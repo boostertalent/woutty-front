@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from "framer-motion";
 import { Handshake, Globe, BarChart3, Rocket, ArrowRight } from "lucide-react";
-
+import Link from 'next/link';
 const partnershipBenefits = [
   {
     icon: <Handshake className="w-8 h-8" />,
@@ -117,29 +117,34 @@ export default function PartnershipBenefits() {
         </motion.div>
 
         {/* Boutons d'action */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.6 }}
-          className="mt-16 flex flex-col sm:flex-row items-center justify-center gap-8"
-        >
-          <motion.button 
-            whileHover={{ scale: 1.05, boxShadow: "0px 10px 20px rgba(245, 194, 0, 0.2)" }}
-            whileTap={{ scale: 0.95 }}
-            className="bg-booster-yellow text-black px-10 py-4 rounded-full font-bold text-sm transition-all shadow-lg"
-          >
-            Devenir partenaire
-          </motion.button>
+         <div className="mt-16 flex flex-col sm:flex-row items-center justify-center gap-12">
           
-          <motion.button 
-            whileHover={{ x: 5 }}
-            className="flex items-center gap-2 text-sm font-medium text-foreground group transition-colors"
+          {/* LIEN PRINCIPAL : INSCRIPTION */}
+          <Link href="/auth" className="w-full sm:w-auto">
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="bg-booster-yellow text-black px-10 py-4 rounded-full font-bold text-center shadow-xl shadow-yellow-500/10 cursor-pointer"
+            >
+              Devenir partenaire
+            </motion.div>
+          </Link>
+
+          {/* LIEN SECONDAIRE : DÉCOUVRIR LES TALENTS */}
+          <Link 
+            href="/" 
+            className="text-foreground flex items-center gap-3 font-semibold group transition-all"
           >
-            Découvrir notre réseau 
-            <ArrowRight className="w-4 h-4 text-booster-yellow group-hover:translate-x-1 transition-transform" />
-          </motion.button>
-        </motion.div>
+            Voir nos partenaires
+            <motion.span
+              animate={{ x: [0, 5, 0] }}
+              transition={{ repeat: Infinity, duration: 1.5 }}
+            >
+              <ArrowRight className="w-5 h-5 text-booster-yellow group-hover:translate-x-2 transition-transform" />
+            </motion.span>
+          </Link>
+          
+        </div>
       </div>
     </section>
   );

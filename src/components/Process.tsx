@@ -1,4 +1,5 @@
 "use client";
+
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -7,86 +8,111 @@ export default function Process() {
 
   const brandSteps = [
     { id: "1", title: "Postez votre brief", desc: "Décrivez votre besoin : objectifs, type de contenu, budget, délais." },
-    { id: "2", title: "Matching IA", desc: "Notre algo identifie les meilleurs créateurs pour votre marque selon vos critères." },
-    { id: "3", title: "Validez et lancez", desc: "Choisissez vos créateurs. Le paiement est bloqué en escrow pour sécuriser tout le monde." },
-    { id: "4", title: "Recevez vos contenus", desc: "Téléchargez vos UGC avec tous les droits d'usage. Utilisez-les où vous voulez !" }
+    { id: "2", title: "Matching IA", desc: "Notre algorithme sélectionne les créateurs les plus pertinents pour votre marque." },
+    { id: "3", title: "Validez et lancez", desc: "Choisissez vos créateurs. Le paiement est sécurisé en escrow." },
+    { id: "4", title: "Recevez vos contenus", desc: "Téléchargez vos UGC avec tous les droits d’utilisation." }
   ];
 
   const creatorSteps = [
-    { id: "1", title: "Créez votre profil", desc: "Mettez en avant vos meilleures réalisations et vos tarifs." },
-    { id: "2", title: "Recevez des offres", desc: "Les marques vous contactent directement pour des projets qui vous correspondent." },
-    { id: "3", title: "Produisez et livrez", desc: "Créez votre contenu et envoyez-le via la plateforme en toute sécurité." },
-    { id: "4", title: "Paiement rapide", desc: "Une fois validé, recevez vos fonds sans attendre des semaines de relance." }
+    { id: "1", title: "Créez votre profil", desc: "Présentez vos réalisations, vos tarifs et votre univers." },
+    { id: "2", title: "Recevez des offres", desc: "Les marques vous contactent pour des projets adaptés à votre profil." },
+    { id: "3", title: "Produisez & livrez", desc: "Créez votre contenu et livrez-le via la plateforme." },
+    { id: "4", title: "Paiement rapide", desc: "Vos fonds sont libérés dès validation, sans délai inutile." }
   ];
 
   const currentSteps = activeTab === "brands" ? brandSteps : creatorSteps;
 
   return (
-    /* ✅ bg-background et text-foreground pour l'adaptation automatique */
-    <section className="py-24 px-6 bg-background text-foreground transition-colors duration-500">
+    <section className="py-24 px-6 bg-background text-foreground">
       <div className="max-w-5xl mx-auto flex flex-col items-center">
-        
-        {/* Badge supérieur - ✅ border-border et text-muted-foreground */}
-        <span className="text-[10px] uppercase tracking-[0.2em] border border-border px-3 py-1 rounded-full text-muted-foreground mb-6">
+
+        {/* Badge */}
+        <motion.span
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-[10px] uppercase tracking-[0.25em] border border-border px-3 py-1 rounded-full text-muted-foreground mb-6"
+        >
           Processus
-        </span>
+        </motion.span>
 
-        <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 tracking-tight">
+        {/* Title */}
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-4xl md:text-5xl font-bold text-center mb-4"
+        >
           Comment ça marche ?
-        </h2>
-        
-        <p className="text-muted-foreground text-center mb-10 max-w-lg">
-          De la première prise de contact aux résultats, nous vous guidons à chaque étape.
-        </p>
+        </motion.h2>
 
-        {/* Navigation par Onglets - ✅ bg-muted pour le fond de la barre */}
-        <div className="flex bg-muted p-1 rounded-full mb-16 border border-border">
-          <button
-            onClick={() => setActiveTab("brands")}
-            className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
-              activeTab === "brands" 
-              ? "bg-booster-yellow text-black shadow-sm" 
-              : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Pour les marques
-          </button>
-          <button
-            onClick={() => setActiveTab("creators")}
-            className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
-              activeTab === "creators" 
-              ? "bg-booster-yellow text-black shadow-sm" 
-              : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Pour les créateurs
-          </button>
+        <motion.p
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-muted-foreground text-center mb-14 max-w-lg"
+        >
+          Un processus simple, fluide et sécurisé, pensé pour les marques et les créateurs.
+        </motion.p>
+
+        {/* Toggle Marques / Créateurs */}
+        <div className="relative flex bg-muted p-1 rounded-full border border-border mb-16">
+          {/* Pill animée */}
+          <motion.div
+            layout
+            className="absolute top-1 bottom-1 w-1/2 bg-booster-yellow rounded-full"
+            initial={false}
+            animate={{ x: activeTab === "brands" ? 0 : "100%" }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+          />
+
+          {["brands", "creators"].map((tab) => (
+            <motion.button
+              key={tab}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setActiveTab(tab as any)}
+              className={`relative z-10 px-6 py-2 text-sm font-medium rounded-full transition-colors ${
+                activeTab === tab ? "text-black" : "text-muted-foreground"
+              }`}
+            >
+              {tab === "brands" ? "Pour les marques" : "Pour les créateurs"}
+            </motion.button>
+          ))}
         </div>
 
-        {/* Grille de contenu */}
+        {/* Steps */}
         <div className="w-full">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              transition={{ duration: 0.3 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4 }}
               className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12"
             >
-              {currentSteps.map((step) => (
-                <div key={step.id} className="flex gap-4">
-                  {/* ✅ Numéro en booster-yellow pour garder l'identité */}
+              {currentSteps.map((step, i) => (
+                <motion.div
+                  key={step.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.08 }}
+                  whileHover={{ y: -4 }}
+                  className="flex gap-5 p-4 rounded-2xl hover:bg-muted/50 transition"
+                >
                   <span className="text-xl font-bold text-booster-yellow shrink-0">
                     {step.id}.
                   </span>
+
                   <div>
-                    <h3 className="text-xl font-bold mb-3">{step.title}</h3>
+                    <h3 className="text-xl font-semibold mb-2">
+                      {step.title}
+                    </h3>
                     <p className="text-muted-foreground text-sm leading-relaxed max-w-sm">
                       {step.desc}
                     </p>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </motion.div>
           </AnimatePresence>

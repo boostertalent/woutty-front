@@ -19,7 +19,7 @@ export default function Hero() {
       {/* Titre avec Jaune Booster constant et texte adaptatif */}
       <h1 className="text-5xl md:text-7xl font-bold tracking-tight max-w-4xl leading-[1.1] mb-8">
         Transformez votre <span className="text-booster-yellow italic">créativité</span> <br /> 
-        en <span className="text-booster-yellow">revenu</span>. 
+        en <span className="text-booster-yellow italic">revenu</span>. 
       </h1>
 
       {/* Paragraphe en couleur "muted" (gris en dark, gris foncé en light) */}
@@ -31,7 +31,7 @@ export default function Hero() {
         {/* Bouton Principal - Adaptatif (Noir sur blanc en light, Blanc sur noir en dark) */}
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
           <Link 
-            href="/register" 
+            href="/auth" 
             className="bg-foreground text-background px-8 py-3.5 rounded-full font-bold transition-transform duration-200 shadow-lg flex items-center justify-center"
           >
             Commencer maintenant

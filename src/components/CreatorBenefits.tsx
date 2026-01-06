@@ -1,5 +1,6 @@
 "use client";
 import React from 'react';
+import Link from 'next/link'; 
 import { motion } from 'framer-motion';
 import { ShieldCheck, TrendingUp, Users, Award, ArrowRight } from 'lucide-react';
 
@@ -49,7 +50,7 @@ export default function CreatorBenefits() {
           Vous créez du contenu qui engage ? Nous vous accompagnons pour décrocher les meilleurs contrats et faire grandir votre communauté.
         </p>
 
-        {/* Grille de cartes avec animation monochrome */}
+        {/* Grille de cartes */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
           {benefits.map((item, index) => (
             <motion.div 
@@ -63,10 +64,8 @@ export default function CreatorBenefits() {
                 borderColor: "var(--booster-yellow, #F5C200)",
                 boxShadow: "0px 10px 40px -10px rgba(245, 194, 0, 0.15)"
               }}
-              /* ✅ Background reste constant, seule la bordure s'anime en jaune */
               className="bg-card border border-border p-10 rounded-[2rem] transition-colors duration-300 group cursor-default"
             >
-              {/* L'icône et le titre utilisent la même couleur unique */}
               <div className="mb-6 text-booster-yellow transform transition-transform duration-300 group-hover:scale-110">
                 {item.icon}
               </div>
@@ -81,21 +80,34 @@ export default function CreatorBenefits() {
             </motion.div>
           ))}
         </div>
+          {/*lien*/}
+        <div className="mt-16 flex flex-col sm:flex-row items-center justify-center gap-12">
+          
+          {/* LIEN PRINCIPAL : INSCRIPTION */}
+          <Link href="/auth" className="w-full sm:w-auto">
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="bg-booster-yellow text-black px-10 py-4 rounded-full font-bold text-center shadow-xl shadow-yellow-500/10 cursor-pointer"
+            >
+              Rejoindre Woutty
+            </motion.div>
+          </Link>
 
-        {/* Boutons d'action */}
-        <div className="mt-16 flex flex-col sm:flex-row items-center justify-center gap-8">
-          <motion.button 
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="bg-booster-yellow text-black px-10 py-4 rounded-full font-bold w-full sm:w-auto shadow-xl shadow-yellow-500/10"
+          {/* LIEN SECONDAIRE : DÉCOUVRIR LES TALENTS */}
+          <Link 
+            href="/" 
+            className="text-foreground flex items-center gap-3 font-semibold group transition-all"
           >
-            Rejoindre Booster Talent
-          </motion.button>
-
-          <button className="text-foreground flex items-center gap-3 font-medium group">
             Voir nos talents 
-            <ArrowRight className="w-5 h-5 text-booster-yellow group-hover:translate-x-2 transition-transform" />
-          </button>
+            <motion.span
+              animate={{ x: [0, 5, 0] }}
+              transition={{ repeat: Infinity, duration: 1.5 }}
+            >
+              <ArrowRight className="w-5 h-5 text-booster-yellow group-hover:translate-x-2 transition-transform" />
+            </motion.span>
+          </Link>
+          
         </div>
         
       </div>
