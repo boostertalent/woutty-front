@@ -56,7 +56,7 @@ export default function CreateCreatorProfile() {
       setShowErrors(true);
     } else {
       // SAUVEGARDE CRUCIALE POUR SUPABASE
-      // On utilise des clés claires que le fichier suivant pourra lire sans erreur
+      // 
       localStorage.setItem('signup_email', formData.email.trim().toLowerCase());
       localStorage.setItem('signup_name', formData.fullName.trim());
       localStorage.setItem('signup_phone', formData.phone.trim());
@@ -67,7 +67,7 @@ export default function CreateCreatorProfile() {
           localStorage.setItem('signup_avatar', imagePreview);
         } catch (error) {
           console.error("Erreur de stockage de l'image (LocalStorage plein)");
-          // On continue quand même, l'image est facultative au pire
+          
         }
       }
       
@@ -119,7 +119,7 @@ export default function CreateCreatorProfile() {
               value={formData.fullName}
               onChange={handleChange}
               type="text" 
-              placeholder="Ex: Peter Parker" 
+              placeholder="exemple: Fall Thiam" 
               className={`w-full px-5 py-3.5 rounded-2xl border outline-none transition-all ${showErrors && !formData.fullName ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-[#ceaf4a] focus:ring-4 focus:ring-[#ceaf4a]/5'}`}
             />
           </div>
@@ -131,7 +131,7 @@ export default function CreateCreatorProfile() {
               value={formData.email}
               onChange={handleChange}
               type="email" 
-              placeholder="peter@parker.com" 
+              placeholder="exemple:fallthiam@gmail.com" 
               className={`w-full px-5 py-3.5 rounded-2xl border outline-none transition-all ${showErrors && !formData.email ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-[#ceaf4a] focus:ring-4 focus:ring-[#ceaf4a]/5'}`}
             />
           </div>
@@ -144,7 +144,7 @@ export default function CreateCreatorProfile() {
                 value={formData.phone}
                 onChange={handleChange}
                 type="tel" 
-                placeholder="06..." 
+                placeholder="+221..." 
                 className={`w-full px-5 py-3.5 rounded-2xl border outline-none transition-all ${showErrors && !formData.phone ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-[#ceaf4a] focus:ring-4 focus:ring-[#ceaf4a]/5'}`}
               />
             </div>
@@ -155,7 +155,7 @@ export default function CreateCreatorProfile() {
                 value={formData.age}
                 onChange={handleChange}
                 type="number" 
-                placeholder="25" 
+                placeholder="exemple:25" 
                 className={`w-full px-5 py-3.5 rounded-2xl border outline-none transition-all ${showErrors && (!formData.age || parseInt(formData.age) <= 0) ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-[#ceaf4a] focus:ring-4 focus:ring-[#ceaf4a]/5'}`}
               />
             </div>

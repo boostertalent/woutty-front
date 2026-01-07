@@ -46,7 +46,7 @@ export default function SocialMediaSelection() {
     setError(null);
 
     try {
-      // 1. Récupération (avec valeurs par défaut pour éviter le NULL en DB)
+      // 1. Récupération 
       const userEmail = localStorage.getItem('signup_email');
       const userName = localStorage.getItem('signup_name') || 'Utilisateur';
       const userPhone = localStorage.getItem('signup_phone') || '';
@@ -95,7 +95,7 @@ export default function SocialMediaSelection() {
           }
         }
 
-        // 4. Upsert (Le coeur de la solution)
+        // 4. Upsert 
         const { error: profileError } = await supabase
           .from('profiles')
           .upsert({
@@ -112,14 +112,12 @@ export default function SocialMediaSelection() {
             snapchat_username: socials.find(s => s.platform === 'snapchat')?.handle || null,
             twitter_username: socials.find(s => s.platform === 'twitter')?.handle || null,
             role: 'creator'
-          }, { onConflict: 'id' }); // Important pour ne pas avoir d'erreur de clé dupliquée
+          }, { onConflict: 'id' }); 
 
         if (profileError) throw profileError;
 
-        // 5. Nettoyage final
         localStorage.clear();
         
-        // Redirection vers ton composant RegistrationSuccess (Verify Email)
         router.push('/creators/auth/success'); 
         
       }
@@ -167,7 +165,7 @@ export default function SocialMediaSelection() {
               </div>
               <input 
                 type="text"
-                placeholder="@votre_pseudo ou lien de profil"
+                placeholder="votre profil ou lien de profil"
                 value={social.handle}
                 onChange={(e) => updateSocial(social.id, 'handle', e.target.value)}
                 className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 outline-none focus:border-[#ceaf4a]"
@@ -184,7 +182,7 @@ export default function SocialMediaSelection() {
         </button>
 
         <div className="space-y-4 mb-6">
-          <label className="text-sm font-bold ml-1 text-gray-700 uppercase tracking-wider">Sécurise ton accès</label>
+          <label className="text-sm font-bold ml-1 text-gray-700 uppercase tracking-wider">Mot de passe</label>
           <div className="relative">
             <input 
               type={showPassword ? "text" : "password"}
@@ -230,6 +228,7 @@ export default function SocialMediaSelection() {
               isFormValid && !loading 
                 ? "bg-[#ceaf4a] text-white shadow-lg shadow-[#ceaf4a]/30 active:scale-95" 
                 : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                
             }`}
           >
             {loading ? <Loader2 className="animate-spin" size={22} /> : "Terminer"}

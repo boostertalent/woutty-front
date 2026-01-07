@@ -40,8 +40,9 @@ export default function Home() {
       <section id="partenariat" className="scroll-mt-24">
         <PartnershipBenefits />
       </section>
-
+    {/* qusetionnaire*/}
       <FAQ />
+      {/* footer */}
       <Footer/>
       
     </main>
