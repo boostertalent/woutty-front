@@ -9,13 +9,18 @@ export default function RegistrationSuccess() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    // Récupérer l'email pour personnaliser le message
-    const email = localStorage.getItem('signup_email');
-    setUserEmail(email);
-    
-    
-  }, []);
+  const email = localStorage.getItem('signup_email');
+  setUserEmail(email);
 
+  // On nettoie le localStorage APRÈS avoir récupéré l'email
+  return () => {
+    localStorage.removeItem('signup_email');
+    localStorage.removeItem('signup_name');
+    localStorage.removeItem('signup_phone');
+    localStorage.removeItem('signup_niche');
+    localStorage.removeItem('signup_avatar');
+  };
+}, []);
   return (
     <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 font-sans text-gray-900">
       

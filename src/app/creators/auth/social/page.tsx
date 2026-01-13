@@ -5,17 +5,17 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
 import { 
-  ChevronLeft, Trash2, Plus, Globe, AlertCircle,
+  ChevronLeft, Trash2, Globe, AlertCircle,
   Instagram, Youtube, Twitter, 
-  Music2, MessageCircle, Eye, EyeOff, Loader2 
+  Music2, MessageCircle, Eye, EyeOff, Loader2, ChevronDown
 } from 'lucide-react';
 
 const PLATFORMS = [
-  { id: 'tiktok', name: 'TikTok', icon: <Music2 size={20} /> },
-  { id: 'instagram', name: 'Instagram', icon: <Instagram size={20} /> },
-  { id: 'snapchat', name: 'Snapchat', icon: <MessageCircle size={20} /> },
-  { id: 'twitter', name: 'Twitter / X', icon: <Twitter size={20} /> },
-  { id: 'youtube', name: 'YouTube', icon: <Youtube size={20} /> },
+  { id: 'tiktok', name: 'TikTok', icon: <Music2 size={18} />, prefix: '@', placeholder: 'nom de profil' },
+  { id: 'instagram', name: 'Instagram', icon: <Instagram size={18} />, prefix: '@', placeholder: 'nom de profil' },
+  { id: 'snapchat', name: 'Snapchat', icon: <MessageCircle size={18} />, prefix: '', placeholder: 'nom de profil' },
+  { id: 'twitter', name: 'Twitter / X', icon: <Twitter size={18} />, prefix: '@', placeholder: 'nom de profil' },
+  { id: 'youtube', name: 'YouTube', icon: <Youtube size={18} />, prefix: '@', placeholder: 'nom_de_la_chaine' },
 ];
 
 export default function SocialMediaSelection() {
@@ -38,92 +38,54 @@ export default function SocialMediaSelection() {
   const isFormValid = 
     password.length >= 6 && 
     isPasswordMatch && 
+    socials.length > 0 &&
     socials.every(s => s.platform !== '' && s.handle.trim().length >= 2);
 
- const handleFinish = async () => {
+  const handleFinish = async () => {
     if (!isFormValid || loading) return;
+    
     setLoading(true);
     setError(null);
 
     try {
-      // 1. Récupération 
-      const userEmail = localStorage.getItem('signup_email');
-      const userName = localStorage.getItem('signup_name') || 'Utilisateur';
-      const userPhone = localStorage.getItem('signup_phone') || '';
-      const userAge = localStorage.getItem('signup_age');
-      const userNicheRaw = localStorage.getItem('signup_niche');
-      const avatarBase64 = localStorage.getItem('signup_avatar');
+      const email = localStorage.getItem('onboarding_email');
+      const fullName = localStorage.getItem('user_full_name');
+      const phone = localStorage.getItem('signup_phone');
+      const ageRaw = localStorage.getItem('signup_age');
+      const nichesRaw = localStorage.getItem('signup_niche');
       
-      const userNiche = userNicheRaw ? JSON.parse(userNicheRaw) : [];
-      const parsedAge = userAge ? parseInt(userAge, 10) : null;
+      let niches = [];
+      try { niches = nichesRaw ? JSON.parse(nichesRaw) : []; } catch (e) { niches = []; }
 
-      if (!userEmail) throw new Error("Données d'inscription manquantes (email).");
+      if (!email) throw new Error("Détails d'inscription manquants. Veuillez recommencer.");
 
-      // 2. Création du compte Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: userEmail,
+      // Conversion en entier pour le type int4 de la base
+      const ageInt = ageRaw ? parseInt(ageRaw, 10) : null;
+
+      const { data, error: authError } = await supabase.auth.signUp({
+        email: email,
         password: password,
         options: {
-          data: { full_name: userName },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: {
+            full_name: fullName || "",
+            phone: phone || "",
+            age: ageInt, 
+            user_niches: niches,
+            user_socials: socials.map(s => ({ platform: s.platform, handle: s.handle }))
+          }
         }
       });
 
       if (authError) throw authError;
-      const userId = authData.user?.id;
 
-      if (userId) {
-        let publicAvatarUrl = null;
-
-        // 3. Gestion de l'image
-        if (avatarBase64) {
-          try {
-            const base64Data = avatarBase64.split(',')[1];
-            const blob = await fetch(`data:image/png;base64,${base64Data}`).then(res => res.blob());
-            const fileName = `${userId}/avatar_${Date.now()}.png`;
-            
-            const { error: uploadError } = await supabase.storage
-              .from('avatars')
-              .upload(fileName, blob, { upsert: true });
-
-            if (!uploadError) {
-              const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
-              publicAvatarUrl = data.publicUrl;
-            }
-          } catch (err) {
-            console.error("Upload avatar ignoré:", err);
-          }
-        }
-
-        // 4. Upsert 
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: userId,
-            email: userEmail,
-            full_name: userName,
-            avatar_url: publicAvatarUrl,
-            phone: userPhone,
-            age: isNaN(parsedAge as number) ? null : parsedAge,
-            niche: userNiche,
-            instagram_username: socials.find(s => s.platform === 'instagram')?.handle || null,
-            tiktok_username: socials.find(s => s.platform === 'tiktok')?.handle || null,
-            youtube_username: socials.find(s => s.platform === 'youtube')?.handle || null,
-            snapchat_username: socials.find(s => s.platform === 'snapchat')?.handle || null,
-            twitter_username: socials.find(s => s.platform === 'twitter')?.handle || null,
-            role: 'creator'
-          }, { onConflict: 'id' }); 
-
-        if (profileError) throw profileError;
-
-        localStorage.clear();
-        
-        router.push('/creators/auth/success'); 
-        
+      if (data.user) {
+        // On ne vide pas le storage ici car RegistrationSuccess en a besoin pour afficher l'email
+        router.push('/creators/auth/success');
       }
+
     } catch (err: any) {
-      console.error("Détails de l'erreur:", err);
-      setError(err.message || "Une erreur est survenue lors de la création du profil.");
+      console.error("Erreur Inscription:", err);
+      setError(err.message || "Une erreur est survenue.");
     } finally {
       setLoading(false);
     }
@@ -133,105 +95,93 @@ export default function SocialMediaSelection() {
     setSocials(socials.map(s => s.id === id ? { ...s, [field]: value } : s));
   };
   
-  const getPlatformIcon = (id: string) => PLATFORMS.find(p => p.id === id)?.icon || <Globe size={20} />;
+  const getPlatformIcon = (id: string) => PLATFORMS.find(p => p.id === id)?.icon || <Globe size={18} />;
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 font-sans text-gray-900">
-      <div className="bg-white border border-gray-200 rounded-[40px] p-8 md:p-12 w-full max-w-2xl shadow-sm">
+    <main className="min-h-screen bg-[#F3F4F6] flex flex-col items-center justify-center p-4 font-sans text-gray-900">
+      <div className="bg-white border border-gray-200 rounded-[32px] p-8 md:p-12 w-full max-w-2xl shadow-xl shadow-gray-200/50">
         
-        <h2 className="text-3xl font-bold text-center mb-4 text-[#ceaf4a]">Tes réseaux</h2>
-        <p className="text-center text-gray-500 mb-8 font-medium">Lien vers tes réseaux et mot de passe</p>
+        <div className="text-center mb-10">
+            <h2 className="text-3xl font-black text-gray-900 mb-2">Vos Réseaux</h2>
+            <p className="text-gray-500 font-medium text-sm">Connectez vos plateformes pour finaliser votre profil</p>
+        </div>
 
         <div className="space-y-4 mb-6">
-          {socials.map((social) => (
-            <div key={social.id} className="p-4 border border-gray-200 rounded-3xl bg-gray-50/50 space-y-3">
-              <div className="flex gap-3 items-center">
-                <div className={`p-2.5 rounded-xl transition-colors ${social.platform ? 'bg-[#ceaf4a] text-white' : 'bg-gray-200 text-gray-400'}`}>
-                  {getPlatformIcon(social.platform)}
+          {socials.map((social) => {
+            const selectedPlatformInfo = PLATFORMS.find(p => p.id === social.platform);
+            return (
+                <div key={social.id} className="group flex items-center bg-white border border-gray-200 rounded-2xl p-1.5 focus-within:border-[#ceaf4a] focus-within:ring-4 focus-within:ring-[#ceaf4a]/10 transition-all">
+                    <div className="relative min-w-[150px] md:min-w-[180px]">
+                        <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 rounded-xl">
+                            <span className={social.platform ? 'text-[#ceaf4a]' : 'text-gray-400'}>{getPlatformIcon(social.platform)}</span>
+                            <span className={`text-sm font-bold flex-1 truncate ${!social.platform ? 'text-gray-400' : 'text-gray-900'}`}>{selectedPlatformInfo ? selectedPlatformInfo.name : 'Plateforme'}</span>
+                            <ChevronDown size={14} className="text-gray-400" />
+                        </div>
+                        <select 
+                            value={social.platform} 
+                            onChange={(e) => updateSocial(social.id, 'platform', e.target.value)} 
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        >
+                            <option value="" disabled>Choisir...</option>
+                            {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                    </div>
+                    <div className="w-px h-8 bg-gray-200 mx-2" />
+                    <div className="flex-1 flex items-center">
+                        {selectedPlatformInfo?.prefix && <span className="text-black font-bold pl-2">{selectedPlatformInfo.prefix}</span>}
+                        <input 
+                            type="text" 
+                            placeholder={selectedPlatformInfo?.placeholder || "Pseudo..."}
+                            value={social.handle}
+                            onChange={(e) => updateSocial(social.id, 'handle', e.target.value)}
+                            disabled={!social.platform}
+                            className="w-full py-3 px-1 outline-none text-black font-bold bg-transparent text-sm"
+                        />
+                    </div>
+                    {socials.length > 1 && (
+                        <button onClick={() => setSocials(socials.filter(s => s.id !== social.id))} className="p-2 text-gray-300 hover:text-red-500"><Trash2 size={18} /></button>
+                    )}
                 </div>
-                <select 
-                  value={social.platform}
-                  onChange={(e) => updateSocial(social.id, 'platform', e.target.value)}
-                  className="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-2.5 outline-none focus:border-[#ceaf4a]"
-                >
-                  <option value="" disabled>Choisir une plateforme</option>
-                  {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-                {socials.length > 1 && (
-                  <button onClick={() => setSocials(socials.filter(s => s.id !== social.id))} className="p-2.5 text-gray-400 hover:text-red-500 bg-white border border-gray-200 rounded-xl transition-colors">
-                    <Trash2 size={20} />
-                  </button>
-                )}
-              </div>
-              <input 
-                type="text"
-                placeholder="votre profil ou lien de profil"
-                value={social.handle}
-                onChange={(e) => updateSocial(social.id, 'handle', e.target.value)}
-                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 outline-none focus:border-[#ceaf4a]"
-              />
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <button 
-          onClick={() => setSocials([...socials, { id: Date.now(), platform: '', handle: '' }])}
-          className="w-full py-3 border-2 border-dashed border-gray-200 rounded-2xl text-gray-400 hover:border-[#ceaf4a] hover:text-[#ceaf4a] mb-8 transition-all font-bold text-sm"
+            onClick={() => setSocials([...socials, { id: Date.now(), platform: '', handle: '' }])}
+            className="w-full py-4 border border-dashed border-gray-300 rounded-2xl text-gray-500 hover:text-[#ceaf4a] font-bold text-sm mb-8"
         >
-          <Plus size={18} className="inline mr-2" /> Ajouter un autre réseau
+            + Ajouter un réseau
         </button>
 
-        <div className="space-y-4 mb-6">
-          <label className="text-sm font-bold ml-1 text-gray-700 uppercase tracking-wider">Mot de passe</label>
-          <div className="relative">
-            <input 
-              type={showPassword ? "text" : "password"}
-              placeholder="Mot de passe (min. 6 caractères)"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 outline-none focus:border-[#ceaf4a] bg-gray-50"
-            />
-            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
-              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-            </button>
-          </div>
-          <div className="relative">
-            <input 
-              type={showConfirmPassword ? "text" : "password"}
-              placeholder="Confirmer le mot de passe"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className={`w-full px-5 py-3.5 rounded-2xl border outline-none bg-gray-50 transition-all ${isPasswordMatch ? 'border-green-500 ring-2 ring-green-500/10' : 'border-gray-200'}`}
-            />
-            <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
-              {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-            </button>
-          </div>
+        <div className="bg-gray-50/50 rounded-3xl p-6 border border-gray-100 space-y-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-600">Mot de passe</label>
+                    <div className="relative">
+                        <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 bg-white text-black font-bold" />
+                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-600">Confirmation</label>
+                    <div className="relative">
+                        <input type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={`w-full px-5 py-3.5 rounded-2xl border bg-white text-black font-bold ${isPasswordMatch ? 'border-green-500' : 'border-gray-200'}`} />
+                        <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">{showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        {error && (
-          <div className="bg-red-50 text-red-600 p-4 rounded-2xl mb-6 flex items-start gap-3 border border-red-100">
-            <AlertCircle size={20} className="shrink-0 mt-0.5" /> 
-            <span className="text-sm font-bold leading-tight">{error}</span>
-          </div>
-        )}
+        {error && <div className="bg-red-50 text-red-600 p-4 rounded-2xl mb-6 flex items-start gap-3 border border-red-100 font-bold text-sm"><AlertCircle size={20} /> {error}</div>}
 
         <div className="flex justify-between items-center pt-6 border-t border-gray-100">
-          <Link href="/creators/auth/niche" className="text-gray-500 font-bold hover:text-black transition-colors flex items-center gap-2">
-            <ChevronLeft size={20} /> Retour
-          </Link>
-          
+          <Link href="/creators/auth/niche" className="text-gray-400 font-bold hover:text-black flex items-center gap-2 text-sm"><ChevronLeft size={18} /> Retour</Link>
           <button 
-            onClick={handleFinish}
-            disabled={!isFormValid || loading}
-            className={`px-12 py-3.5 rounded-2xl font-bold transition-all flex items-center gap-2 ${
-              isFormValid && !loading 
-                ? "bg-[#ceaf4a] text-white shadow-lg shadow-[#ceaf4a]/30 active:scale-95" 
-                : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                
-            }`}
+            onClick={handleFinish} 
+            disabled={!isFormValid || loading} 
+            className={`px-10 py-4 rounded-2xl font-bold transition-all text-sm uppercase flex items-center justify-center min-w-[200px] ${isFormValid && !loading ? "bg-[#ceaf4a] text-white shadow-xl" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
           >
-            {loading ? <Loader2 className="animate-spin" size={22} /> : "Terminer"}
+            {loading ? <Loader2 className="animate-spin" /> : "Finaliser mon inscription"}
           </button>
         </div>
       </div>

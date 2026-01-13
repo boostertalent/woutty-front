@@ -1,82 +1,105 @@
 "use client";
 
-import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Check, partyPopper, ArrowRight, sparkles } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { CheckCircle2, Mail, ArrowRight, Sparkles, PartyPopper } from 'lucide-react';
 
-export default function SuccessPage() {
-  const router = useRouter();
+export default function RegistrationSuccess() {
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    // Petit effet de confettis à l'arrivée
-    const duration = 3 * 1000;
-    const animationEnd = Date.now() + duration;
-    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+  const email = localStorage.getItem('signup_email');
+  setUserEmail(email);
 
-    const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
-
-    const interval: any = setInterval(function() {
-      const timeLeft = animationEnd - Date.now();
-
-      if (timeLeft <= 0) {
-        return clearInterval(interval);
-      }
-
-      const particleCount = 50 * (timeLeft / duration);
-      confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
-      confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
-    }, 250);
-
-    return () => clearInterval(interval);
-  }, []);
-
+  // On nettoie le localStorage APRÈS avoir récupéré l'email
+  return () => {
+    localStorage.removeItem('signup_email');
+    localStorage.removeItem('signup_name');
+    localStorage.removeItem('signup_phone');
+    localStorage.removeItem('signup_niche');
+    localStorage.removeItem('signup_avatar');
+  };
+}, []);
   return (
-    <main className="min-h-screen bg-[#f3f3f3] flex items-center justify-center p-4 font-sans text-gray-900">
-      <div className="bg-white rounded-[40px] shadow-sm w-full max-w-xl p-8 md:p-16 border border-gray-100 text-center relative overflow-hidden">
-        
-        {/* Décoration en arrière-plan */}
+    <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 font-sans text-gray-900">
+      
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="bg-white border border-gray-200 rounded-[40px] p-8 md:p-12 w-full max-w-2xl shadow-xl text-center relative overflow-hidden"
+      >
+        {/* Éléments décoratifs en arrière-plan */}
         <div className="absolute top-0 left-0 w-full h-2 bg-[#ceaf4a]" />
+        <Sparkles className="absolute top-10 right-10 text-[#ceaf4a]/20" size={40} />
         
         {/* Icône de succès animée */}
-        <div className="flex justify-center mb-8">
-          <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center animate-bounce duration-[2000ms]">
-            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center shadow-lg shadow-green-200">
-              <Check size={40} className="text-white" strokeWidth={3} />
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="flex justify-center mb-8"
+        >
+          <div className="relative">
+            <div className="absolute inset-0 bg-green-100 rounded-full animate-ping opacity-25" />
+            <div className="bg-green-100 p-6 rounded-full relative">
+              <CheckCircle2 size={60} className="text-green-600" strokeWidth={1.5} />
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        <h1 className="text-4xl font-bold mb-4 tracking-tight">Félicitations !</h1>
-        <p className="text-gray-500 text-lg mb-10 font-medium">
-          Votre compte est désormais prêt. Bienvenue dans l'aventure !
+        <h1 className="text-4xl font-bold mb-4">
+          Inscription <span className="text-[#ceaf4a]">réussie !</span>
+        </h1>
+        
+        <p className="text-xl text-gray-600 mb-8 font-medium">
+          Bienvenue dans la communauté <span className="font-bold">Woutty</span>.
         </p>
 
-        <div className="space-y-4 max-w-sm mx-auto">
-          <button 
-            onClick={() => router.push('/brands/dashboard')}
-            className="w-full bg-[#ceaf4a] text-white py-4 rounded-2xl font-bold text-lg shadow-xl shadow-[#ceaf4a]/20 hover:bg-[#b8962f] hover:scale-[1.02] transition-all active:scale-95 flex items-center justify-center gap-3"
-          >
-            Accéder à mon espace <ArrowRight size={22} />
-          </button>
-          
-          <p className="text-sm text-gray-400">
-            Vous allez être redirigé vers votre tableau de bord.
+        {/* Encadré Email */}
+        <motion.div 
+          initial={{ x: -20, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="bg-gray-50 border border-gray-100 rounded-3xl p-6 mb-10 flex flex-col items-center"
+        >
+          <Mail className="text-[#ceaf4a] mb-3" size={30} />
+          <h3 className="font-bold text-gray-800 mb-2">Vérifiez votre boîte mail</h3>
+          <p className="text-gray-500 text-sm">
+            Un lien de confirmation a été envoyé à :<br/>
+            <span className="font-bold text-gray-900">{userEmail || "votre adresse email"}</span>
           </p>
+        </motion.div>
+
+        <div className="space-y-4">
+          <p className="text-gray-400 text-sm italic">
+            Pensez à regarder dans vos courriers indésirables (spams) si vous ne voyez rien.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+            <Link 
+              href="/auth/login"
+              className="px-10 py-4 bg-black text-white rounded-2xl font-bold hover:bg-gray-800 transition-all active:scale-95 flex items-center justify-center gap-2"
+            >
+              Aller à la connexion
+            </Link>
+            
+            <Link 
+              href="/"
+              className="px-10 py-4 border border-gray-200 text-gray-600 rounded-2xl font-bold hover:bg-gray-50 transition-all active:scale-95 flex items-center justify-center gap-2"
+            >
+              Retour à l'accueil
+            </Link>
+          </div>
         </div>
 
-        {/* Petits badges informatifs */}
-        <div className="mt-12 pt-8 border-t border-gray-50 flex justify-center gap-6 text-gray-400">
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
-            <span className="w-2 h-2 bg-green-500 rounded-full" />
-            Profil Vérifié
-          </div>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
-            <span className="w-2 h-2 bg-green-500 rounded-full" />
-            Accès Illimité
-          </div>
+        {/* Petit message de rappel */}
+        <div className="mt-12 pt-8 border-t border-gray-100 flex items-center justify-center gap-2 text-[#ceaf4a] font-bold text-sm uppercase tracking-widest">
+          <PartyPopper size={18} />
+          C'est le début de l'aventure
         </div>
-      </div>
+      </motion.div>
     </main>
   );
 }

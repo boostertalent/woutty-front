@@ -34,7 +34,7 @@ export default function AuthChoicePage() {
         {/* CARTE MARQUE */}
         <ChoiceCard 
           icon={<Building2 size={60} strokeWidth={1.2} />}
-          title="Marque"
+          title="Marque/Entreprise"
           description={<>Vous cherchez des créateurs <br/> pour vos campagnes</>}
           features={[
             "Trouvez les profils parfaits",
@@ -42,7 +42,7 @@ export default function AuthChoicePage() {
             "Suivi en temps réel"
           ]}
           href="/brands/auth/entreprise"
-          buttonText="Je suis une marque"
+          buttonText="Je suis une marque/Entreprise"
         />
 
         {/* CARTE PARTENARIAT */}

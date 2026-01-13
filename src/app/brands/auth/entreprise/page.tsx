@@ -85,8 +85,8 @@ export default function EntrepriseDetails() {
       <div className="bg-white rounded-[40px] shadow-sm w-full max-w-2xl p-8 md:p-12 border border-gray-100 relative">
         
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-medium mb-2">Votre entreprise</h1>
-          <p className="text-gray-500 font-medium">Présentez votre marque</p>
+          <h1 className="text-4xl font-medium mb-2">Votre entreprise/Marque</h1>
+          <p className="text-gray-500 font-medium">Présentez votre marque/Entreprise</p>
         </div>
 
         <div className="flex justify-center mb-12">
@@ -103,7 +103,7 @@ export default function EntrepriseDetails() {
           )}
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Nom de l'entreprise *</label>
+            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Nom Marque/Entreprise*</label>
             <input
               type="text"
               name="companyName"
@@ -129,7 +129,7 @@ export default function EntrepriseDetails() {
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Email entreprise *</label>
+              <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Email Marque/Entreprise*</label>
               <input
                 type="email"
                 name="email"
@@ -165,7 +165,7 @@ export default function EntrepriseDetails() {
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Site web</label>
+              <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Site web*</label>
               <input
                 type="url"
                 name="website"

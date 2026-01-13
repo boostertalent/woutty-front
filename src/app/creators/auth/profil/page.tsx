@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, ChangeEvent } from 'react';
+import React, { useState, ChangeEvent, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Upload, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
@@ -17,7 +17,25 @@ export default function CreateCreatorProfile() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
 
-  // Validation stricte
+  // 1. CHARGEMENT DES DONNÉES (Correction des clés pour matcher avec SocialMediaSelection)
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('onboarding_email');
+    const savedName = localStorage.getItem('user_full_name');
+    const savedPhone = localStorage.getItem('signup_phone');
+    const savedAge = localStorage.getItem('signup_age');
+    const savedAvatar = localStorage.getItem('signup_avatar');
+
+    if (savedEmail || savedName) {
+      setFormData({
+        email: savedEmail || '',
+        fullName: savedName || '',
+        phone: savedPhone || '',
+        age: savedAge || ''
+      });
+      if (savedAvatar) setImagePreview(savedAvatar);
+    }
+  }, []);
+
   const isFormValid = 
     formData.fullName.trim().length >= 2 && 
     formData.email.includes('@') && 
@@ -27,7 +45,6 @@ export default function CreateCreatorProfile() {
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    // Empêcher l'âge négatif à la saisie
     if (name === 'age' && value !== '' && parseInt(value) < 0) return;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -35,50 +52,44 @@ export default function CreateCreatorProfile() {
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Vérification de la taille (max 2Mo pour le localStorage)
       if (file.size > 2 * 1024 * 1024) {
         alert("L'image est trop lourde (max 2Mo)");
         return;
       }
-
       const reader = new FileReader();
       reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setImagePreview(base64String);
+        setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleContinue = (e: React.MouseEvent) => {
+  // 2. SAUVEGARDE ET NAVIGATION (Clés synchronisées avec le reste du projet)
+  const handleContinue = () => {
     if (!isFormValid) {
-      e.preventDefault();
       setShowErrors(true);
-    } else {
-      // SAUVEGARDE CRUCIALE POUR SUPABASE
-      // 
-      localStorage.setItem('signup_email', formData.email.trim().toLowerCase());
-      localStorage.setItem('signup_name', formData.fullName.trim());
-      localStorage.setItem('signup_phone', formData.phone.trim());
-      localStorage.setItem('signup_age', formData.age);
-      
-      if (imagePreview) {
-        try {
-          localStorage.setItem('signup_avatar', imagePreview);
-        } catch (error) {
-          console.error("Erreur de stockage de l'image (LocalStorage plein)");
-          
-        }
-      }
-      
-      // Navigation vers l'étape suivante
-      router.push("/creators/auth/niche");
+      return;
     }
+
+    // On utilise les clés que les pages suivantes attendent
+    localStorage.setItem('onboarding_email', formData.email.trim().toLowerCase());
+    localStorage.setItem('user_full_name', formData.fullName.trim());
+    localStorage.setItem('signup_phone', formData.phone.trim());
+    localStorage.setItem('signup_age', formData.age);
+    
+    if (imagePreview) {
+      try {
+        localStorage.setItem('signup_avatar', imagePreview);
+      } catch (error) {
+        console.warn("LocalStorage plein : l'image ne sera pas sauvegardée localement.");
+      }
+    }
+    
+    router.push("/creators/auth/niche");
   };
 
   return (
     <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 font-sans text-gray-900">
-      
       <Link href="/auth" className="fixed top-8 left-8 flex items-center gap-2 text-gray-500 hover:text-black transition-colors font-medium">
         <ChevronLeft size={20} /> Retour
       </Link>
@@ -88,7 +99,6 @@ export default function CreateCreatorProfile() {
       </h1>
 
       <div className="bg-white border border-gray-200 rounded-[40px] p-8 md:p-12 w-full max-w-2xl shadow-sm">
-        
         <div className="text-center mb-10">
           <h2 className="text-2xl font-bold mb-2 text-gray-800">Ton identité</h2>
           <p className="text-gray-500 text-sm">Présente-toi aux marques</p>
@@ -155,7 +165,7 @@ export default function CreateCreatorProfile() {
                 value={formData.age}
                 onChange={handleChange}
                 type="number" 
-                placeholder="exemple:25" 
+                placeholder="25" 
                 className={`w-full px-5 py-3.5 rounded-2xl border outline-none transition-all ${showErrors && (!formData.age || parseInt(formData.age) <= 0) ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-[#ceaf4a] focus:ring-4 focus:ring-[#ceaf4a]/5'}`}
               />
             </div>

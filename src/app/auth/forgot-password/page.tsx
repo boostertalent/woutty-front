@@ -1,15 +1,26 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '../../../lib/supabaseClient';
-import Link from 'next/link';
-import { Mail, Loader2, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
+import {
+  Mail,
+  Loader2,
+  X,
+  AlertCircle,
+  CheckCircle2
+} from "lucide-react";
 import { motion, AnimatePresence } from 'framer-motion';
+import { createBrowserClient } from '@supabase/ssr';
+import Link from 'next/link';
 
-export default function ForgotPasswordPage() {
+export default function ForgotPasswordPro() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,110 +34,89 @@ export default function ForgotPasswordPage() {
     if (error) {
       setStatus({ type: 'error', message: error.message });
     } else {
-      setStatus({ 
-        type: 'success', 
-        message: '📩 Un lien de réinitialisation a été envoyé sur votre boîte mail.' 
+      setStatus({
+        type: 'success',
+        message: 'Un lien sécurisé a été envoyé. Vérifiez votre boîte mail.'
       });
     }
     setLoading(false);
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 overflow-hidden font-sans">
-      
-      {/* Background Glows adaptés au thème doré */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#ceaf4a]/5 rounded-full blur-[120px]" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#ceaf4a]/5 rounded-full blur-[120px]" />
-
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4 }}
-        className="relative w-full max-w-[460px] space-y-8 bg-white p-8 sm:p-12 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-gray-100"
+    <div className="flex flex-col items-center justify-center w-full max-w-[420px] mx-auto min-h-screen p-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full bg-white border border-gray-200 p-8 rounded-[40px] shadow-xl"
       >
-        
-        <div className="text-center space-y-3">
-          <Link href="/auth/login" className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-[#ceaf4a] transition-colors mb-4">
-            <ArrowLeft size={14} /> Retour à la connexion
+        <div className="flex justify-between items-start mb-8">
+          <div>
+           
+            <h3 className="text-2xl font-black text-black">
+              {status?.type === 'success' ? "Lien envoyé !" : "Récupération"}
+            </h3>
+          </div>
+          <Link href="/auth/login" className="p-2 bg-gray-50 rounded-full text-gray-400 hover:text-black transition-colors">
+            <X size={20} />
           </Link>
-          <h2 className="text-3xl font-bold text-[#ceaf4a] tracking-tight">Mot de passe oublié</h2>
-          <p className="text-gray-500 font-medium">
-            Entrez votre adresse email pour recevoir un lien de réinitialisation sécurisé.
-          </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleReset}>
-          <div className="space-y-2">
-            <label className="text-sm font-bold ml-1 text-gray-700 uppercase tracking-wider">Adresse Email</label>
-            <div className="relative">
-              <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-              <input
-                type="email"
-                required
-                className="block w-full rounded-2xl border border-gray-200 bg-gray-50/50 pl-14 pr-5 py-4 text-gray-900 transition-all placeholder:text-gray-300 focus:border-[#ceaf4a] focus:bg-white focus:outline-none shadow-sm"
-                placeholder="votre@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
+        <form onSubmit={handleReset} className="space-y-6">
+          <p className="text-sm text-gray-500 font-medium leading-relaxed">
+            {status?.type === 'success'
+              ? "Nous avons envoyé un lien de réinitialisation à votre adresse. Si vous ne le voyez pas, vérifiez vos spams."
+              : "Entrez l'adresse email associée à votre compte Woutty pour recevoir les instructions."}
+          </p>
+
+          <div className="relative">
+            <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <input
+              required
+              type="email"
+              disabled={status?.type === 'success'}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="votre@email.com"
+              className="w-full rounded-2xl border border-transparent bg-gray-50 pl-14 pr-5 py-4 text-black font-bold outline-none focus:bg-white focus:border-[#ceaf4a] focus:ring-4 focus:ring-[#ceaf4a]/5 placeholder:text-gray-400 placeholder:font-medium transition-all"
+            />
           </div>
 
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             {status && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10, height: 0 }}
-                animate={{ opacity: 1, y: 0, height: 'auto' }}
-                exit={{ opacity: 0, y: -10, height: 0 }}
-                className={`flex items-start gap-3 rounded-2xl p-4 text-sm font-bold border ${
-                  status.type === 'success' 
-                    ? 'bg-green-50 text-green-700 border-green-100' 
-                    : 'bg-red-50 text-red-600 border-red-100'
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className={`flex items-center gap-3 p-4 rounded-2xl text-xs font-bold border ${
+                  status.type === 'success'
+                    ? 'bg-green-50 text-green-700 border-green-100'
+                    : 'bg-red-50 text-red-700 border-red-100'
                 }`}
               >
-                {status.type === 'success' ? <CheckCircle2 size={18} className="shrink-0 mt-0.5" /> : <AlertCircle size={18} className="shrink-0 mt-0.5" />}
+                {status.type === 'success'
+                  ? <CheckCircle2 size={18} />
+                  : <AlertCircle size={18} />}
                 {status.message}
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* BOUTON DORÉ */}
-          <motion.button
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
+          <button
             type="submit"
             disabled={loading || status?.type === 'success'}
-            className={`group relative w-full h-[60px] overflow-hidden rounded-2xl text-sm font-bold text-white transition-all shadow-lg ${
-              loading || status?.type === 'success'
-              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-              : "bg-[#ceaf4a] hover:bg-[#b8962f] shadow-[#ceaf4a]/30"
-            }`}
+            className="w-full py-4 rounded-2xl bg-black text-white font-bold text-sm uppercase tracking-widest disabled:opacity-50 hover:bg-[#ceaf4a] transition-all active:scale-[0.98] shadow-lg shadow-black/5"
           >
-            <AnimatePresence mode="wait" initial={false}>
-              {loading ? (
-                <motion.div
-                  key="loader"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex items-center justify-center w-full"
-                >
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="text"
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -15 }}
-                  className="flex items-center justify-center gap-2"
-                >
-                  <span>Envoyer </span>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.button>
+            {loading ? <Loader2 className="animate-spin mx-auto h-5 w-5" /> : "Envoyer"}
+          </button>
         </form>
 
+        <div className="mt-8 pt-6 border-t border-gray-50 flex flex-col items-center gap-4">
+            <Link href="/auth/login" className="text-sm font-bold text-gray-400 hover:text-black transition-colors">
+                Retour à la connexion
+            </Link>
+            <p className="text-[9px] font-black text-gray-300 uppercase tracking-[0.3em]">
+                Woutty Secure Shield
+            </p>
+        </div>
       </motion.div>
     </div>
   );

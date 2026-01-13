@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, KeyboardEvent } from 'react';
-import { useRouter } from 'next/navigation'; // Ajouté
+import { useRouter } from 'next/navigation'; 
 import Link from 'next/link';
 import { Sparkles, X, Plus, ChevronRight } from 'lucide-react';
 
@@ -44,7 +44,7 @@ export default function NicheSelection() {
 
   // --- FONCTION DE SAUVEGARDE ET NAVIGATION ---
   const handleContinue = (e: React.MouseEvent) => {
-    e.preventDefault(); // Empêche le comportement par défaut du Link
+    e.preventDefault(); 
     if (selectedNiches.length > 0) {
       // Sauvegarde propre en JSON
       localStorage.setItem('signup_niche', JSON.stringify(selectedNiches));
