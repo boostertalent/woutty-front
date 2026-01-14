@@ -76,10 +76,10 @@ export async function GET(request: Request) {
         // On adapte la clé d'ID selon la table cible
         let conflictColumn = 'id';
         if (targetTable === 'createur') {
-          insertData.id_w = user.id; // On utilise id_w pour les créateurs
+          insertData.id_w = user.id; /
           conflictColumn = 'id_w';
         } else {
-          insertData.id = user.id; // On reste sur id pour les marques
+          insertData.id = user.id; /
           conflictColumn = 'id';
         }
 
