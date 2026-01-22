@@ -11,11 +11,11 @@ import {
 } from 'lucide-react';
 
 const PLATFORMS = [
-  { id: 'tiktok', name: 'TikTok', icon: <Music2 size={18} />, prefix: '@', placeholder: 'nom de profil' },
-  { id: 'instagram', name: 'Instagram', icon: <Instagram size={18} />, prefix: '@', placeholder: 'nom de profil' },
+  { id: 'tiktok', name: 'TikTok', icon: <Music2 size={18} />, prefix: '', placeholder: 'nom de profil' },
+  { id: 'instagram', name: 'Instagram', icon: <Instagram size={18} />, prefix: '', placeholder: 'nom de profil' },
   { id: 'snapchat', name: 'Snapchat', icon: <MessageCircle size={18} />, prefix: '', placeholder: 'nom de profil' },
-  { id: 'twitter', name: 'Twitter / X', icon: <Twitter size={18} />, prefix: '@', placeholder: 'nom de profil' },
-  { id: 'youtube', name: 'YouTube', icon: <Youtube size={18} />, prefix: '@', placeholder: 'nom_de_la_chaine' },
+  { id: 'twitter', name: 'Twitter / X', icon: <Twitter size={18} />, prefix: '', placeholder: 'nom de profil' },
+  { id: 'youtube', name: 'YouTube', icon: <Youtube size={18} />, prefix: '', placeholder: 'nom_de_la_chaine' },
 ];
 
 export default function SocialMediaSelection() {

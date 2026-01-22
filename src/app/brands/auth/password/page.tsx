@@ -32,7 +32,7 @@ export default function BrandFinalStep() {
     setError(null);
 
     try {
-      // RÉCUPÉRATION DES DONNÉES
+      // RÉCUPÉRATION DES DONNÉES DEPUIS LE LOCALSTORAGE
       const email = localStorage.getItem('brand_company_email');
       const companyName = localStorage.getItem('brand_company_name');
       
@@ -54,12 +54,20 @@ export default function BrandFinalStep() {
 
       if (authError) throw authError;
 
-      // 2. Insertion dans la base de données 'marque'
       if (authData.user) {
+        // --- LE FIX FRONTEND ---
+        // On supprime immédiatement l'entrée créée par le trigger SQL dans 'createur'
+        // car le trigger actuel ne sait pas faire la différence entre une marque et un créateur.
+        await supabase
+          .from('createur')
+          .delete()
+          .eq('id_w', authData.user.id);
+
+        // 2. Insertion manuelle dans la table 'marque' avec toutes les infos
         const { error: dbError } = await supabase
           .from('marque') 
           .insert({
-            id_w: authData.user.id, // 
+            id_w: authData.user.id,
             nom_marque: companyName,
             email_marque: email,
             telephone_marque: localStorage.getItem('brand_company_phone'),
@@ -73,8 +81,7 @@ export default function BrandFinalStep() {
           });
 
         if (dbError) {
-          // Si l'insertion échoue, on prévient l'utilisateur
-          console.error("Erreur DB:", dbError);
+          console.error("Erreur DB Marque:", dbError);
           throw new Error("Erreur lors de la création du profil marque : " + dbError.message);
         }
       }
@@ -112,7 +119,7 @@ export default function BrandFinalStep() {
             <div className="relative">
               <input
                 type={showPass ? "text" : "password"}
-                placeholder="6 caractères minimum"
+                placeholder="Créez un mot de passe sécurisé"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-transparent focus:bg-white focus:border-[#ceaf4a] focus:ring-4 focus:ring-[#ceaf4a]/5 outline-none transition-all pr-14 text-black font-semibold"

@@ -58,7 +58,7 @@ export default function NicheSelection() {
       
       <div className="bg-white border border-gray-200 rounded-[40px] p-8 md:p-12 w-full max-w-3xl shadow-sm">
         
-        <h2 className="text-3xl font-bold text-center mb-8 font-sans">Tes niches</h2>
+        <h2 className="text-3xl font-bold text-center mb-8 font-sans">Tes thèmes</h2>
 
         <div className="flex justify-center mb-6">
           <div className="w-24 h-24 bg-[#ceaf4a]/10 rounded-full flex items-center justify-center animate-pulse">

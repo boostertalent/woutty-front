@@ -1,30 +1,41 @@
 "use client";
 
-import React, { useState } from 'react';
-import { ChevronDown, ChevronLeft, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  ChevronDown, 
+  ChevronLeft, 
+  AlertCircle,
+  Shirt, 
+  Monitor, 
+  Heart, 
+  Utensils, 
+  Trophy, 
+  Sparkles, 
+  Plane, 
+  Plus 
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 export default function Step2() {
   const router = useRouter();
   const steps = [1, 2, 3, 4];
-  const interestsList = ["Mode", "Tech", "Lifestyle", "Food", "Sport", "Beauté", "Voyage", "Autre"];
+
+  // Configuration des centres d'intérêt avec icônes
+  const interestsConfig = [
+    { name: "Mode", icon: Shirt },
+    { name: "Tech", icon: Monitor },
+    { name: "Lifestyle", icon: Heart },
+    { name: "Food", icon: Utensils },
+    { name: "Sport", icon: Trophy },
+    { name: "Beauté", icon: Sparkles },
+    { name: "Voyage", icon: Plane },
+    { name: "Autre", icon: Plus },
+  ];
   
   const countries = [
     "Afghanistan", "Afrique du Sud", "Albanie", "Algérie", "Allemagne", "Andorre", "Angola", "Antigua-et-Barbuda", "Arabie Saoudite", "Argentine", "Arménie", "Australie", "Autriche", "Azerbaïdjan",
-    "Bahamas", "Bahreïn", "Bangladesh", "Barbade", "Belgique", "Belize", "Bénin", "Bhoutan", "Biélorussie", "Birmanie", "Bolivie", "Bosnie-Herzégovine", "Botswana", "Brésil", "Brunei", "Bulgarie", "Burkina Faso", "Burundi",
-    "Cambodge", "Cameroun", "Canada", "Cap-Vert", "Chili", "Chine", "Chypre", "Colombie", "Comores", "Congo-Brazzaville", "Congo-Kinshasa", "Corée du Nord", "Corée du Sud", "Costa Rica", "Côte d’Ivoire", "Croatie", "Cuba",
-    "Danemark", "Djibouti", "Dominique", "Égypte", "Émirats Arabes Unis", "Équateur", "Érythrée", "Espagne", "Estonie", "Eswatini", "États-Unis", "Éthiopie",
-    "Fidji", "Finlande", "France", "Gabon", "Gambie", "Géorgie", "Ghana", "Grèce", "Grenade", "Guatemala", "Guinée", "Guinée équatoriale", "Guinée-Bissau", "Guyana",
-    "Haïti", "Honduras", "Hongrie", "Inde", "Indonésie", "Irak", "Iran", "Irlande", "Islande", "Israël", "Italie", "Jamaïque", "Japon", "Jordanie",
-    "Kazakhstan", "Kenya", "Kirghizistan", "Kiribati", "Koweït", "Laos", "Lesotho", "Lettonie", "Liban", "Liberia", "Libye", "Liechtenstein", "Lituanie", "Luxembourg",
-    "Macédoine du Nord", "Madagascar", "Malaisie", "Malawi", "Maldives", "Mali", "Malte", "Maroc", "Marshall", "Maurice", "Mauritanie", "Mexique", "Micronésie", "Moldavie", "Monaco", "Mongolie", "Monténégro", "Mozambique",
-    "Namibie", "Nauru", "Népal", "Nicaragua", "Niger", "Nigeria", "Norvège", "Nouvelle-Zélande", "Oman", "Ouganda", "Ouzbékistan",
-    "Pakistan", "Palaos", "Palestine", "Panama", "Papouasie-Nouvelle-Guinée", "Paraguay", "Pays-Bas", "Pérou", "Philippines", "Pologne", "Portugal",
-    "Qatar", "République Centrafricaine", "République Dominicaine", "République Tchèque", "Roumanie", "Royaume-Uni", "Russie", "Rwanda",
-    "Saint-Christophe-et-Niévès", "Sainte-Lucie", "Saint-Marin", "Saint-Vincent-et-les-Grenadines", "Salomon", "Salvador", "Samoa", "Sao Tomé-et-Principe", "Sénégal", "Serbie", "Seychelles", "Sierra Leone", "Singapour", "Slovaquie", "Slovénie", "Somalie", "Soudan", "Soudan du Sud", "Sri Lanka", "Suède", "Suisse", "Suriname", "Syrie",
-    "Tadjikistan", "Tanzanie", "Tchad", "Thaïlande", "Timor oriental", "Togo", "Tonga", "Trinité-et-Tobago", "Tunisie", "Turkménistan", "Turquie", "Tuvalu",
-    "Ukraine", "Uruguay", "Vanuatu", "Vatican", "Venezuela", "Vietnam", "Yémen", "Zambie", "Zimbabwe", "Autre"
+    "Belgique", "Bénin", "Brésil", "Burkina Faso", "Cameroun", "Canada", "Chine", "Congo-Brazzaville", "Congo-Kinshasa", "Côte d’Ivoire", "Espagne", "États-Unis", "France", "Gabon", "Guinée", "Italie", "Mali", "Maroc", "Mauritanie", "Niger", "Nigeria", "Sénégal", "Suisse", "Tchad", "Togo", "Tunisie", "Autre"
   ];
 
   // États
@@ -35,6 +46,19 @@ export default function Step2() {
   const [customCountry, setCustomCountry] = useState("");
   const [showError, setShowError] = useState(false);
 
+  // Charger les données au montage
+  useEffect(() => {
+    const saved = localStorage.getItem('campaign_step_2');
+    if (saved) {
+      const data = JSON.parse(saved);
+      if (data.ageRange) setAgeRange(data.ageRange);
+      if (data.selectedInterests) setSelectedInterests(data.selectedInterests);
+      if (data.customInterest) setCustomInterest(data.customInterest);
+      if (data.selectedCountry) setSelectedCountry(data.selectedCountry);
+      if (data.customCountry) setCustomCountry(data.customCountry);
+    }
+  }, []);
+
   // Validation
   const isFormValid = () => {
     const hasCountry = selectedCountry !== "" && (selectedCountry !== "Autre" || customCountry.trim() !== "");
@@ -44,9 +68,18 @@ export default function Step2() {
     return hasCountry && hasInterests && hasCustomInterest;
   };
 
+  // Sauvegarder et Continuer
   const handleContinue = () => {
     if (isFormValid()) {
       setShowError(false);
+      const step2Data = {
+        ageRange,
+        selectedInterests,
+        customInterest,
+        selectedCountry,
+        customCountry
+      };
+      localStorage.setItem('campaign_step_2', JSON.stringify(step2Data));
       router.push('/brands/auth/campagne3');
     } else {
       setShowError(true);
@@ -143,17 +176,26 @@ export default function Step2() {
             {/* Centres d'intérêt */}
             <div className="space-y-4">
               <label className="block text-[15px] font-bold text-gray-700">Centres d&apos;intérêt *</label>
-              <div className="flex flex-wrap gap-2">
-                {interestsList.map((interest) => (
-                  <button
-                    key={interest}
-                    type="button"
-                    onClick={() => { toggleInterest(interest); setShowError(false); }}
-                    className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all ${selectedInterests.includes(interest) ? "bg-[#D4A017] text-white shadow-md shadow-[#D4A017]/20" : showError && selectedInterests.length === 0 ? "bg-red-50 text-red-600 border border-red-100" : "bg-gray-50 text-gray-600 hover:bg-gray-100"}`}
-                  >
-                    {interest}
-                  </button>
-                ))}
+              <div className="flex flex-wrap gap-3">
+                {interestsConfig.map((item) => {
+                  const Icon = item.icon;
+                  const isSelected = selectedInterests.includes(item.name);
+                  return (
+                    <button
+                      key={item.name}
+                      type="button"
+                      onClick={() => { toggleInterest(item.name); setShowError(false); }}
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-medium transition-all duration-300 border ${
+                        isSelected 
+                          ? "bg-[#D4A017] text-white border-[#D4A017] shadow-lg shadow-[#D4A017]/20" 
+                          : "bg-white text-gray-600 border-gray-100 hover:border-[#D4A017]/30 hover:bg-gray-50"
+                      }`}
+                    >
+                      <Icon size={18} className={isSelected ? "text-white" : "text-[#D4A017]"} />
+                      {item.name}
+                    </button>
+                  );
+                })}
               </div>
 
               {selectedInterests.includes("Autre") && (

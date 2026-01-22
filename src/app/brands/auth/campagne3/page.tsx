@@ -19,16 +19,36 @@ export default function Step3() {
   const tones = ["Professionnel", "Amical / Décontracté", "Humoristique", "Inspirant", "Informatif"];
   const contentFormats = ["Post Image", "Vidéo courte (Reel/TikTok)", "Story", "Carrousel", "Vidéo longue"];
 
+  // --- NOUVEAU : Charger les données au montage ---
+  useEffect(() => {
+    const saved = localStorage.getItem('campaign_step_3');
+    if (saved) {
+      const data = JSON.parse(saved);
+      // On définit les états un par un pour ne pas casser la logique dynamique
+      if (data.nbPublications !== undefined) setNbPublications(data.nbPublications);
+      if (data.ton !== undefined) setTon(data.ton);
+      if (data.formats !== undefined) setFormats(data.formats);
+    }
+  }, []);
+
+  // --- NOUVEAU : Sauvegarder les données à chaque changement ---
+  useEffect(() => {
+    const dataToSave = { nbPublications, formats, ton };
+    localStorage.setItem('campaign_step_3', JSON.stringify(dataToSave));
+  }, [nbPublications, formats, ton]);
+
   // Mettre à jour la liste des formats quand le nombre de publications change
+  // Note : Cette logique est conservée telle quelle
   useEffect(() => {
     const n = Number(nbPublications) || 0;
     setFormats(prev => {
       const newFormats = [...prev];
       if (n > prev.length) {
         return [...prev, ...Array(n - prev.length).fill("")];
-      } else {
+      } else if (n < prev.length) {
         return prev.slice(0, n);
       }
+      return prev;
     });
   }, [nbPublications]);
 
@@ -40,8 +60,9 @@ export default function Step3() {
   };
 
   const isFormValid = () => {
-    const hasNbPubs = Number(nbPublications) > 0;
-    const allFormatsSelected = formats.every(f => f !== "");
+    const n = Number(nbPublications);
+    const hasNbPubs = n > 0;
+    const allFormatsSelected = formats.length === n && formats.every(f => f !== "");
     const hasTon = ton !== "";
     return hasNbPubs && allFormatsSelected && hasTon;
   };
@@ -59,7 +80,7 @@ export default function Step3() {
     <main className="min-h-screen bg-[#F9FAFB] p-8 font-sans text-[#111827]">
       {/* Header */}
       <div className="max-w-3xl mx-auto mb-8">
-        <Link href="/create-campaign/step-2" className="flex items-center text-sm text-gray-400 hover:text-gray-600 transition-colors mb-4 group w-fit">
+        <Link href="/brands/auth/campagne2" className="flex items-center text-sm text-gray-400 hover:text-gray-600 transition-colors mb-4 group w-fit">
           <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
           <span>Étape précédente</span>
         </Link>
