@@ -7,7 +7,7 @@ class N8nReporter {
       passed: results.numPassedTests,
       failed: results.numFailedTests,
       total: results.numTotalTests,
-      status: results.numFailedTests > 0 ? '❌ Erreur' : '✅ Succès',
+      status: results.numFailedTests > 0 ? ' Failed' : 'Success',
       details: results.testResults
         .filter(r => r.failureMessage) // On ne garde que les erreurs si besoin
         .map(r => r.failureMessage)

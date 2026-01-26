@@ -6,7 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "jest --passWithNoTests",
+    "test:watch": "jest --watch",
+    "test:cypress": "cypress run",
+    "cypress:open": "cypress open",
+    "test:all": "npm run test && npm run cypress:run"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.2.6",

@@ -15,7 +15,7 @@ export default defineConfig({
               total: results.totalTests,
               reussis: results.totalPassed,
               echecs: results.totalFailed,
-              statut: results.totalFailed > 0 ? "🔴 Erreur" : "🟢 Succès",
+              statut: results.totalFailed > 0 ? "Failed" : "Success",
               date: new Date().toISOString()
             });
             console.log('✅ Rapport envoyé à Notion via n8n');
