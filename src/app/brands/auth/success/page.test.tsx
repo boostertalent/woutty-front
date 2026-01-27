@@ -1,105 +1,77 @@
-"use client";
+import React from 'react';
+import { render, screen, cleanup } from '@testing-library/react';
+import RegistrationSuccess from './page';
 
-import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { CheckCircle2, Mail, ArrowRight, Sparkles, PartyPopper } from 'lucide-react';
+// Mock de framer-motion pour éviter les problèmes liés aux animations dans l'environnement de test
+jest.mock('framer-motion', () => ({
+  motion: {
+    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+  },
+}));
 
-export default function RegistrationSuccess() {
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-
-  useEffect(() => {
-  const email = localStorage.getItem('signup_email');
-  setUserEmail(email);
-
-  // On nettoie le localStorage APRÈS avoir récupéré l'email
-  return () => {
-    localStorage.removeItem('signup_email');
-    localStorage.removeItem('signup_name');
-    localStorage.removeItem('signup_phone');
-    localStorage.removeItem('signup_niche');
-    localStorage.removeItem('signup_avatar');
-  };
-}, []);
-  return (
-    <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 font-sans text-gray-900">
-      
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
-        className="bg-white border border-gray-200 rounded-[40px] p-8 md:p-12 w-full max-w-2xl shadow-xl text-center relative overflow-hidden"
-      >
-        {/* Éléments décoratifs en arrière-plan */}
-        <div className="absolute top-0 left-0 w-full h-2 bg-[#ceaf4a]" />
-        <Sparkles className="absolute top-10 right-10 text-[#ceaf4a]/20" size={40} />
-        
-        {/* Icône de succès animée */}
-        <motion.div 
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="flex justify-center mb-8"
-        >
-          <div className="relative">
-            <div className="absolute inset-0 bg-green-100 rounded-full animate-ping opacity-25" />
-            <div className="bg-green-100 p-6 rounded-full relative">
-              <CheckCircle2 size={60} className="text-green-600" strokeWidth={1.5} />
-            </div>
-          </div>
-        </motion.div>
-
-        <h1 className="text-4xl font-bold mb-4">
-          Inscription <span className="text-[#ceaf4a]">réussie !</span>
-        </h1>
-        
-        <p className="text-xl text-gray-600 mb-8 font-medium">
-          Bienvenue dans la communauté <span className="font-bold">Woutty</span>.
-        </p>
-
-        {/* Encadré Email */}
-        <motion.div 
-          initial={{ x: -20, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="bg-gray-50 border border-gray-100 rounded-3xl p-6 mb-10 flex flex-col items-center"
-        >
-          <Mail className="text-[#ceaf4a] mb-3" size={30} />
-          <h3 className="font-bold text-gray-800 mb-2">Vérifiez votre boîte mail</h3>
-          <p className="text-gray-500 text-sm">
-            Un lien de confirmation a été envoyé à :<br/>
-            <span className="font-bold text-gray-900">{userEmail || "votre adresse email"}</span>
-          </p>
-        </motion.div>
-
-        <div className="space-y-4">
-          <p className="text-gray-400 text-sm italic">
-            Pensez à regarder dans vos courriers indésirables (spams) si vous ne voyez rien.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-            <Link 
-              href="/auth/login"
-              className="px-10 py-4 bg-black text-white rounded-2xl font-bold hover:bg-gray-800 transition-all active:scale-95 flex items-center justify-center gap-2"
-            >
-              Aller à la connexion
-            </Link>
-            
-            <Link 
-              href="/"
-              className="px-10 py-4 border border-gray-200 text-gray-600 rounded-2xl font-bold hover:bg-gray-50 transition-all active:scale-95 flex items-center justify-center gap-2"
-            >
-              Retour à l'accueil
-            </Link>
-          </div>
-        </div>
-
-        {/* Petit message de rappel */}
-        <div className="mt-12 pt-8 border-t border-gray-100 flex items-center justify-center gap-2 text-[#ceaf4a] font-bold text-sm uppercase tracking-widest">
-          <PartyPopper size={18} />
-          C'est le début de l'aventure
-        </div>
-      </motion.div>
-    </main>
+// Mock de next/link
+jest.mock('next/link', () => {
+  return ({ children, href }: { children: React.ReactNode; href: string }) => (
+    <a href={href}>{children}</a>
   );
-}
+});
+
+describe('RegistrationSuccess - Page de confirmation', () => {
+  const localStorageMock = (() => {
+    let store: Record<string, string> = {};
+    return {
+      getItem: (key: string) => store[key] || null,
+      setItem: (key: string, value: string) => { store[key] = value; },
+      removeItem: (key: string) => { delete store[key]; },
+      clear: () => { store = {}; }
+    };
+  })();
+
+  Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+
+  beforeEach(() => {
+    localStorageMock.clear();
+    jest.clearAllMocks();
+  });
+
+  it('affiche l\'email de l\'utilisateur récupéré depuis le localStorage', () => {
+    localStorageMock.setItem('signup_email', 'test@woutty.com');
+    
+    render(<RegistrationSuccess />);
+    
+    expect(screen.getByText('test@woutty.com')).toBeInTheDocument();
+    expect(screen.getByText(/Inscription/i)).toBeInTheDocument();
+    expect(screen.getByText(/réussie !/i)).toBeInTheDocument();
+  });
+
+  it('affiche un texte par défaut si l\'email est absent du localStorage', () => {
+    render(<RegistrationSuccess />);
+    
+    expect(screen.getByText('votre adresse email')).toBeInTheDocument();
+  });
+
+  it('nettoie les données sensibles du localStorage lors du démontage du composant (unmount)', () => {
+    localStorageMock.setItem('signup_email', 'test@woutty.com');
+    localStorageMock.setItem('signup_name', 'John Doe');
+    localStorageMock.setItem('signup_niche', 'Lifestyle');
+
+    const { unmount } = render(<RegistrationSuccess />);
+    
+    // On démonte le composant pour déclencher la fonction de nettoyage du useEffect
+    unmount();
+
+    expect(localStorageMock.getItem('signup_email')).toBeNull();
+    expect(localStorageMock.getItem('signup_name')).toBeNull();
+    expect(localStorageMock.getItem('signup_niche')).toBeNull();
+  });
+
+  it('contient les liens de navigation essentiels', () => {
+    render(<RegistrationSuccess />);
+    
+    const loginLink = screen.getByRole('link', { name: /Aller à la connexion/i });
+    const homeLink = screen.getByRole('link', { name: /Retour à l'accueil/i });
+
+    expect(loginLink).toHaveAttribute('href', '/auth/login');
+    expect(homeLink).toHaveAttribute('href', '/');
+  });
+});

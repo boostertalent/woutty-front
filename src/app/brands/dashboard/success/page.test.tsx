@@ -1,70 +1,94 @@
-"use client";
-
-import React, { useEffect, useState } from 'react';
-import { Sparkles, CheckCircle2, Loader2 } from 'lucide-react';
+import React from 'react';
+import { render, screen, act, waitFor } from '@testing-library/react';
+import MatchingAnalysis from './page';
 import { useRouter } from 'next/navigation';
 
-export default function MatchingAnalysis() {
-  const [progress, setProgress] = useState(0);
-  const [status, setStatus] = useState("Analyse des profils...");
-  const router = useRouter();
+// Mock de useRouter
+jest.mock('next/navigation', () => ({
+  useRouter: jest.fn(),
+}));
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(timer);
-          return 100;
-        }
-        return prev + 1;
-      });
-    }, 40); // Environ 4 secondes au total
+describe('MatchingAnalysis - Animation de transition IA', () => {
+  const mockPush = jest.fn();
 
-    return () => clearInterval(timer);
-  }, []);
+  beforeEach(() => {
+    jest.useFakeTimers(); // Permet de contrôler le temps (setInterval/setTimeout)
+    (useRouter as jest.Mock).mockReturnValue({ push: mockPush });
+  });
 
-  useEffect(() => {
-    if (progress === 30) setStatus("Scan de l'audience cible...");
-    if (progress === 60) setStatus("Calcul du ROI prédictif...");
-    if (progress === 90) setStatus("Finalisation de la sélection...");
-    if (progress === 100) {
-      // Redirection finale après l'animation
-      setTimeout(() => router.push('/brands/dashboard'), 1000);
-    }
-  }, [progress, router]);
+  afterEach(() => {
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
+    jest.clearAllMocks();
+  });
 
-  return (
-    <main className="min-h-screen bg-[#F9FAFB] flex items-center justify-center p-8">
-      <div className="max-w-md w-full text-center space-y-8 animate-in fade-in zoom-in duration-700">
-        <div className="relative inline-block">
-          <div className="w-24 h-24 bg-[#D4A017]/10 rounded-full flex items-center justify-center mx-auto">
-            {progress < 100 ? (
-              <Loader2 className="text-[#D4A017] animate-spin" size={40} />
-            ) : (
-              <CheckCircle2 className="text-green-500 animate-bounce" size={40} />
-            )}
-          </div>
-          <Sparkles className="absolute -top-2 -right-2 text-[#D4A017] animate-pulse" />
-        </div>
+  it('affiche le premier message de statut au démarrage', () => {
+    render(<MatchingAnalysis />);
+    expect(screen.getByText(/Analyse des profils.../i)).toBeInTheDocument();
+    expect(screen.getByText(/IA en pleine action/i)).toBeInTheDocument();
+  });
 
-        <div className="space-y-2">
-          <h2 className="text-2xl font-serif font-bold text-[#111827]">
-            {progress < 100 ? "IA en pleine action" : "Matching Terminé !"}
-          </h2>
-          <p className="text-gray-500 text-sm">{status}</p>
-        </div>
+  it('change de statut au cours de la progression', () => {
+    render(<MatchingAnalysis />);
 
-        <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
-          <div 
-            className="bg-[#D4A017] h-full transition-all duration-300 ease-out"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
+    // Avancer le temps pour atteindre 30% (30 * 40ms = 1200ms)
+    act(() => {
+      jest.advanceTimersByTime(1200);
+    });
+    expect(screen.getByText(/Scan de l'audience cible.../i)).toBeInTheDocument();
 
-        <p className="text-xs text-gray-400 italic">
-          Cette opération prend généralement moins de 5 secondes...
-        </p>
-      </div>
-    </main>
-  );
-}
+    // Avancer pour atteindre 60%
+    act(() => {
+      jest.advanceTimersByTime(1200);
+    });
+    expect(screen.getByText(/Calcul du ROI prédictif.../i)).toBeInTheDocument();
+
+    // Avancer pour atteindre 90%
+    act(() => {
+      jest.advanceTimersByTime(1200);
+    });
+    expect(screen.getByText(/Finalisation de la sélection.../i)).toBeInTheDocument();
+  });
+
+  it('affiche l\'état terminé quand le progrès atteint 100%', () => {
+    render(<MatchingAnalysis />);
+
+    act(() => {
+      jest.advanceTimersByTime(4000); // Temps total pour 100%
+    });
+
+    expect(screen.getByText(/Matching Terminé !/i)).toBeInTheDocument();
+    // Vérifie que l'icône de succès est présente (CheckCircle2)
+    const successIcon = screen.queryByTestId('check-circle'); 
+    // Note: Si vous n'avez pas de test-id, on vérifie via la classe ou le changement de texte h2
+  });
+
+  it('redirige vers le dashboard après la fin de l\'animation', async () => {
+    render(<MatchingAnalysis />);
+
+    // Simuler la fin de la barre (100%)
+    act(() => {
+      jest.advanceTimersByTime(4000);
+    });
+
+    // Simuler le délai de 1 seconde (setTimeout) avant la redirection
+    act(() => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/brands/dashboard');
+    });
+  });
+
+  it('met à jour la largeur de la barre de progression (style CSS)', () => {
+    const { container } = render(<MatchingAnalysis />);
+    const progressBar = container.querySelector('.bg-\\[\\#D4A017\\]'); // Cible la barre via sa classe
+
+    act(() => {
+      jest.advanceTimersByTime(2000); // 50%
+    });
+
+    expect(progressBar).toHaveStyle('width: 50%');
+  });
+});

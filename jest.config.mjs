@@ -6,6 +6,7 @@ const createJestConfig = nextJest({
 
 const config = {
   testEnvironment: 'jest-environment-jsdom',
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   reporters: ["default", "<rootDir>/jest-reporter.js"]
 }
 

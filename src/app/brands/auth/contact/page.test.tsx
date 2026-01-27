@@ -1,166 +1,97 @@
-"use client";
-
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import ContactPrincipal from './page';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { User, Loader2, AlertCircle, ChevronRight, ChevronLeft } from 'lucide-react';
 
-export default function ContactPrincipal() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+// Mock de useRouter
+jest.mock('next/navigation', () => ({
+  useRouter: jest.fn(),
+}));
 
-  const [formData, setFormData] = useState({
-    fullName: '',
-    function: '',
-    email: '',
-    phone: ''
+// Mock localStorage
+const localStorageMock = (() => {
+  let store = {};
+  return {
+    getItem: (key) => store[key] || null,
+    setItem: (key, value) => { store[key] = value.toString(); },
+    clear: () => { store = {}; }
+  };
+})();
+
+Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+
+describe('ContactPrincipal - Informations de contact', () => {
+  const mockPush = jest.fn();
+
+  beforeEach(() => {
+    localStorageMock.clear();
+    jest.clearAllMocks();
+    useRouter.mockReturnValue({ push: mockPush });
   });
 
-  // Récupération des données si l'utilisateur revient sur la page
-  useEffect(() => {
-    const savedName = localStorage.getItem('brand_contact_fullname');
-    if (savedName) {
-      setFormData({
-        fullName: savedName,
-        function: localStorage.getItem('brand_contact_function') || '',
-        email: localStorage.getItem('brand_contact_professional_email') || '',
-        phone: localStorage.getItem('brand_contact_phone') || '',
-      });
-    }
-  }, []);
+  it('affiche correctement les champs de saisie', () => {
+    render(<ContactPrincipal />);
+    expect(screen.getByLabelText(/Nom complet \*/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Email professionnel \*/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Responsable Marketing/i)).toBeInTheDocument();
+  });
 
-  // Validation simple
-  const isFormValid = formData.fullName.trim() !== '' && formData.email.trim() !== '';
+  it('le bouton continuer est désactivé si les champs obligatoires sont vides', () => {
+    render(<ContactPrincipal />);
+    const button = screen.getByRole('button', { name: /Continuer/i });
+    expect(button).toBeDisabled();
+    expect(button).toHaveClass('bg-gray-200');
+  });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleContinue = (e: React.FormEvent | React.MouseEvent) => {
-    e.preventDefault();
+  it('active le bouton quand le nom et l\'email sont remplis', () => {
+    render(<ContactPrincipal />);
     
-    if (!isFormValid || loading) return;
+    fireEvent.change(screen.getByLabelText(/Nom complet \*/i), { target: { value: 'John Doe' } });
+    fireEvent.change(screen.getByLabelText(/Email professionnel \*/i), { target: { value: 'john@doe.com' } });
+    
+    const button = screen.getByRole('button', { name: /Continuer/i });
+    expect(button).not.toBeDisabled();
+    expect(button).toHaveClass('bg-[#ceaf4a]');
+  });
 
-    setLoading(true);
-    try {
-      // Stockage local pour l'étape finale
-      localStorage.setItem('brand_contact_fullname', formData.fullName);
-      localStorage.setItem('brand_contact_function', formData.function);
-      localStorage.setItem('brand_contact_professional_email', formData.email);
-      localStorage.setItem('brand_contact_phone', formData.phone);
+  it('sauvegarde les données dans le localStorage et redirige au clic', async () => {
+    render(<ContactPrincipal />);
+    
+    fireEvent.change(screen.getByLabelText(/Nom complet \*/i), { target: { value: 'Jane Smith' } });
+    fireEvent.change(screen.getByLabelText(/Fonction/i), { target: { value: 'CEO' } });
+    fireEvent.change(screen.getByLabelText(/Email professionnel \*/i), { target: { value: 'jane@smith.com' } });
+    
+    fireEvent.click(screen.getByRole('button', { name: /Continuer/i }));
 
-      router.push('/brands/auth/password');
-    } catch (err) {
-      setError("Une erreur est survenue lors de la sauvegarde locale.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    expect(localStorageMock.getItem('brand_contact_fullname')).toBe('Jane Smith');
+    expect(localStorageMock.getItem('brand_contact_function')).toBe('CEO');
+    expect(localStorageMock.getItem('brand_contact_professional_email')).toBe('jane@smith.com');
+    
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/brands/auth/password');
+    });
+  });
 
-  return (
-    <main className="min-h-screen bg-[#f3f3f3] flex items-center justify-center p-4 font-sans text-gray-900">
-      <div className="bg-white rounded-[40px] shadow-sm w-full max-w-2xl p-8 md:p-14 border border-gray-100">
-        
-        {/* En-tête */}
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-semibold tracking-tight mb-3">Contact principal</h1>
-          <p className="text-gray-500 font-medium text-lg">Qui gère les campagnes ?</p>
-        </div>
+  it('restaure les données depuis le localStorage au chargement du composant', () => {
+    localStorageMock.setItem('brand_contact_fullname', 'Alice Liddell');
+    localStorageMock.setItem('brand_contact_professional_email', 'alice@wonderland.com');
 
-        {/* Icône */}
-        <div className="flex justify-center mb-12">
-          <div className="w-24 h-24 bg-[#fdf2d0] rounded-3xl flex items-center justify-center shadow-inner transform -rotate-3 hover:rotate-0 transition-transform duration-300">
-            <User size={40} className="text-[#ceaf4a]" />
-          </div>
-        </div>
+    render(<ContactPrincipal />);
 
-        <form onSubmit={handleContinue} className="space-y-5 max-w-lg mx-auto">
-          {error && (
-            <div className="bg-red-50 text-red-600 p-4 rounded-2xl flex items-center gap-3 text-sm font-bold border border-red-100 animate-in fade-in">
-              <AlertCircle size={18} /> {error}
-            </div>
-          )}
+    expect(screen.getByDisplayValue('Alice Liddell')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('alice@wonderland.com')).toBeInTheDocument();
+  });
 
-          <div className="space-y-1.5">
-            <label className="text-sm font-bold text-gray-700 ml-1">Nom complet *</label>
-            <input 
-              type="text" 
-              name="fullName" 
-              required
-              placeholder="Ex: Jean Dupont" 
-              value={formData.fullName} 
-              onChange={handleChange} 
-              className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-transparent focus:bg-white focus:border-[#ceaf4a] focus:ring-4 focus:ring-[#ceaf4a]/5 outline-none transition-all" 
-            />
-          </div>
+  it('affiche un état de chargement lors de la soumission', async () => {
+    render(<ContactPrincipal />);
+    
+    fireEvent.change(screen.getByLabelText(/Nom complet \*/i), { target: { value: 'Test User' } });
+    fireEvent.change(screen.getByLabelText(/Email professionnel \*/i), { target: { value: 'test@user.com' } });
+    
+    fireEvent.click(screen.getByRole('button', { name: /Continuer/i }));
 
-          <div className="space-y-1.5">
-            <label className="text-sm font-bold text-gray-700 ml-1">Fonction</label>
-            <input 
-              type="text" 
-              name="function" 
-              placeholder="Ex: Responsable Marketing" 
-              value={formData.function} 
-              onChange={handleChange} 
-              className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-transparent focus:bg-white focus:border-[#ceaf4a] focus:ring-4 focus:ring-[#ceaf4a]/5 outline-none transition-all" 
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-sm font-bold text-gray-700 ml-1">Email professionnel *</label>
-            <input 
-              type="email" 
-              name="email" 
-              required
-              placeholder="jean@entreprise.com" 
-              value={formData.email} 
-              onChange={handleChange} 
-              className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-transparent focus:bg-white focus:border-[#ceaf4a] focus:ring-4 focus:ring-[#ceaf4a]/5 outline-none transition-all" 
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-sm font-bold text-gray-700 ml-1">Téléphone</label>
-            <input 
-              type="tel" 
-              name="phone" 
-              placeholder="+33 6 00 00 00 00" 
-              value={formData.phone} 
-              onChange={handleChange} 
-              className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-transparent focus:bg-white focus:border-[#ceaf4a] focus:ring-4 focus:ring-[#ceaf4a]/5 outline-none transition-all" 
-            />
-          </div>
-
-          <div className="flex justify-between items-center mt-12 pt-6">
-            <Link 
-              href="/brands/auth/entreprise" 
-              className="text-gray-400 font-bold px-4 py-2 hover:text-gray-900 transition-colors flex items-center gap-2"
-            >
-              <ChevronLeft size={20} /> Retour
-            </Link>
-            
-            <button 
-              type="submit"
-              disabled={!isFormValid || loading}
-              className={`px-10 py-3.5 rounded-2xl font-bold transition-all flex items-center gap-2 shadow-md ${
-                isFormValid && !loading
-                ? "bg-[#ceaf4a] hover:bg-[#b8962f] text-white shadow-[#ceaf4a]/20 active:scale-95" 
-                : "bg-gray-200 text-gray-400 cursor-not-allowed shadow-none"
-              }`}
-            >
-              {loading ? (
-                <Loader2 className="animate-spin" size={18} />
-              ) : (
-                <>
-                  Continuer
-                  <ChevronRight size={18} />
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </main>
-  );
-}
+    // Note : Le chargement est très rapide ici car synchrone dans le mock, 
+    // mais on vérifie la présence du spinner ou de l'état désactivé
+    expect(screen.getByRole('button')).toBeDisabled();
+  });
+});

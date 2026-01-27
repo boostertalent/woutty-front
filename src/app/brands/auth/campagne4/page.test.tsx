@@ -1,319 +1,114 @@
-"use client";
-
-import React, { useState, useEffect } from 'react';
-import { ChevronLeft, AlertCircle, Sparkles, Loader2, Coins, ArrowLeftRight } from 'lucide-react';
-import Link from 'next/link';
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import Step4 from './page';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 
-export default function Step4() {
-  const router = useRouter();
-  const steps = [1, 2, 3, 4];
-  
-  // Paramètres de conversion
-  const EURO_RATE = 655.957; 
-  const MIN_BUDGET_CFA = 15000;
+// Mocks
+jest.mock('next/navigation', () => ({
+  useRouter: jest.fn(),
+}));
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-  
-  const [budget, setBudget] = useState<string>(""); 
-  const [currency, setCurrency] = useState("CFA");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showError, setShowError] = useState(false);
+jest.mock('@supabase/ssr', () => ({
+  createBrowserClient: jest.fn(() => ({
+    from: jest.fn(() => ({
+      insert: jest.fn().mockResolvedValue({ error: null }),
+    })),
+  })),
+}));
 
-  // Calcul de la contre-valeur en temps réel pour l'affichage
-  const getCounterValue = () => {
-    if (!budget || isNaN(Number(budget))) return null;
-    if (currency === "CFA") {
-      return (Number(budget) / EURO_RATE).toFixed(2) + " €";
-    } else {
-      return Math.round(Number(budget) * EURO_RATE).toLocaleString() + " CFA";
-    }
+const localStorageMock = (() => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: (key: string) => store[key] || null,
+    setItem: (key: string, value: string) => { store[key] = value; },
+    removeItem: (key: string) => { delete store[key]; },
+    clear: () => { store = {}; }
   };
+})();
 
-  // Gestion intelligente de la saisie (Interdit négatifs + entiers pour CFA)
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
+Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
-    // 1. Interdire le signe négatif
-    if (val.includes('-')) return;
+describe('Step4 - Budget et Soumission Finale', () => {
+  const mockPush = jest.fn();
 
-    // 2. Si CFA : Interdire les points et virgules (que des entiers)
-    if (currency === "CFA" && (val.includes('.') || val.includes(','))) {
-      return;
-    }
+  beforeEach(() => {
+    localStorageMock.clear();
+    jest.clearAllMocks();
+    (useRouter as jest.Mock).mockReturnValue({ push: mockPush });
+  });
 
-    setBudget(val);
-    if (showError) setShowError(false);
-  };
+  it('affiche les options de budget et la devise par défaut (CFA)', () => {
+    render(<Step4 />);
+    expect(screen.getByText(/Budget de la campagne/i)).toBeInTheDocument();
+    expect(screen.getByText(/Min. 15 000 FCFA/i)).toBeInTheDocument();
+  });
 
-  const handleCurrencyChange = (newCurrency: string) => {
-    if (currency === newCurrency) return;
+  it('interdit la saisie de nombres décimaux quand la devise est CFA', () => {
+    render(<Step4 />);
+    const input = screen.getByPlaceholderText(/Ex: 50000/i) as HTMLInputElement;
     
-    if (budget && !isNaN(Number(budget))) {
-      if (newCurrency === "EUR") {
-        // CFA -> EUR : On garde 2 décimales
-        setBudget((Number(budget) / EURO_RATE).toFixed(2));
-      } else {
-        // EUR -> CFA : On arrondit à l'entier strict
-        setBudget(Math.round(Number(budget) * EURO_RATE).toString());
-      }
-    } else {
-      // Si le champ est vide, on nettoie juste pour éviter des bugs
-      setBudget("");
-    }
+    // Simuler la saisie de "50.5"
+    fireEvent.change(input, { target: { value: '50.5' } });
+    
+    // La logique handleInputChange doit bloquer la mise à jour si un point est présent en CFA
+    expect(input.value).toBe(""); 
+  });
 
-    setCurrency(newCurrency);
-    setShowError(false);
-  };
+  it('met à jour dynamiquement la conversion lors du changement de devise', () => {
+    render(<Step4 />);
+    const input = screen.getByPlaceholderText(/Ex: 50000/i);
+    
+    // Entrer 655957 CFA (équivaut à 1000€ environ)
+    fireEvent.change(input, { target: { value: '655957' } });
+    
+    const eurButton = screen.getByText(/Euro \(€\)/i);
+    fireEvent.click(eurButton);
+    
+    // Vérifier que l'input a été converti (655957 / 655.957 = 1000)
+    expect(screen.getByDisplayValue('1000.00')).toBeInTheDocument();
+  });
 
-  useEffect(() => {
-    const saved = localStorage.getItem('campaign_step_4');
-    if (saved) {
-      const data = JSON.parse(saved);
-      if (data.budget !== undefined) setBudget(data.budget);
-      if (data.currency !== undefined) setCurrency(data.currency);
-    }
-  }, []);
+  it('affiche une erreur si le budget est inférieur au minimum (15 000 CFA)', () => {
+    render(<Step4 />);
+    const input = screen.getByPlaceholderText(/Ex: 50000/i);
+    fireEvent.change(input, { target: { value: '5000' } });
+    
+    fireEvent.click(screen.getByText(/Lancer le matching IA !/i));
+    
+    expect(screen.getByText(/Le budget minimum est de 15 000 FCFA/i)).toBeInTheDocument();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
 
-  useEffect(() => {
-    const dataToSave = { budget, currency };
-    localStorage.setItem('campaign_step_4', JSON.stringify(dataToSave));
-  }, [budget, currency]);
+  it('soumet les données combinées des 4 étapes à Supabase avec succès', async () => {
+    // Préparer le mock localStorage pour toutes les étapes
+    localStorageMock.setItem('campaign_step_1', JSON.stringify({ title: 'Campagne Test', objectives: ['Engagement'], startDate: '2026-01-01' }));
+    localStorageMock.setItem('campaign_step_2', JSON.stringify({ ageRange: { min: 18, max: 35 }, selectedCountry: 'Sénégal', selectedInterests: ['Mode'] }));
+    localStorageMock.setItem('campaign_step_3', JSON.stringify({ nbPublications: 2, formats: ['Reel', 'Story'], ton: 'Amical' }));
 
-  const handleFinalSubmit = async () => {
-    // --- VALIDATION ---
-    // On convertit tout en CFA virtuellement pour vérifier le seuil exact
-    let valInCFA = Number(budget);
-    if (currency === "EUR") {
-      valInCFA = valInCFA * EURO_RATE;
-    }
+    render(<Step4 />);
+    
+    const input = screen.getByPlaceholderText(/Ex: 50000/i);
+    fireEvent.change(input, { target: { value: '20000' } });
 
-    // Validation : Pas de négatifs (redondant avec l'input mais sécu) et Min budget
-    if (!budget || Number(budget) < 0 || valInCFA < (MIN_BUDGET_CFA - 1)) {
-      setShowError(true);
-      return;
-    }
-    // ------------------
+    fireEvent.click(screen.getByText(/Lancer le matching IA !/i));
 
-    setIsSubmitting(true);
-    setShowError(false);
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/brands/dashboard/success');
+    });
 
-    try {
-      const s1 = JSON.parse(localStorage.getItem('campaign_step_1') || '{}');
-      const s2 = JSON.parse(localStorage.getItem('campaign_step_2') || '{}');
-      const s3 = JSON.parse(localStorage.getItem('campaign_step_3') || '{}');
+    // Vérifier que le localStorage a été nettoyé
+    expect(localStorageMock.getItem('campaign_step_1')).toBeNull();
+  });
 
-      const finalObjectives = s1.objectives?.map((obj: string) => 
-        obj === "Autre" ? s1.customObjective : obj
-      ) || [];
+  it('affiche un état de chargement pendant la soumission', async () => {
+    render(<Step4 />);
+    const input = screen.getByPlaceholderText(/Ex: 50000/i);
+    fireEvent.change(input, { target: { value: '20000' } });
 
-      const finalInterests = s2.selectedInterests?.map((int: string) => 
-        int === "Autre" ? s2.customInterest : int
-      ) || [];
+    fireEvent.click(screen.getByText(/Lancer le matching IA !/i));
 
-      const finalCountry = s2.selectedCountry === "Autre" 
-        ? s2.customCountry 
-        : (s2.selectedCountry || "Non défini");
-
-      // Pour la payload, on s'assure d'envoyer un entier si c'est du CFA
-      const finalBudget = currency === "CFA" ? Math.floor(parseFloat(budget)) : parseFloat(budget);
-
-      const finalPayload = {
-        title: s1.title || "Sans titre",
-        objectives: finalObjectives, 
-        start_date: s1.startDate,
-        end_date: s1.endDate,
-        age_min_ciblé: s2.ageRange?.min_ciblé || 13,
-        age_max_ciblé: s2.ageRange?.max_ciblé || 80,
-        country: finalCountry, 
-        interests: finalInterests,
-        nb_publications: s3.nbPublications || 0,
-        formats: s3.formats || [],
-        tone: s3.ton || "Inspirant",
-        budget: finalBudget,
-        currency: currency,
-        status: 'active'
-      };
-
-      const { error } = await supabase.from('campaigns').insert([finalPayload]);
-      if (error) throw error;
-
-      localStorage.removeItem('campaign_step_1');
-      localStorage.removeItem('campaign_step_2');
-      localStorage.removeItem('campaign_step_3');
-      localStorage.removeItem('campaign_step_4');
-
-      router.push('/brands/dashboard/success');
-
-    } catch (err: any) {
-      console.error("Erreur:", err);
-      setShowError(true);
-      setIsSubmitting(false);
-    }
-  };
-
-  // Calcul du texte minimum affiché (purement visuel)
-  const minText = currency === "CFA" 
-    ? "15 000 FCFA" 
-    : `${(MIN_BUDGET_CFA / EURO_RATE).toFixed(2)} €`;
-
-  return (
-    <main className="min-h-screen bg-[#F9FAFB] p-8 font-sans text-[#111827]">
-      <style jsx global>{`
-        input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button {
-          -webkit-appearance: none;
-          margin: 0;
-        }
-        input[type=number] {
-          -moz-appearance: textfield;
-        }
-      `}</style>
-
-      <div className="max-w-3xl mx-auto mb-8">
-        <Link href="/brands/auth/campagne3" className="flex items-center text-sm text-gray-400 hover:text-gray-600 transition-colors mb-4 group w-fit">
-          <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-          <span>Étape précédente</span>
-        </Link>
-        <h1 className="text-3xl font-serif font-bold mb-2">Créer une campagne</h1>
-        <p className="text-gray-500 text-sm">Définissez votre enveloppe budgétaire</p>
-      </div>
-
-      <div className="max-w-xl mx-auto mb-12 relative">
-        <div className="absolute top-1/2 left-0 w-full h-px bg-gray-200 -z-10 -translate-y-1/2"></div>
-        <div className="flex justify-between items-center">
-          {steps.map((s) => (
-            <div
-              key={s}
-              className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all duration-500 ${
-                s <= 4 
-                  ? "bg-[#D4A017] text-white ring-8 ring-[#D4A017]/10" 
-                  : "bg-white border border-gray-100 text-gray-400 shadow-sm"
-              }`}
-            >
-              {s}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="max-w-3xl mx-auto bg-white border border-gray-100 rounded-[32px] p-10 shadow-sm min-h-[450px] flex flex-col justify-between">
-        <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-          <div className="flex items-center gap-3 mb-8">
-            <Coins className="text-[#D4A017]" size={28} />
-            <h2 className="text-2xl font-serif font-bold">Budget de la campagne</h2>
-          </div>
-          
-          <div className="space-y-8">
-            {/* Sélecteur de devise */}
-            <div className="space-y-3">
-              <label className="block text-[15px] font-bold text-gray-700">Choisissez votre devise *</label>
-              <div className="flex gap-4">
-                {["CFA", "EUR"].map((cur) => (
-                  <button
-                    key={cur}
-                    onClick={() => handleCurrencyChange(cur)}
-                    className={`flex-1 py-4 rounded-xl font-bold border-2 transition-all ${
-                      currency === cur 
-                      ? "border-[#D4A017] bg-[#D4A017]/5 text-[#D4A017]" 
-                      : "border-gray-100 bg-gray-50 text-gray-400 hover:border-gray-200"
-                    }`}
-                  >
-                    {cur === "CFA" ? "FCFA (CFA)" : "Euro (€)"}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Input Budget avec conversion en direct */}
-            <div className="space-y-3">
-              <label className="block text-[15px] font-bold text-gray-700">
-                Montant de l'investissement * <span className="text-xs font-normal text-gray-400 ml-2">
-                  (Min. {minText})
-                </span>
-              </label>
-              <div className="relative group">
-                <input
-                  type="number"
-                  min="0" // Aide le navigateur
-                  step={currency === "CFA" ? "1" : "0.01"} // Pas décimal pour CFA
-                  value={budget}
-                  onChange={handleInputChange} // Utilisation du nouveau handler
-                  onKeyDown={(e) => {
-                    // Bloquer le signe moins au clavier pour plus de sécurité UX
-                    if (e.key === '-' || e.key === 'e') e.preventDefault();
-                    // Bloquer le point/virgule si CFA
-                    if (currency === "CFA" && (e.key === '.' || e.key === ',')) e.preventDefault();
-                  }}
-                  placeholder={currency === "CFA" ? "Ex: 50000" : "Ex: 75"}
-                  className={`w-full px-6 py-5 rounded-2xl border-2 outline-none transition-all text-2xl font-bold appearance-none ${
-                    showError 
-                    ? "border-red-200 bg-red-50/30" 
-                    : "border-gray-100 focus:border-[#D4A017] bg-gray-50/30"
-                  }`}
-                />
-                <div className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-lg">
-                  {currency}
-                </div>
-              </div>
-
-              {/* Affichage de la conversion en temps réel */}
-              {budget && !isNaN(Number(budget)) && Number(budget) > 0 && (
-                <div className="flex items-center gap-2 px-2 text-[#D4A017] font-medium text-sm animate-in fade-in slide-in-from-left-2">
-                  <ArrowLeftRight size={14} />
-                  <span>Équivaut environ à <strong className="font-bold">{getCounterValue()}</strong></span>
-                </div>
-              )}
-              
-              {showError && (
-                <div className="flex items-center gap-2 text-red-500 text-sm mt-2 animate-in slide-in-from-top-1">
-                  <AlertCircle size={14} />
-                  <span>
-                    Le budget minimum est de {minText}.
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className="p-6 bg-[#D4A017]/5 rounded-2xl border border-[#D4A017]/10 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-[#D4A017]/10 flex items-center justify-center shrink-0">
-                <Sparkles className="text-[#D4A017]" size={24} />
-              </div>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                Le budget définit la portée de votre campagne. Un budget plus élevé permet de collaborer avec des profils <strong>Premium</strong>.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-between items-center pt-12">
-          <Link 
-            href="/brands/auth/campagne3" 
-            className="px-8 py-3.5 text-gray-500 font-bold text-sm hover:text-gray-800 transition-all"
-          >
-            Retour
-          </Link>
-          
-          <button 
-            onClick={handleFinalSubmit}
-            disabled={isSubmitting}
-            className="flex items-center justify-center gap-2 min-w-[240px] px-8 py-4 bg-[#D4A017] text-white rounded-xl font-bold text-sm hover:bg-[#B88A14] transition-all shadow-lg shadow-[#D4A017]/20 disabled:bg-gray-300"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 size={18} className="animate-spin" />
-                Matching en cours...
-              </>
-            ) : (
-              "Lancer le matching IA !"
-            )}
-          </button>
-        </div>
-      </div>
-    </main>
-  );
-}
+    expect(screen.getByText(/Matching en cours.../i)).toBeInTheDocument();
+    expect(screen.getByRole('button')).toBeDisabled();
+  });
+});
