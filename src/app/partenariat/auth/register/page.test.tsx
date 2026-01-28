@@ -1,199 +1,110 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import RegisterPage from './page';
 import { supabase } from '../../../../lib/supabaseClient';
-import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
-export default function RegisterPage() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+// Mocks
+jest.mock('next/navigation', () => ({
+  useRouter: jest.fn(),
+}));
 
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    password: '',
-    password_confirmation: '',
+jest.mock('../../../../lib/supabaseClient', () => ({
+  supabase: {
+    auth: {
+      signUp: jest.fn(),
+    },
+    from: jest.fn().mockReturnThis(),
+    upsert: jest.fn(),
+  },
+}));
+
+describe('RegisterPage - Inscription Utilisateur', () => {
+  const mockPush = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (useRouter as jest.Mock).mockReturnValue({ push: mockPush });
+    // Mock global de l'alerte
+    global.alert = jest.fn();
   });
 
-  const [passwordsMatch, setPasswordsMatch] = useState(true);
+  it('affiche tous les champs du formulaire', () => {
+    render(<RegisterPage />);
+    expect(screen.getByPlaceholderText(/Thiam Alioune/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/thiam.alioune@gmail.com/i)).toBeInTheDocument();
+    expect(screen.getAllByPlaceholderText(/••••••••/i)).toHaveLength(2);
+  });
 
-  // Vérification de la correspondance des mots de passe
-  useEffect(() => {
-    if (formData.password_confirmation !== "") {
-      setPasswordsMatch(formData.password === formData.password_confirmation);
-    } else {
-      setPasswordsMatch(true);
-    }
-  }, [formData.password, formData.password_confirmation]);
+  it('valide que les mots de passe doivent correspondre pour activer le bouton', () => {
+    render(<RegisterPage />);
+    const passInput = screen.getAllByPlaceholderText(/••••••••/i)[0];
+    const confirmInput = screen.getAllByPlaceholderText(/••••••••/i)[1];
+    const submitBtn = screen.getByRole('button', { name: /Créer mon compte/i });
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
+    fireEvent.change(passInput, { target: { value: 'Password123' } });
+    fireEvent.change(confirmInput, { target: { value: 'DifferentPass' } });
+
+    expect(submitBtn).toBeDisabled();
+    expect(screen.getByText(/Les mots de passe ne correspondent pas/i)).toBeInTheDocument();
+  });
+
+  it('effectue l\'inscription Auth et l\'insertion Profil avec succès', async () => {
+    const mockUser = { id: 'new-user-uuid', email: 'test@woutty.com' };
     
-    if (!passwordsMatch) {
-      setErrorMsg("Les mots de passe ne correspondent pas.");
-      return;
-    }
+    // Mock Auth SignUp
+    (supabase.auth.signUp as jest.Mock).mockResolvedValue({
+      data: { user: mockUser },
+      error: null,
+    });
 
-    setLoading(true);
-    setErrorMsg(null);
+    // Mock Profile Upsert
+    (supabase.upsert as jest.Mock).mockResolvedValue({ error: null });
 
-    try {
-      // 1. Inscription dans l'Auth de Supabase
-      const { data, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            full_name: formData.name, // Stocké temporairement dans l'auth
-          },
-        },
-      });
+    render(<RegisterPage />);
 
-      if (authError) throw authError;
+    // Remplissage du formulaire
+    fireEvent.change(screen.getByPlaceholderText(/Thiam Alioune/i), { target: { value: 'Alioune' } });
+    fireEvent.change(screen.getByPlaceholderText(/thiam.alioune@gmail.com/i), { target: { value: 'test@woutty.com' } });
+    fireEvent.change(screen.getAllByPlaceholderText(/••••••••/i)[0], { target: { value: 'Woutty2026' } });
+    fireEvent.change(screen.getAllByPlaceholderText(/••••••••/i)[1], { target: { value: 'Woutty2026' } });
 
-      if (data.user) {
-        // 2. Insertion manuelle dans la table 'profiles' 
-        
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert({ 
-            id: data.user.id, 
-            full_name: formData.name, 
-            phone: formData.phone,
-            role: 'creator' // Rôle forcé par défaut pour la sécurité
-          });
+    fireEvent.click(screen.getByRole('button', { name: /Créer mon compte/i }));
 
-        if (profileError) console.error("Erreur Profil:", profileError);
+    await waitFor(() => {
+      // Vérifie l'appel Auth
+      expect(supabase.auth.signUp).toHaveBeenCalledWith(expect.objectContaining({
+        email: 'test@woutty.com',
+        password: 'Woutty2026'
+      }));
+      
+      // Vérifie l'appel Profil (Upsert)
+      expect(supabase.upsert).toHaveBeenCalledWith(expect.objectContaining({
+        id: 'new-user-uuid',
+        role: 'creator'
+      }));
 
-        alert("Compte créé avec succès ! Connectez-vous maintenant.");
-        router.push('partenariat/auth/login');
-      }
+      expect(global.alert).toHaveBeenCalledWith(expect.stringContaining("succès"));
+      expect(mockPush).toHaveBeenCalledWith('partenariat/auth/login');
+    });
+  });
 
-    } catch (error: any) {
-      setErrorMsg(error.message || "Une erreur technique est survenue.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  it('affiche une erreur si l\'inscription Auth échoue', async () => {
+    (supabase.auth.signUp as jest.Mock).mockResolvedValue({
+      data: { user: null },
+      error: { message: "Cet utilisateur existe déjà" },
+    });
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC] px-4 py-12">
-      <div className="w-full max-w-[550px] space-y-8 bg-white p-8 sm:p-12 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-gray-100">
-        
-        <div className="text-center">
-          <Link href="/" className="mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-black text-white text-2xl font-black transition-transform hover:scale-110">
-            W
-          </Link>
-          <h2 className="text-3xl font-black text-gray-900 tracking-tight"></h2>
-          <p className="text-black font-bold  hover:text-black transition-colors">Rejoignez woutty</p>
-        </div>
+    render(<RegisterPage />);
+    
+    // On remplit pour débloquer le bouton
+    fireEvent.change(screen.getAllByPlaceholderText(/••••••••/i)[0], { target: { value: 'Pass123' } });
+    fireEvent.change(screen.getAllByPlaceholderText(/••••••••/i)[1], { target: { value: 'Pass123' } });
+    
+    fireEvent.click(screen.getByRole('button', { name: /Créer mon compte/i }));
 
-        <form className="mt-10 space-y-5" onSubmit={handleRegister}>
-          <div className="space-y-4">
-            {/* Nom */}
-            <div className="space-y-1.5">
-              <label className="text-black font-bold  hover:text-black transition-colors">Nom de partenariat</label>
-              <input
-                type="text"
-                required
-                className="block w-full rounded-2xl border-2 border-gray-50 bg-gray-50/50 px-4 py-3.5 text-gray-900 transition-all placeholder:text-gray-400 focus:border-black focus:bg-white focus:outline-none"
-                placeholder="Thiam Alioune"
-                value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
-              />
-            </div>
-
-            {/* Email & Phone */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-black font-bold  hover:text-black transition-colors">Email</label>
-                <input
-                  type="email"
-                  required
-                  className="block w-full rounded-2xl border-2 border-gray-50 bg-gray-50/50 px-4 py-3.5 text-gray-900 transition-all placeholder:text-gray-400 focus:border-black focus:bg-white focus:outline-none"
-                  placeholder="thiam.alioune@gmail.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-black font-bold  hover:text-black transition-colors">Téléphone</label>
-                <input
-                  type="tel"
-                  className="block w-full rounded-2xl border-2 border-gray-50 bg-gray-50/50 px-4 py-3.5 text-gray-900 transition-all placeholder:text-gray-400 focus:border-black focus:bg-white focus:outline-none"
-                  placeholder="+221 ..."
-                  value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                />
-              </div>
-            </div>
-
-            {/* Passwords */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-black font-bold  hover:text-black transition-colors">Mot de passe</label>
-                <input
-                  type="password"
-                  required
-                  className="block w-full rounded-2xl border-2 border-gray-50 bg-gray-50/50 px-4 py-3.5 text-gray-900 transition-all focus:border-black focus:bg-white focus:outline-none"
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={(e) => setFormData({...formData, password: e.target.value})}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-black font-bold  hover:text-black transition-colors">Confirmation</label>
-                <input
-                  type="password"
-                  required
-                  className={`block w-full rounded-2xl border-2 px-4 py-3.5 text-gray-900 transition-all focus:border-black focus:bg-white focus:outline-none ${
-                    !passwordsMatch && formData.password_confirmation !== "" 
-                    ? "border-red-200 bg-red-50/30" 
-                    : "border-gray-50 bg-gray-50/50"
-                  }`}
-                  placeholder="••••••••"
-                  value={formData.password_confirmation}
-                  onChange={(e) => setFormData({...formData, password_confirmation: e.target.value})}
-                />
-              </div>
-            </div>
-          </div>
-
-          {errorMsg && (
-            <div className="flex items-center gap-2 rounded-2xl bg-red-50 p-4 text-sm font-medium text-red-600 border border-red-100">
-              <AlertCircle size={18} />
-              {errorMsg}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading || !passwordsMatch}
-            className="group w-full bg-black text-white py-4 rounded-2xl font-bold shadow-xl hover:bg-gray-800 active:scale-[0.98] transition-all disabled:opacity-50"
-          >
-            <span className="flex items-center justify-center gap-2">
-              {loading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                "Créer mon compte"
-              )}
-            </span>
-          </button>
-        </form>
-
-        <div className="text-center">
-          <p className="text-sm text-gray-500 font-medium">
-            Déjà inscrit ?{' '}
-            <Link href="/partenariat/auth/login" className="text-black font-bold hover:underline underline-offset-4">
-              Se connecter
-            </Link>
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
+    await waitFor(() => {
+      expect(screen.getByText(/Cet utilisateur existe déjà/i)).toBeInTheDocument();
+    });
+  });
+});

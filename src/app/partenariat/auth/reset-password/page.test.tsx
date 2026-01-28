@@ -1,142 +1,99 @@
-'use client';
-
-import { useState } from 'react';
+import React from 'react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import ResetPasswordPage from './page';
 import { supabase } from '../../../../lib/supabaseClient';
 import { useRouter } from 'next/navigation';
-import { Lock, Loader2, CheckCircle2, AlertCircle, Eye, EyeOff } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 
-export default function ResetPasswordPage() {
-  const router = useRouter();
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+// Mocks
+jest.mock('next/navigation', () => ({
+  useRouter: jest.fn(),
+}));
 
-  const handleUpdatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password !== confirmPassword) {
-      setStatus({ type: 'error', message: 'Les mots de passe ne correspondent pas.' });
-      return;
-    }
+jest.mock('../../../../lib/supabaseClient', () => ({
+  supabase: {
+    auth: {
+      updateUser: jest.fn(),
+    },
+  },
+}));
 
-    setLoading(true);
-    setStatus(null);
+// Mock Framer Motion
+jest.mock('framer-motion', () => ({
+  motion: {
+    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+    button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+    span: ({ children, ...props }: any) => <span {...props}>{children}</span>,
+  },
+  AnimatePresence: ({ children }: any) => <>{children}</>
+}));
 
-    const { error } = await supabase.auth.updateUser({ password });
+describe('ResetPasswordPage - Mise à jour du mot de passe', () => {
+  const mockPush = jest.fn();
 
-    if (error) {
-      setStatus({ type: 'error', message: error.message });
-      setLoading(false);
-    } else {
-      setStatus({ type: 'success', message: 'Mot de passe mis à jour ! Redirection...' });
-      setTimeout(() => router.push('partenariat/auth/login'), 2000);
-    }
-  };
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (useRouter as jest.Mock).mockReturnValue({ push: mockPush });
+    jest.useFakeTimers(); // Pour gérer le setTimeout de redirection
+  });
 
-  return (
-    <div className="relative flex min-h-screen items-center justify-center bg-[#FDFDFD] px-4 py-12 overflow-hidden font-sans">
-      {/* Background Glows */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-50/50 rounded-full blur-[120px]" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-50/50 rounded-full blur-[120px]" />
+  afterEach(() => {
+    jest.useRealTimers();
+  });
 
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative w-full max-w-[460px] space-y-8 bg-white/80 backdrop-blur-xl p-8 sm:p-12 rounded-[2.8rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)] border border-white"
-      >
-        <div className="text-center space-y-3">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-black text-white shadow-2xl mb-4">
-            <Lock size={28} />
-          </div>
-          <h2 className="text-3xl font-black text-gray-900 tracking-tight">Sécurisez votre compte</h2>
-          <p className="text-gray-500 font-medium">Choisissez un nouveau mot de passe fort.</p>
-        </div>
+  it('affiche les champs de saisie et le bouton', () => {
+    render(<ResetPasswordPage />);
+    expect(screen.getByLabelText(/Nouveau mot de passe/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Confirmer le mot de passe/i)).toBeInTheDocument();
+  });
 
-        <form className="mt-8 space-y-5" onSubmit={handleUpdatePassword}>
-          {/* Inputs (Password & Confirm) */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-black font-bold ml-1">Nouveau mot de passe</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  className="block w-full rounded-2xl border border-gray-100 bg-gray-50/30 px-5 py-4 text-gray-900 transition-all focus:border-black focus:bg-white focus:ring-4 focus:ring-black/5 focus:outline-none"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400">
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
+  it('affiche une erreur si les mots de passe ne correspondent pas', async () => {
+    render(<ResetPasswordPage />);
+    
+    const passInput = screen.getByLabelText(/Nouveau mot de passe/i);
+    const confirmInput = screen.getByLabelText(/Confirmer le mot de passe/i);
+    const submitBtn = screen.getByRole('button', { name: /Confirmer le changement/i });
 
-            <div className="space-y-2">
-              <label className="text-black font-bold ml-1">Confirmer le mot de passe</label>
-              <input
-                type={showPassword ? "text" : "password"}
-                required
-                className="block w-full rounded-2xl border border-gray-100 bg-gray-50/30 px-5 py-4 text-gray-900 transition-all focus:border-black focus:bg-white focus:ring-4 focus:ring-black/5 focus:outline-none"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-            </div>
-          </div>
+    fireEvent.change(passInput, { target: { value: 'NouveauPass123' } });
+    fireEvent.change(confirmInput, { target: { value: 'ErreurPass' } });
+    fireEvent.click(submitBtn);
 
-          {/* Status Message Animé */}
-          <AnimatePresence mode="wait">
-            {status && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className={`flex items-start gap-3 rounded-2xl p-4 text-sm font-semibold border ${
-                  status.type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'
-                }`}
-              >
-                {status.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-                {status.message}
-              </motion.div>
-            )}
-          </AnimatePresence>
+    expect(screen.getByText(/Les mots de passe ne correspondent pas/i)).toBeInTheDocument();
+    expect(supabase.auth.updateUser).not.toHaveBeenCalled();
+  });
 
-          {/* LE BOUTON ANIMÉ */}
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            type="submit"
-            disabled={loading || status?.type === 'success'}
-            className="relative w-full overflow-hidden rounded-2xl bg-black py-4.5 text-sm font-bold text-white shadow-xl disabled:opacity-50"
-          >
-            <AnimatePresence mode="wait" initial={false}>
-              {loading ? (
-                <motion.div
-                  key="loader"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="flex items-center justify-center"
-                >
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                </motion.div>
-              ) : (
-                <motion.span
-                  key="text"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                >
-                  Confirmer le changement
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </motion.button>
-        </form>
-      </motion.div>
-    </div>
-  );
-}
+  it('met à jour le mot de passe et redirige en cas de succès', async () => {
+    (supabase.auth.updateUser as jest.Mock).mockResolvedValue({ error: null });
+
+    render(<ResetPasswordPage />);
+    
+    fireEvent.change(screen.getByLabelText(/Nouveau mot de passe/i), { target: { value: 'Secret123!' } });
+    fireEvent.change(screen.getByLabelText(/Confirmer le mot de passe/i), { target: { value: 'Secret123!' } });
+    fireEvent.click(screen.getByRole('button', { name: /Confirmer le changement/i }));
+
+    await waitFor(() => {
+      expect(supabase.auth.updateUser).toHaveBeenCalledWith({ password: 'Secret123!' });
+      expect(screen.getByText(/Mot de passe mis à jour/i)).toBeInTheDocument();
+    });
+
+    // Avancer le temps pour la redirection
+    act(() => {
+      jest.advanceTimersByTime(2000);
+    });
+
+    expect(mockPush).toHaveBeenCalledWith('partenariat/auth/login');
+  });
+
+  it('bascule la visibilité du mot de passe lors du clic sur l\'œil', () => {
+    render(<ResetPasswordPage />);
+    const passInput = screen.getByLabelText(/Nouveau mot de passe/i);
+    const toggleBtn = screen.getByRole('button', { name: '' }); // Le bouton avec l'icône Eye
+
+    expect(passInput).toHaveAttribute('type', 'password');
+    
+    fireEvent.click(toggleBtn);
+    expect(passInput).toHaveAttribute('type', 'text');
+    
+    fireEvent.click(toggleBtn);
+    expect(passInput).toHaveAttribute('type', 'password');
+  });
+});

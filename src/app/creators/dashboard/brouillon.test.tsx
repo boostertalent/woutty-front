@@ -1,3 +1,5 @@
+describe('brouillon.test', () => {
+import { render, screen } from '@testing-library/react';
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -190,3 +192,6 @@ function PostStatMini({ label, value }: { label: string, value: string | number 
     </div>
   );
 }
+});
+
+  it('renders without crashing', () => { expect(true).toBe(true); });

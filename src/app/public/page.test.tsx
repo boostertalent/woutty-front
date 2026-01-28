@@ -1,88 +1,67 @@
-import Link from 'next/link';
-import { ArrowRight, CheckCircle2 } from 'lucide-react'; // Assure-toi d'avoir installé lucide-react
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import PublicPage from './page';
 
-export default function PublicPage() {
-  return (
-    <div className="flex flex-col">
+// Mock de Next/Link pour tester les redirections sans charger le routeur
+jest.mock('next/link', () => {
+  return ({ children, href }: { children: React.ReactNode; href: string }) => {
+    return <a href={href}>{children}</a>;
+  };
+});
+
+describe('PublicPage - Page d\'accueil Marketplace', () => {
+  
+  beforeEach(() => {
+    render(<PublicPage />);
+  });
+
+  describe('Section Hero', () => {
+    it('doit afficher le titre principal accrocheur', () => {
+      const title = screen.getByText(/La marketplace ultime pour/i);
+      const span = screen.getByText(/le contenu UGC/i);
       
-      {/* SECTION HERO */}
-      <section className="py-24 lg:py-32 px-4 text-center bg-gradient-to-b from-white to-indigo-50/50">
-        <h1 className="text-4xl font-extrabold tracking-tight sm:text-6xl mb-6">
-          La marketplace ultime pour <br />
-          <span className="text-indigo-600">le contenu UGC</span>
-        </h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-10">
-          Nous simplifions la collaboration entre les marques e-commerce et les créateurs de contenu talentueux. Authenticité, rapidité et performance.
-        </p>
-        
-        <div className="flex flex-col sm:flex-row justify-center gap-4">
-          <Link href="/public/creators">
-            <button className="w-full sm:w-auto px-8 py-4 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition flex items-center justify-center gap-2">
-              Je suis Créateur
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </Link>
-          <Link href="/public/brands">
-            <button className="w-full sm:w-auto px-8 py-4 bg-white border border-gray-300 text-gray-900 rounded-lg font-bold hover:bg-gray-50 transition">
-              Je suis une Marque
-            </button>
-          </Link>
-        </div>
-      </section>
+      expect(title).toBeInTheDocument();
+      expect(span).toHaveClass('text-indigo-600');
+    });
 
-      {/* SECTION AVANTAGES RAPIDES */}
-      <section className="py-20 px-4 bg-white">
-        <div className="container mx-auto max-w-5xl">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            
-            {/* Bloc Créateurs */}
-            <div className="p-8 rounded-2xl bg-gray-50 border border-gray-100">
-              <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
-                <span className="text-2xl">🎨</span>
-              </div>
-              <h3 className="text-2xl font-bold mb-4">Pour les Créateurs</h3>
-              <ul className="space-y-3 mb-6">
-                <li className="flex items-center gap-2 text-gray-600">
-                  <CheckCircle2 className="w-5 h-5 text-green-500" /> Gardez les produits reçus
-                </li>
-                <li className="flex items-center gap-2 text-gray-600">
-                  <CheckCircle2 className="w-5 h-5 text-green-500" /> Rémunération rapide
-                </li>
-                <li className="flex items-center gap-2 text-gray-600">
-                  <CheckCircle2 className="w-5 h-5 text-green-500" /> Pas besoin de milliers d'abonnés
-                </li>
-              </ul>
-              <Link href="/public/creators" className="text-indigo-600 font-medium hover:underline">
-                En savoir plus &rarr;
-              </Link>
-            </div>
+    it('doit proposer deux boutons d\'appel à l\'action (CTA) distincts', () => {
+      const creatorBtn = screen.getByRole('link', { name: /Je suis Créateur/i });
+      const brandBtn = screen.getByRole('link', { name: /Je suis une Marque/i });
 
-            {/* Bloc Marques */}
-            <div className="p-8 rounded-2xl bg-gray-50 border border-gray-100">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                <span className="text-2xl">🚀</span>
-              </div>
-              <h3 className="text-2xl font-bold mb-4">Pour les Marques</h3>
-              <ul className="space-y-3 mb-6">
-                <li className="flex items-center gap-2 text-gray-600">
-                  <CheckCircle2 className="w-5 h-5 text-blue-500" /> Contenus livrés en &lt; 48h
-                </li>
-                <li className="flex items-center gap-2 text-gray-600">
-                  <CheckCircle2 className="w-5 h-5 text-blue-500" /> Droits d'utilisation inclus (Ads)
-                </li>
-                <li className="flex items-center gap-2 text-gray-600">
-                  <CheckCircle2 className="w-5 h-5 text-blue-500" /> Créateurs vérifiés manuellement
-                </li>
-              </ul>
-              <Link href="/public/brands" className="text-blue-600 font-medium hover:underline">
-                Découvrir l'offre &rarr;
-              </Link>
-            </div>
+      expect(creatorBtn).toHaveAttribute('href', '/public/creators');
+      expect(brandBtn).toHaveAttribute('href', '/public/brands');
+    });
+  });
 
-          </div>
-        </div>
-      </section>
+  describe('Section Avantages', () => {
+    it('doit lister les avantages spécifiques aux créateurs', () => {
+      expect(screen.getByText(/Pour les Créateurs/i)).toBeInTheDocument();
+      expect(screen.getByText(/Gandez les produits reçus/i)).toBeInTheDocument();
+      expect(screen.getByText(/Pas besoin de milliers d'abonnés/i)).toBeInTheDocument();
+    });
 
-    </div>
-  );
-}
+    it('doit lister les avantages spécifiques aux marques', () => {
+      expect(screen.getByText(/Pour les Marques/i)).toBeInTheDocument();
+      expect(screen.getByText(/Contenus livrés en < 48h/i)).toBeInTheDocument();
+      expect(screen.getByText(/Droits d'utilisation inclus/i)).toBeInTheDocument();
+    });
+
+    it('doit contenir les liens "En savoir plus" vers les pages dédiées', () => {
+      const moreCreatorLink = screen.getByRole('link', { name: /En savoir plus →/i });
+      const moreBrandLink = screen.getByRole('link', { name: /Découvrir l'offre →/i });
+
+      expect(moreCreatorLink).toHaveAttribute('href', '/public/creators');
+      expect(moreBrandLink).toHaveAttribute('href', '/public/brands');
+    });
+  });
+
+  describe('Accessibilité et Sémantique', () => {
+    it('doit utiliser des balises de titre hiérarchisées (H1, H3)', () => {
+      const h1 = screen.getByRole('heading', { level: 1 });
+      const h3s = screen.getAllByRole('heading', { level: 3 });
+
+      expect(h1).toBeInTheDocument();
+      expect(h3s.length).toBeGreaterThanOrEqual(2);
+    });
+  });
+});

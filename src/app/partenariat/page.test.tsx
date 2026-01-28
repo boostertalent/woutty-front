@@ -1,75 +1,62 @@
-"use client";
-import Link from 'next/link';
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { 
-  Handshake, 
-  Building2, 
-  Megaphone, 
-  TrendingUp, 
-  ArrowRight, 
-  CheckCircle2, 
-  Mail,
-  Globe
-} from "lucide-react";
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import PartnershipPage from './page';
 
-export default function PartnershipPage() {
-  const [formState, setFormState] = useState({
-    company: "",
-    contactName: "",
-    email: "",
-    type: "agency",
-    message: ""
+// Mock de Framer Motion pour éviter les problèmes d'animation dans l'environnement de test
+jest.mock('framer-motion', () => ({
+  motion: {
+    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+  },
+}));
+
+describe('PartnershipPage - Landing de Partenariat', () => {
+  beforeEach(() => {
+    // Reset les mocks avant chaque test
+    jest.clearAllMocks();
+    global.alert = jest.fn();
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Logique d'envoi ici (ex: Supabase ou API)
-    console.log("Partnership request:", formState);
-    alert("Merci ! Votre demande de partenariat a été reçue.");
-  };
+  it('affiche les éléments visuels clés et le slogan', () => {
+    render(<PartnershipPage />);
+    
+    expect(screen.getByText(/Grandissons ensemble/i)).toBeInTheDocument();
+    expect(screen.getByText(/Espace Partenaires/i)).toBeInTheDocument();
+  });
 
-  return (
-    <div className="min-h-screen bg-white text-black selection:bg-black selection:text-white">
-       <nav className="flex justify-between items-center px-8 py-8 max-w-7xl mx-auto relative z-50">
-        <div className="text-4xl font-black italic tracking-tighter">W.</div>
-        
-        <div className="flex items-center gap-4">
-           <Link href="/partenariat/auth/login" className="text-sm font-black bg-black text-white px-8 py-3 rounded-full hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.3)] hover:-translate-y-0.5 transition-all">
-            Connexion
-          </Link>
-          <Link href="/partenariat/auth/register" className="text-sm font-black bg-black text-white px-8 py-3 rounded-full hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.3)] hover:-translate-y-0.5 transition-all">
-            S'inscrire
-          </Link>
-        </div>
-      </nav>
-      {/* --- HERO SECTION --- */}
-      <section className="relative pt-32 pb-20 px-4 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-gray-50 rounded-full blur-3xl -z-10 opacity-60" />
-        
-        <div className="max-w-4xl mx-auto text-center space-y-8">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-xs font-bold uppercase tracking-widest text-gray-600 mb-6">
-              <Handshake size={14} /> Espace Partenaires
-            </span>
-            <h1 className="text-5xl md:text-7xl font-black tracking-tight leading-[1.1] mb-6">
-              Grandissons <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-900 via-gray-600 to-gray-900">
-                ensemble.
-              </span>
-            </h1>
-            <p className="text-lg md:text-xl text-gray-500 font-medium max-w-2xl mx-auto leading-relaxed">
-              Woutty n'est pas seulement une plateforme. C'est un écosystème. 
-              Nous collaborons avec des agences, des médias et des innovateurs pour façonner l'avenir de la Creator Economy en Afrique.
-            </p>
-          </motion.div>
-        </div>
-      </section>
-      
-    </div>
-  );
-}
+  it('contient les liens de navigation corrects vers l\'authentification', () => {
+    render(<PartnershipPage />);
+    
+    const loginLink = screen.getByRole('link', { name: /Connexion/i });
+    const registerLink = screen.getByRole('link', { name: /S'inscrire/i });
+
+    expect(loginLink).toHaveAttribute('href', '/partenariat/auth/login');
+    expect(registerLink).toHaveAttribute('href', '/partenariat/auth/register');
+  });
+
+  it('vérifie la présence du logo minimaliste', () => {
+    render(<PartnershipPage />);
+    expect(screen.getByText('W.')).toBeInTheDocument();
+  });
+
+  it('est optimisée pour la "selection" textuelle (SEO/UX)', () => {
+    const { container } = render(<PartnershipPage />);
+    // On vérifie que la classe CSS de sélection personnalisée est présente sur le wrapper principal
+    expect(container.firstChild).toHaveClass('selection:bg-black');
+  });
+
+  // Test futur si vous activez le formulaire
+  it('pourrait gérer une soumission de formulaire (simulation)', () => {
+    // Note: Actuellement votre formulaire n'est pas rendu dans le JSX retourné 
+    // mais la logique est dans le code. Ce test est prêt pour quand vous afficherez le <form>
+    const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+    
+    render(<PartnershipPage />);
+    
+    // Si le formulaire était présent :
+    // fireEvent.change(screen.getByLabelText(/Email/i), { target: { value: 'partenaire@test.com' } });
+    // fireEvent.click(screen.getByRole('button', { name: /Envoyer/i }));
+    // expect(global.alert).toHaveBeenCalledWith(expect.stringContaining("reçue"));
+    
+    consoleSpy.mockRestore();
+  });
+});
