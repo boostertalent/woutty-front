@@ -190,3 +190,204 @@ function PostStatMini({ label, value }: { label: string, value: string | number 
     </div>
   );
 }
+
+
+
+//dashboard createur
+"use client";
+
+import React, { useState, useMemo } from 'react';
+import { 
+  BarChart3, 
+  Briefcase, 
+  Send, 
+  User, 
+  Instagram, 
+  MessageCircle,
+  Heart,
+  Eye,
+  Share2,
+  Twitter,
+  Ghost,
+  Layers
+} from 'lucide-react';
+
+export default function CreatorDashboard() {
+  // État pour la plateforme sélectionnée (null = tout afficher)
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  
+  // Données des plateformes
+  const [selectedPlatforms] = useState([
+    { id: 'insta', name: 'Instagram', icon: <Instagram size={14} />, followers: '1 M', follows: '3M', posts: '8M', engagement: '2%' },
+    { id: 'tt', name: 'Tik tok', icon: <span className="text-[10px]">🎵</span>, followers: '1.2 M', follows: '300', posts: '20', engagement: '20%' },
+    { id: 'snap', name: 'Snapchat', icon: <Ghost size={14} />, followers: '800 K', follows: '150', posts: '150', engagement: '15%' },
+    { id: 'x', name: 'X', icon: <Twitter size={14} />, followers: '10 K', follows: '200', posts: '1.2K', engagement: '5%' },
+  ]);
+
+  const menuItems = [
+    { name: 'Ma performance', icon: <BarChart3 size={20} />, active: true },
+    { name: 'Opportunités', icon: <Briefcase size={20} />, active: false },
+    { name: 'Mes campagnes', icon: <Send size={20} />, active: false },
+    { name: 'Mon profil', icon: <User size={20} />, active: false },
+  ];
+
+  // Données des posts
+  const allPosts = [
+    { id: 1, platform: 'Instagram', image: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400&h=300&fit=crop', likes: '12K', views: '45K' },
+    { id: 2, platform: 'Tik tok', image: 'https://images.unsplash.com/photo-1596558450268-9c27524baaf7?w=400&h=300&fit=crop', likes: '85K', views: '1.2M' },
+    { id: 3, platform: 'Snapchat', image: 'https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=400&h=300&fit=crop', likes: '5K', views: '20K' },
+    { id: 4, platform: 'Instagram', image: 'https://images.unsplash.com/photo-1611162147679-51f263fca1ac?w=400&h=300&fit=crop', likes: '18K', views: '60K' },
+    { id: 5, platform: 'X', image: 'https://images.unsplash.com/photo-1611605698335-8b1569810432?w=400&h=300&fit=crop', likes: '2K', views: '15K' },
+  ];
+
+  // Filtrage dynamique des posts
+  const filteredPosts = useMemo(() => {
+    if (!activeFilter) return allPosts;
+    return allPosts.filter(post => post.platform.toLowerCase() === activeFilter.toLowerCase());
+  }, [activeFilter]);
+
+  return (
+    <div className="flex min-h-screen bg-[#F9FAFB] font-sans">
+      
+      {/* SIDEBAR */}
+      <aside className="w-64 bg-white border-r border-gray-100 flex flex-col p-6 sticky top-0 h-screen">
+        <div className="flex items-center gap-3 mb-10 px-2">
+          <div className="w-10 h-10 rounded-full border-2 border-[#D4A017] flex items-center justify-center p-0.5">
+            <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+               <User className="text-gray-400" size={20} />
+            </div>
+          </div>
+          <span className="font-serif font-bold text-lg text-[#111827]">Créateur</span>
+        </div>
+
+        <nav className="space-y-2">
+          {menuItems.map((item) => (
+            <button
+              key={item.name}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
+                item.active 
+                ? 'bg-[#EBD8A3] text-[#D4A017]' 
+                : 'text-gray-500 hover:bg-gray-50'
+              }`}
+            >
+              {item.icon}
+              {item.name}
+            </button>
+          ))}
+        </nav>
+      </aside>
+
+      {/* MAIN CONTENT */}
+      <main className="flex-1 p-10 overflow-y-auto">
+        <header className="mb-10 flex justify-between items-end">
+          <div>
+            <h1 className="text-3xl font-serif font-bold text-[#111827]">Dashboard Créateur</h1>
+            <p className="text-gray-400 text-sm mt-1 font-medium">Cliquez sur une carte pour filtrer vos contenus.</p>
+          </div>
+          <button 
+            onClick={() => setActiveFilter(null)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all border ${
+              !activeFilter ? 'bg-[#D4A017] text-white border-[#D4A017]' : 'bg-white text-gray-400 border-gray-100 hover:border-[#D4A017]'
+            }`}
+          >
+            <Layers size={14} /> Voir tout
+          </button>
+        </header>
+
+        {/* HORIZONTAL SOCIAL STATS CARDS */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12">
+          {selectedPlatforms.map((platform) => (
+            <div 
+              key={platform.id}
+              onClick={() => setActiveFilter(platform.name)}
+              className={`p-5 rounded-[24px] border cursor-pointer transition-all hover:scale-[1.02] shadow-sm ${
+                activeFilter === platform.name 
+                ? 'bg-white border-[#D4A017] ring-2 ring-[#D4A017]/10' 
+                : 'bg-white border-gray-50'
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-4 text-[#D4A017]">
+                <div className="p-1 border border-[#D4A017] rounded-md">
+                  {platform.icon}
+                </div>
+                <span className="text-[9px] font-bold uppercase tracking-widest">{platform.name}</span>
+              </div>
+              
+              <div className="flex items-center justify-between gap-1 overflow-hidden">
+                <div className="text-center">
+                  <p className="text-sm font-black text-[#111827] leading-none">{platform.followers}</p>
+                  <p className="text-[7px] font-bold text-gray-300 uppercase tracking-tighter mt-1">Followers</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-black text-[#111827] leading-none">{platform.engagement}</p>
+                  <p className="text-[7px] font-bold text-gray-300 uppercase tracking-tighter mt-1">Engage.</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-black text-[#111827] leading-none">{platform.posts}</p>
+                  <p className="text-[7px] font-bold text-gray-300 uppercase tracking-tighter mt-1">Posts</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-black text-[#111827] leading-none">{platform.follows}</p>
+                  <p className="text-[7px] font-bold text-gray-300 uppercase tracking-tighter mt-1">Follows</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* POSTS SECTION */}
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-serif font-bold text-[#111827]">
+              {activeFilter ? `Posts ${activeFilter}` : 'Mes derniers posts'}
+            </h2>
+            <span className="text-xs font-bold text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
+              {filteredPosts.length} résultats
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {filteredPosts.map((post) => (
+              <div key={post.id} className="relative group rounded-[24px] overflow-hidden aspect-[4/3] bg-gray-200 border-4 border-white shadow-md transition-all hover:shadow-lg">
+                <img 
+                  src={post.image} 
+                  alt={`Post ${post.platform}`} 
+                  className="w-full h-full object-cover"
+                />
+                
+                {/* Platform Badge */}
+                <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-1 rounded-full shadow-sm border border-gray-100">
+                  <span className="text-[9px] font-black uppercase tracking-tighter text-[#D4A017]">
+                    {post.platform}
+                  </span>
+                </div>
+
+                {/* Stats Overlay */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[90%] bg-black/50 backdrop-blur-md rounded-full px-4 py-2 flex justify-around items-center border border-white/20">
+                  <div className="flex items-center gap-1 text-white text-[10px] font-bold italic">
+                    <Heart size={12} className="text-[#D4A017] fill-[#D4A017]" /> {post.likes}
+                  </div>
+                  <div className="flex items-center gap-1 text-white text-[10px] font-bold italic">
+                    <Eye size={12} className="text-[#D4A017]" /> {post.views}
+                  </div>
+                  <div className="flex items-center gap-1 text-white text-[10px] font-bold italic">
+                    <MessageCircle size={12} className="text-[#D4A017] fill-[#D4A017]" /> 2
+                  </div>
+                  <div className="flex items-center gap-1 text-white text-[10px] font-bold italic">
+                    <Share2 size={12} className="text-[#D4A017]" /> 5
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {filteredPosts.length === 0 && (
+            <div className="text-center py-20 bg-gray-50 rounded-[32px] border-2 border-dashed border-gray-100">
+              <p className="text-gray-400 font-medium">Aucun post trouvé pour cette plateforme.</p>
+            </div>
+          )}
+        </section>
+      </main>
+    </div>
+  );
+}

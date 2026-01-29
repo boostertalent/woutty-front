@@ -41,7 +41,20 @@ export default function LoginPage() {
       if (authData.user) {
         const userId = authData.user.id;
 
-        // 2. On cherche dans la table 'createur' (Utilisation de id_w)
+        // 2. On cherche dans la table 'createur'
+        const { data: creatorData } = await supabase
+          .from('createur')
+          .select('id_w') 
+          .eq('id_w', userId)
+          .maybeSingle(); 
+
+        if (authData.user) {
+        const userId = authData.user.id;
+
+        // ÉTAPE CRUCIALE : On force la synchronisation des cookies de session
+        router.refresh();
+
+        // 2. On cherche dans la table 'createur'
         const { data: creatorData } = await supabase
           .from('createur')
           .select('id_w') 
@@ -49,12 +62,27 @@ export default function LoginPage() {
           .maybeSingle(); 
 
         if (creatorData) {
-          router.push('/creators/dashboard');
-          router.refresh();
+          // On attend un micro-délai pour être sûr que le refresh est effectif
+          setTimeout(() => router.push('/creators/dashboard'), 100);
           return;
         }
 
-        // 3. On cherche dans la table 'marque' (Utilisation de id_w)
+        // 3. On cherche dans la table 'marque'
+        const { data: brandData } = await supabase
+          .from('marque')
+          .select('id_w')
+          .eq('id_w', userId)
+          .maybeSingle();
+
+        if (brandData) {
+          setTimeout(() => router.push('/brands/dashboard'), 100);
+          return;
+        }
+
+        setErrorMsg("Votre profil est en cours de configuration ou introuvable.");
+      }
+
+        // 3. On cherche dans la table 'marque'
         const { data: brandData } = await supabase
           .from('marque')
           .select('id_w')
@@ -136,7 +164,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-widest ml-1 text-gray-400">Email Professionnel</label>
+            <label className="text-xs font-black uppercase tracking-widest">Email Professionnel</label>
             <div className="relative">
               <Mail size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
@@ -152,7 +180,7 @@ export default function LoginPage() {
 
           <div className="space-y-2">
             <div className="flex justify-between items-center ml-1">
-              <label className="text-xs font-black uppercase tracking-widest text-gray-400">Mot de passe</label>
+              <label className="text-xs font-black uppercase tracking-widest ">Mot de passe</label>
               <Link href="/auth/forgot-password" size="sm" className="text-xs font-bold text-[#ceaf4a] hover:text-black transition-colors">
                 Oublié ?
               </Link>

@@ -3,24 +3,26 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { CheckCircle2, Mail, ArrowRight, Sparkles, PartyPopper } from 'lucide-react';
+import { CheckCircle2, Mail, Sparkles, PartyPopper } from 'lucide-react';
 
 export default function RegistrationSuccess() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
-  const email = localStorage.getItem('signup_email');
-  setUserEmail(email);
+    const email = localStorage.getItem('signup_email');
+    setUserEmail(email);
+    // On ne nettoie pas ici pour permettre le rafraîchissement de page (F5)
+  }, []);
 
-  // On nettoie le localStorage APRÈS avoir récupéré l'email
-  return () => {
+  // Fonction pour vider le storage quand on quitte vraiment le flux d'inscription
+  const handleFinalize = () => {
     localStorage.removeItem('signup_email');
     localStorage.removeItem('signup_name');
     localStorage.removeItem('signup_phone');
     localStorage.removeItem('signup_niche');
     localStorage.removeItem('signup_avatar');
   };
-}, []);
+
   return (
     <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 font-sans text-gray-900">
       
@@ -30,11 +32,9 @@ export default function RegistrationSuccess() {
         transition={{ duration: 0.5 }}
         className="bg-white border border-gray-200 rounded-[40px] p-8 md:p-12 w-full max-w-2xl shadow-xl text-center relative overflow-hidden"
       >
-        {/* Éléments décoratifs en arrière-plan */}
         <div className="absolute top-0 left-0 w-full h-2 bg-[#ceaf4a]" />
         <Sparkles className="absolute top-10 right-10 text-[#ceaf4a]/20" size={40} />
         
-        {/* Icône de succès animée */}
         <motion.div 
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -57,7 +57,6 @@ export default function RegistrationSuccess() {
           Bienvenue dans la communauté <span className="font-bold">Woutty</span>.
         </p>
 
-        {/* Encadré Email */}
         <motion.div 
           initial={{ x: -20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
@@ -74,12 +73,13 @@ export default function RegistrationSuccess() {
 
         <div className="space-y-4">
           <p className="text-gray-400 text-sm italic">
-            Pensez à regarder dans vos courriers indésirables (spams) si vous ne voyez rien.
+            Pensez à regarder dans vos courriers indésirables (spams).
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
             <Link 
               href="/auth/login"
+              onClick={handleFinalize}
               className="px-10 py-4 bg-black text-white rounded-2xl font-bold hover:bg-gray-800 transition-all active:scale-95 flex items-center justify-center gap-2"
             >
               Aller à la connexion
@@ -87,14 +87,14 @@ export default function RegistrationSuccess() {
             
             <Link 
               href="/"
-              className="px-10 py-4 border border-gray-200 text-gray-600 rounded-2xl font-bold hover:bg-gray-50 transition-all active:scale-95 flex items-center justify-center gap-2"
+              onClick={handleFinalize}
+              className="px-10 py-4 border border-gray-200 text-gray-600 rounded-2xl font-bold hover:bg-gray-50 transition-all active:scale-95"
             >
               Retour à l'accueil
             </Link>
           </div>
         </div>
 
-        {/* Petit message de rappel */}
         <div className="mt-12 pt-8 border-t border-gray-100 flex items-center justify-center gap-2 text-[#ceaf4a] font-bold text-sm uppercase tracking-widest">
           <PartyPopper size={18} />
           C'est le début de l'aventure

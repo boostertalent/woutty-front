@@ -1,250 +1,297 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
-  Heart, Eye, TrendingUp, Zap, Calendar, 
-  ArrowUpRight, LayoutDashboard, Briefcase, 
-  CheckCircle2, Clock, BarChart3, Users
+  BarChart3, 
+  Briefcase, 
+  Send, 
+  User, 
+  Instagram, 
+  MessageCircle,
+  Heart,
+  Eye,
+  Share2,
+  Twitter,
+  Ghost,
+  Camera,
+  Settings,
+  LogOut,
+  Calendar
 } from 'lucide-react';
-import { StatCard } from '@/components/dashboard/StatCard';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 export default function CreatorDashboard() {
-  const [activeMenu, setActiveMenu] = useState<'stats' | 'available' | 'my_campaigns'>('stats');
-  const [profile, setProfile] = useState<any>(null);
-  const [posts, setPosts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('Ma performance');
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  
+  const menuItems = [
+    { name: 'Ma performance', icon: <BarChart3 size={20} /> },
+    { name: 'Opportunités', icon: <Briefcase size={20} /> },
+    { name: 'Mes campagnes', icon: <Send size={20} /> },
+    { name: 'Mon profil', icon: <User size={20} /> },
+  ];
 
-  const USER_ID_W = "votre-uuid-test"; 
+  const [selectedPlatforms] = useState([
+    { id: 'insta', name: 'Instagram', icon: <Instagram size={14} />, followers: '1 M', follows: '3M', posts: '8M', engagement: '2%' },
+    { id: 'tt', name: 'Tik tok', icon: <span className="text-[10px]">🎵</span>, followers: '1.2 M', follows: '300', posts: '20', engagement: '20%' },
+    { id: 'snap', name: 'Snapchat', icon: <Ghost size={14} />, followers: '800 K', follows: '150', posts: '150', engagement: '15%' },
+    { id: 'x', name: 'X', icon: <Twitter size={14} />, followers: '10 K', follows: '200', posts: '1.2K', engagement: '5%' },
+  ]);
 
-  useEffect(() => {
-    async function fetchCreatorData() {
-      try {
-        setLoading(true);
-        const { data: profileData } = await supabase
-          .from('info_profile')
-          .select('*')
-          .eq('id_w', USER_ID_W)
-          .single();
+  // Ajout des titres et des dates ici
+  const allPosts = [
+    { 
+      id: 1, 
+      title: "Routine Matinale Bio", 
+      date: "24 Janv. 2024",
+      platform: 'Instagram', 
+      icon: <Instagram size={10} />, 
+      image: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400&h=300&fit=crop', 
+      likes: '12K', 
+      views: '45K' 
+    },
+    { 
+      id: 2, 
+      title: "Review Setup Gaming", 
+      date: "22 Janv. 2024",
+      platform: 'Tik tok', 
+      icon: <span className="text-[10px]">🎵</span>, 
+      image: 'https://images.unsplash.com/photo-1596558450268-9c27524baaf7?w=400&h=300&fit=crop', 
+      likes: '85K', 
+      views: '1.2M' 
+    },
+    { 
+      id: 3, 
+      title: "Vlog Unboxing", 
+      date: "19 Janv. 2024",
+      platform: 'Snapchat', 
+      icon: <Ghost size={10} />, 
+      image: 'https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=400&h=300&fit=crop', 
+      likes: '5K', 
+      views: '20K' 
+    },
+  ];
 
-        const { data: postsData } = await supabase
-          .from('info_poste')
-          .select('*')
-          .order('date_poste', { ascending: false })
-          .limit(6);
+  const opportunities = [
+    { id: 1, title: "Lancement cosmétique bio", brand: "Natural beauty", price: "350,000 FCFA", tags: ["Skincare", "Beauty"] },
+    { id: 2, title: "Lancement App Gaming", brand: "Playzone", price: "50,000 FCFA", tags: ["Tech", "Live"] },
+  ];
 
-        setProfile(profileData);
-        setPosts(postsData || []);
-      } catch (error) {
-        console.error("Erreur dashboard:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchCreatorData();
-  }, []);
-
-  if (loading) return <div className="p-20 text-center font-bold text-[#D4A017]">Chargement du studio...</div>;
+  const filteredPosts = useMemo(() => {
+    if (!activeFilter) return allPosts;
+    return allPosts.filter(post => post.platform.toLowerCase() === activeFilter.toLowerCase());
+  }, [activeFilter]);
 
   return (
-    <div className="flex min-h-screen bg-[#FAFBFC] font-sans">
+    <div className="flex h-screen w-full bg-[#F9FAFB] font-sans overflow-hidden text-[#111827]">
       
-      {/* --- MENU LATÉRAL --- */}
-      <aside className="w-72 bg-white border-r border-gray-100 flex flex-col sticky top-0 h-screen shadow-sm">
-        <div className="p-8">
-          <div className="flex items-center gap-3 mb-10">
-            <div className="w-10 h-10 bg-[#111827] rounded-xl flex items-center justify-center text-[#D4A017]">
-              <Zap size={24} fill="currentColor" />
-            </div>
-            <span className="font-serif font-black text-xl tracking-tighter">CREATOR<span className="text-[#D4A017]">.</span></span>
-          </div>
-
-          <nav className="space-y-1">
-            <p className="text-[10px] font-black uppercase text-gray-400 mb-4 ml-4 tracking-widest">Analyse</p>
-            <MenuButton 
-              isActive={activeMenu === 'stats'} 
-              onClick={() => setActiveMenu('stats')} 
-              icon={<BarChart3 size={18} />} 
-              label="Ma Performance" 
-            />
-            
-            <p className="text-[10px] font-black uppercase text-gray-400 mb-4 mt-8 ml-4 tracking-widest">Business</p>
-            <MenuButton 
-              isActive={activeMenu === 'available'} 
-              onClick={() => setActiveMenu('available')} 
-              icon={<Briefcase size={18} />} 
-              label="Opportunités" 
-            />
-            <MenuButton 
-              isActive={activeMenu === 'my_campaigns'} 
-              onClick={() => setActiveMenu('my_campaigns')} 
-              icon={<CheckCircle2 size={18} />} 
-              label="Mes Campagnes" 
-            />
-          </nav>
-        </div>
-
-        {/* Profil Mini en bas du menu */}
-        <div className="mt-auto p-6 border-t border-gray-50">
-          <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-2xl">
-            <img src={profile?.url_photo_profile} className="w-10 h-10 rounded-xl object-cover" />
-            <div className="overflow-hidden">
-              <p className="text-sm font-bold truncate">{profile?.nom_complet}</p>
-              <p className="text-[10px] text-gray-400 font-bold uppercase">{profile?.nom_plateforme}</p>
+      <aside className="w-64 bg-white border-r border-gray-100 flex flex-col p-6 h-full flex-shrink-0">
+        <div className="flex items-center gap-3 mb-10 px-2">
+          <div className="w-10 h-10 rounded-full border-2 border-[#D4A017] flex items-center justify-center p-0.5">
+            <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+               <User className="text-gray-400" size={20} />
             </div>
           </div>
+          <span className="font-serif font-bold text-lg">créateur</span>
         </div>
+
+        <nav className="space-y-2">
+          {menuItems.map((item) => (
+            <button
+              key={item.name}
+              onClick={() => setActiveTab(item.name)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
+                activeTab === item.name ? 'bg-[#EBD8A3] text-[#D4A017]' : 'text-gray-500 hover:bg-gray-50'
+              }`}
+            >
+              {item.icon}
+              {item.name}
+            </button>
+          ))}
+        </nav>
       </aside>
 
-      {/* --- CONTENU PRINCIPAL --- */}
-      <main className="flex-1 p-8 md:p-12 overflow-y-auto">
+      <main className="flex-1 flex flex-col p-10 h-full overflow-hidden">
         
-        {/* Header Dynamique selon le menu */}
-        <div className="flex justify-between items-center mb-12">
-          <div>
-            <h1 className="text-4xl font-serif font-black text-[#111827]">
-              {activeMenu === 'stats' ? "Analytics Studio" : activeMenu === 'available' ? "Marketplace" : "Suivi Contrats"}
-            </h1>
-            <p className="text-gray-400 text-sm mt-1">Gérez votre influence et vos revenus en temps réel.</p>
-          </div>
-          <button className="bg-[#111827] text-white px-6 py-3 rounded-2xl font-bold text-sm hover:shadow-xl transition-all">
-            Mettre à jour
-          </button>
-        </div>
+        <header className="mb-8 flex-shrink-0">
+          <h1 className="text-3xl font-serif font-bold">
+            {activeTab === 'Mes campagnes' ? 'Suivi contrats' : activeTab}
+          </h1>
+          <p className="text-gray-400 text-sm mt-1 font-medium italic">Gérez votre influence et vos revenus en temps réel.</p>
+        </header>
 
-        {/* Rendu Conditionnel des Sections */}
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-          
-          {/* SECTION : PERFORMANCE */}
-          {activeMenu === 'stats' && (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-                <StatCard title="Abonnés" value={profile?.nbre_followers?.toLocaleString()} icon={<Users size={22} />} trend="Live" />
-                <StatCard title="Posts" value={profile?.nbre_poste} icon={<LayoutDashboard size={22} />} />
-                <StatCard title="Engagement" value="4.8%" icon={<Zap size={22} className="text-[#D4A017]" />} />
-                <StatCard title="Moy. Likes" value={posts.length > 0 ? Math.round(posts.reduce((acc, p) => acc + p.nbre_like, 0) / posts.length) : "0"} icon={<Heart size={22} />} />
+        <div className="flex-1 overflow-hidden">
+          {activeTab === 'Ma performance' ? (
+            <div className="h-full flex flex-col space-y-8">
+              <div className="grid grid-cols-4 gap-4 flex-shrink-0">
+                {selectedPlatforms.map((platform) => (
+                  <div 
+                    key={platform.id}
+                    onClick={() => setActiveFilter(platform.name)}
+                    className={`p-4 rounded-[24px] border cursor-pointer transition-all shadow-sm ${
+                      activeFilter === platform.name ? 'bg-white border-[#D4A017] ring-2 ring-[#D4A017]/10' : 'bg-white border-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-4 text-[#D4A017]">
+                      <div className="p-1 border border-[#D4A017] rounded-md">{platform.icon}</div>
+                      <span className="text-[9px] font-bold uppercase tracking-widest">{platform.name}</span>
+                    </div>
+                    <div className="flex justify-between items-end">
+                      <div className="text-center">
+                        <p className="text-xs font-black">{platform.followers}</p>
+                        <p className="text-[7px] text-gray-300 uppercase font-bold">followers</p>
+                      </div>
+                       <div className="text-center">
+                        <p className="text-xs font-black">{platform.follows}</p>
+                        <p className="text-[7px] text-gray-300 uppercase font-bold">follows</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs font-black">{platform.engagement}</p>
+                        <p className="text-[7px] text-gray-300 uppercase font-bold">Engagement</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs font-black">{platform.posts}</p>
+                        <p className="text-[7px] text-gray-300 uppercase font-bold">Posts</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
 
-              <div className="bg-white rounded-[40px] border border-gray-100 p-10 shadow-sm">
-                <h2 className="text-xl font-bold mb-8">Flux de Publications</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {posts.map((post) => <PostCard key={post.id_w} post={post} />)}
+              <div className="flex-1 min-h-0 flex flex-col">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-serif font-bold">Mes posts</h2>
+                  <button onClick={() => setActiveFilter(null)} className="text-[10px] font-bold text-[#D4A017] underline">Voir tout</button>
+                </div>
+                <div className="grid grid-cols-3 gap-6 flex-1 min-h-0 overflow-y-auto pr-2">
+                  {filteredPosts.map((post) => (
+                    <div key={post.id} className="relative rounded-[24px] overflow-hidden bg-gray-100 border-4 border-white shadow-md group h-fit">
+                      {/* Badge Plateforme */}
+                      <div className="absolute top-3 left-3 z-10 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-2 border border-[#D4A017]/20">
+                        <span className="text-[#D4A017]">{post.icon}</span>
+                        <span className="text-[8px] font-black uppercase tracking-tighter text-[#111827]">
+                          {post.platform}
+                        </span>
+                      </div>
+
+                      {/* Nouveau: Badge Date */}
+                      <div className="absolute top-3 right-3 z-10 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-1.5 text-white border border-white/10">
+                        <Calendar size={10} className="text-[#D4A017]" />
+                        <span className="text-[8px] font-bold uppercase tracking-tighter">
+                          {post.date}
+                        </span>
+                      </div>
+                      
+                      <div className="aspect-[4/3] overflow-hidden">
+                        <img src={post.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="" />
+                      </div>
+
+                      {/* Overlay Infos (Titre + Stats) */}
+                      <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-12">
+                        {/* Nouveau: Titre du Post */}
+                        <h4 className="text-white text-[11px] font-bold mb-2 ml-2 line-clamp-1">
+                          {post.title}
+                        </h4>
+                        
+                        <div className="w-full bg-black/50 backdrop-blur-md rounded-full px-4 py-2 flex justify-between items-center border border-white/20 text-white text-[9px] font-bold">
+                          <div className="flex items-center gap-1"><Heart size={11} className="text-[#D4A017] fill-[#D4A017]" /> {post.likes}</div>
+                          <div className="flex items-center gap-1"><MessageCircle size={11} className="text-[#D4A017] fill-[#D4A017]" /> 12</div>
+                          <div className="flex items-center gap-1"><Share2 size={11} className="text-[#D4A017]" /> 5</div>
+                          <div className="flex items-center gap-1"><Eye size={11} className="text-[#D4A017]" /> {post.views}</div>
+                          <div className="text-[#D4A017] italic">% 2.4</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </>
-          )}
-
-          {/* SECTION : OPPORTUNITÉS */}
-          {activeMenu === 'available' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <CampaignAvailableCard title="Lancement Cosmétique Bio" brand="Naturelle Lux" reward="350,000 CFA" tags={["Skincare", "Reels"]} />
-              <CampaignAvailableCard title="Série Gaming Mobile" brand="PlayZone" reward="150,000 CFA" tags={["Tech", "Live"]} />
             </div>
-          )}
-
-          {/* SECTION : MES CAMPAGNES */}
-          {activeMenu === 'my_campaigns' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <CampaignActiveCard title="Partenariat Tech 2026" status="Production" progress={65} />
+          ) : activeTab === 'Opportunités' ? (
+            <div className="grid grid-cols-2 gap-8 items-start">
+              {opportunities.map((op) => (
+                <div key={op.id} className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-50 relative group transition-all hover:shadow-xl">
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="w-12 h-12 bg-white border border-gray-100 rounded-xl flex items-center justify-center shadow-sm">
+                      <Briefcase className="text-[#D4A017]" size={24} />
+                    </div>
+                    <span className="text-[10px] font-bold text-[#22C55E] bg-[#F0FDF4] px-3 py-1.5 rounded-full border border-green-100">
+                      {op.price}
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-bold mb-1">{op.title}</h3>
+                  <p className="text-gray-400 text-xs mb-4 uppercase tracking-tighter font-medium">{op.brand}</p>
+                  <div className="flex gap-2 mb-8">
+                    {op.tags.map(tag => (
+                      <span key={tag} className="px-3 py-1 bg-gray-50 rounded-full text-[10px] font-bold text-gray-400 border border-gray-100">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  <button className="w-full py-4 bg-[#111827] text-white rounded-full font-bold text-sm hover:bg-black transition-all active:scale-[0.98] shadow-lg shadow-black/10">
+                    Postuler maintenant
+                  </button>
+                </div>
+              ))}
             </div>
-          )}
-
+          ) : activeTab === 'Mes campagnes' ? (
+            <div className="grid grid-cols-2 gap-8 items-start">
+              <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-50">
+                <div className="flex justify-between items-center mb-10">
+                  <div className="w-12 h-12 bg-white border border-gray-100 rounded-xl flex items-center justify-center shadow-sm">
+                    <Briefcase className="text-[#D4A017]" size={24} />
+                  </div>
+                  <span className="text-[10px] font-bold text-[#22C55E] bg-[#F0FDF4] px-4 py-1.5 rounded-full border border-green-100 uppercase tracking-widest">
+                    En cours
+                  </span>
+                </div>
+                <h3 className="text-2xl font-bold mb-10">Lancement cosmétique bio</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between text-[10px] font-bold uppercase text-gray-400 tracking-widest">
+                    <span>Livrables</span>
+                    <span>0%</span>
+                  </div>
+                  <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-[#EBD8A3] w-[5%]" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : activeTab === 'Mon profil' ? (
+            <div className="max-w-2xl bg-white rounded-[32px] shadow-sm border border-gray-50 overflow-hidden">
+              <div className="h-32 bg-[#EBD8A3] relative">
+                <div className="absolute -bottom-12 left-8">
+                  <div className="w-24 h-24 rounded-full border-4 border-white bg-gray-200 overflow-hidden relative group">
+                    <User className="w-full h-full p-4 text-gray-400" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                      <Camera className="text-white" size={20} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="pt-16 pb-8 px-8">
+                <div className="flex justify-between items-start mb-8">
+                  <div>
+                    <h2 className="text-2xl font-bold">créateur</h2>
+                    <p className="text-gray-400 text-sm font-medium">Créatrice Lifestyle & Beauté</p>
+                  </div>
+                  <button className="px-6 py-2 border border-gray-200 rounded-full text-xs font-bold hover:bg-gray-50 transition-colors">
+                    Modifier le profil
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-3">
+                    <Settings className="text-gray-400" size={18} />
+                    <span className="text-sm font-bold">Paramètres du compte</span>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-3 text-red-500 cursor-pointer">
+                    <LogOut size={18} />
+                    <span className="text-sm font-bold">Se déconnecter</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
       </main>
-    </div>
-  );
-}
-
-// --- SOUS-COMPOSANTS ---
-
-function MenuButton({ isActive, onClick, icon, label }: any) {
-  return (
-    <button 
-      onClick={onClick}
-      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-bold text-sm ${
-        isActive 
-        ? "bg-[#D4A017]/10 text-[#D4A017] shadow-sm" 
-        : "text-gray-400 hover:bg-gray-50 hover:text-gray-600"
-      }`}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-}
-
-function PostCard({ post }: { post: any }) {
-  return (
-    <div className="group bg-white rounded-[32px] border border-gray-100 overflow-hidden hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
-      <div className="relative h-56 bg-gray-50 flex items-center justify-center">
-        <span className="absolute top-4 left-4 bg-white px-3 py-1 rounded-full text-[10px] font-black uppercase shadow-sm">{post.type_poste}</span>
-        <Eye className="text-gray-200 group-hover:scale-110 transition-transform" size={40} />
-      </div>
-      <div className="p-6">
-        <h3 className="font-bold text-[#111827] line-clamp-2 min-h-[3rem] group-hover:text-[#D4A017] transition-colors">{post.titre_poste}</h3>
-        <div className="flex justify-between mt-6 bg-gray-50 p-4 rounded-2xl">
-          <div className="text-center">
-            <p className="text-[9px] font-bold text-gray-400 uppercase">Likes</p>
-            <p className="font-black text-sm">{post.nbre_like?.toLocaleString()}</p>
-          </div>
-          <div className="text-center border-x border-gray-200 px-4">
-            <p className="text-[9px] font-bold text-gray-400 uppercase">Vues</p>
-            <p className="font-black text-sm text-[#D4A017]">{post.nbre_vue?.toLocaleString()}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-[9px] font-bold text-gray-400 uppercase">Comms</p>
-            <p className="font-black text-sm">{post.nbre_commentaire}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function CampaignAvailableCard({ title, brand, reward, tags }: any) {
-  return (
-    <div className="bg-white p-8 rounded-[40px] border border-gray-100 hover:border-[#D4A017]/50 transition-all group">
-      <div className="flex justify-between items-start mb-6">
-        <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-[#D4A017] group-hover:bg-[#D4A017] group-hover:text-white transition-all">
-          <Briefcase size={28}/>
-        </div>
-        <span className="text-xl font-black text-green-600">{reward}</span>
-      </div>
-      <h3 className="text-xl font-black text-[#111827] mb-1">{title}</h3>
-      <p className="text-gray-400 font-bold text-sm mb-6">{brand}</p>
-      <div className="flex gap-2 mb-8">
-        {tags.map((t: string) => <span key={t} className="text-[10px] font-black bg-gray-50 px-3 py-1.5 rounded-lg text-gray-400 uppercase">{t}</span>)}
-      </div>
-      <button className="w-full py-4 bg-[#111827] text-white rounded-2xl font-black text-sm hover:bg-[#D4A017] transition-all flex items-center justify-center gap-2">
-        Postuler maintenant <ArrowUpRight size={18} />
-      </button>
-    </div>
-  );
-}
-
-function CampaignActiveCard({ title, status, progress }: any) {
-  return (
-    <div className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4A017]/5 rounded-full -mr-16 -mt-16" />
-      <div className="flex justify-between items-center mb-8">
-        <span className="text-xs font-black text-blue-500 bg-blue-50 px-3 py-1.5 rounded-full uppercase tracking-widest">{status}</span>
-        <Clock size={20} className="text-gray-300" />
-      </div>
-      <h3 className="text-2xl font-black text-[#111827] mb-8">{title}</h3>
-      <div className="space-y-3">
-        <div className="flex justify-between text-xs font-black text-gray-400 uppercase">
-          <span>Livrables</span>
-          <span>{progress}%</span>
-        </div>
-        <div className="w-full h-3 bg-gray-50 rounded-full">
-          <div className="h-full bg-[#D4A017] rounded-full transition-all duration-1000" style={{ width: `${progress}%` }} />
-        </div>
-      </div>
     </div>
   );
 }

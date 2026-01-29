@@ -21,7 +21,6 @@ export default function Step2() {
   const router = useRouter();
   const steps = [1, 2, 3, 4];
 
-  // Configuration des centres d'intérêt avec icônes
   const interestsConfig = [
     { name: "Mode", icon: Shirt },
     { name: "Tech", icon: Monitor },
@@ -38,7 +37,7 @@ export default function Step2() {
     "Belgique", "Bénin", "Brésil", "Burkina Faso", "Cameroun", "Canada", "Chine", "Congo-Brazzaville", "Congo-Kinshasa", "Côte d’Ivoire", "Espagne", "États-Unis", "France", "Gabon", "Guinée", "Italie", "Mali", "Maroc", "Mauritanie", "Niger", "Nigeria", "Sénégal", "Suisse", "Tchad", "Togo", "Tunisie", "Autre"
   ];
 
-  // États
+  // États initialisés avec le localStorage
   const [ageRange, setAgeRange] = useState({ min: 13, max: 80 });
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [customInterest, setCustomInterest] = useState("");
@@ -46,40 +45,48 @@ export default function Step2() {
   const [customCountry, setCustomCountry] = useState("");
   const [showError, setShowError] = useState(false);
 
-  // Charger les données au montage
+  // 1. Charger les données au montage du composant
   useEffect(() => {
     const saved = localStorage.getItem('campaign_step_2');
     if (saved) {
-      const data = JSON.parse(saved);
-      if (data.ageRange) setAgeRange(data.ageRange);
-      if (data.selectedInterests) setSelectedInterests(data.selectedInterests);
-      if (data.customInterest) setCustomInterest(data.customInterest);
-      if (data.selectedCountry) setSelectedCountry(data.selectedCountry);
-      if (data.customCountry) setCustomCountry(data.customCountry);
+      try {
+        const data = JSON.parse(saved);
+        if (data.ageRange) setAgeRange(data.ageRange);
+        if (data.selectedInterests) setSelectedInterests(data.selectedInterests);
+        if (data.customInterest) setCustomInterest(data.customInterest);
+        if (data.selectedCountry) setSelectedCountry(data.selectedCountry);
+        if (data.customCountry) setCustomCountry(data.customCountry);
+      } catch (e) {
+        console.error("Erreur de lecture du localStorage", e);
+      }
     }
   }, []);
 
-  // Validation
+  // 2. SAUVEGARDE AUTOMATIQUE : Crucial pour que tout soit envoyé en base de données plus tard
+  useEffect(() => {
+    const step2Data = {
+      ageRange,
+      selectedInterests,
+      customInterest,
+      selectedCountry,
+      customCountry
+    };
+    // On sauvegarde si au moins un champ commence à être rempli
+    if (selectedInterests.length > 0 || selectedCountry !== "") {
+      localStorage.setItem('campaign_step_2', JSON.stringify(step2Data));
+    }
+  }, [ageRange, selectedInterests, customInterest, selectedCountry, customCountry]);
+
   const isFormValid = () => {
     const hasCountry = selectedCountry !== "" && (selectedCountry !== "Autre" || customCountry.trim() !== "");
     const hasInterests = selectedInterests.length > 0;
     const hasCustomInterest = !selectedInterests.includes("Autre") || customInterest.trim() !== "";
-    
     return hasCountry && hasInterests && hasCustomInterest;
   };
 
-  // Sauvegarder et Continuer
   const handleContinue = () => {
     if (isFormValid()) {
       setShowError(false);
-      const step2Data = {
-        ageRange,
-        selectedInterests,
-        customInterest,
-        selectedCountry,
-        customCountry
-      };
-      localStorage.setItem('campaign_step_2', JSON.stringify(step2Data));
       router.push('/brands/auth/campagne3');
     } else {
       setShowError(true);
@@ -133,7 +140,6 @@ export default function Step2() {
           <h2 className="text-2xl font-serif font-bold mb-8">Audience cible</h2>
           
           <div className="space-y-12">
-            {/* Age Slider */}
             <div>
               <label className="block text-[15px] font-bold text-gray-700 mb-6">
                 Tranche d&apos;âge : <span className="text-[#D4A017] font-extrabold">{ageRange.min} – {ageRange.max} ans</span>
@@ -145,7 +151,6 @@ export default function Step2() {
               </div>
             </div>
 
-            {/* Localisation */}
             <div className="space-y-4">
               <label className="block text-[15px] font-bold text-gray-700">Localisation *</label>
               <div className="relative">
@@ -173,7 +178,6 @@ export default function Step2() {
               )}
             </div>
 
-            {/* Centres d'intérêt */}
             <div className="space-y-4">
               <label className="block text-[15px] font-bold text-gray-700">Centres d&apos;intérêt *</label>
               <div className="flex flex-wrap gap-3">

@@ -125,7 +125,7 @@ export default function ContactPrincipal() {
             <input 
               type="tel" 
               name="phone" 
-              placeholder="+33 6 00 00 00 00" 
+              placeholder="+221..." 
               value={formData.phone} 
               onChange={handleChange} 
               className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-transparent focus:bg-white focus:border-[#ceaf4a] focus:ring-4 focus:ring-[#ceaf4a]/5 outline-none transition-all" 
