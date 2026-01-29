@@ -83,4 +83,4 @@ describe('LoginPage', () => {
     render(<LoginPage />);
 
     fireEvent.change(screen.getByPlaceholderText('nom@exemple.com'), { target: { value: 'brand@test.com' } });
-    fireEvent.change(screen.getByPlaceholderText('••••••••'),
+    fireEvent.change(screen.getByPlaceholderText('••••••••'), { target: { value: 'password123' } });

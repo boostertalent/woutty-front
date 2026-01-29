@@ -4,19 +4,21 @@ class N8nReporter {
   async onRunComplete(contexts, results) {
     // Extraire les résultats de chaque fichier testé
     const testFiles = results.testResults
-      .filter(testResult => testResult.numPassingTests > 0 || testResult.numFailingTests > 0) // Ignorer les fichiers sans tests
+      .filter(testResult => testResult.numPassingTests > 0 || testResult.numFailingTests > 0)
       .map(testResult => {
-        // Nettoyer le chemin du fichier (enlever les chemins absolus si nécessaire)
-        const filePath = testResult.testFilePath.replace(/\\/g, '/').replace(process.cwd().replace(/\\/g, '/'), '');
+        const filePath = testResult.testFilePath
+          .replace(/\\/g, '/')
+          .replace(process.cwd().replace(/\\/g, '/'), '')
+          .replace(/^\//, '');
         
         return {
-          filePath: filePath.startsWith('/') ? filePath.slice(1) : filePath,
+          filePath: filePath,
           passed: testResult.numPassingTests,
           failed: testResult.numFailingTests,
           total: testResult.numPassingTests + testResult.numFailingTests,
           status: testResult.numFailingTests > 0 ? 'Failed' : 'Passed',
           description: testResult.failureMessage 
-            ? testResult.failureMessage.substring(0, 500) // Limiter à 500 caractères
+            ? testResult.failureMessage.substring(0, 500)
             : 'Tous les tests réussis'
         };
       });
@@ -28,23 +30,22 @@ class N8nReporter {
       failed: results.numFailedTests,
       total: results.numTotalTests,
       testFiles: testFiles,
+      status: results.numFailedTests > 0 ? 'Failed' : 'Success',
+      projet: 'Woutty Front',
       summary: `${results.numPassedTests} réussis, ${results.numFailedTests} échoués sur ${results.numTotalTests} tests`
     };
 
     try {
-      // L'URL du webhook n8n depuis les variables d'environnement
-      const n8nUrl = process.env.N8N_WEBHOOK_URL;
+      const n8nUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || process.env.N8N_WEBHOOK_URL;
       
       if (!n8nUrl) {
-        console.warn('⚠️ N8N_WEBHOOK_URL non défini dans .env.local - données non envoyées');
+        console.warn('⚠️ N8N_WEBHOOK_URL ou NEXT_PUBLIC_N8N_WEBHOOK_URL non défini dans .env.local - données non envoyées');
         return;
       }
       
       await axios.post(n8nUrl, data, {
-        timeout: 10000, // Timeout de 10 secondes
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        timeout: 10000,
+        headers: { 'Content-Type': 'application/json' }
       });
       console.log(`✅ ${testFiles.length} fichier(s) testé(s) envoyé(s) à Notion via n8n`);
     } catch (error) {

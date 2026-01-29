@@ -194,4 +194,4 @@ function PostStatMini({ label, value }: { label: string, value: string | number 
 }
 });
 
-  it('renders without crashing', () => { expect(true).toBe(true); });
+  it('renders without crashing', () => { render(<brouillon />); });
