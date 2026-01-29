@@ -3,11 +3,15 @@ import { createBrowserClient } from '@supabase/ssr'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Les variables d\'environnement Supabase sont manquantes.');
-}
+// On crée une instance unique (Singleton) pour le client
+let client: ReturnType<typeof createBrowserClient> | undefined;
 
-export const supabase = createBrowserClient(
-  supabaseUrl,
-  supabaseAnonKey
-);
+export const getSupabaseBrowserClient = () => {
+  if (client) return client;
+
+  client = createBrowserClient(supabaseUrl, supabaseAnonKey);
+  return client;
+};
+
+// Pour garder la compatibilité avec tes imports actuels :
+export const supabase = getSupabaseBrowserClient();

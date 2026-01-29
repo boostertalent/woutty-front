@@ -37,7 +37,6 @@ export async function GET(request: Request) {
       let redirectPath = '/auth';
 
       // 2. RECHERCHE DES PROFILS EXISTANTS
-      // On cherche d'abord dans 'createur' avec id_w
       const { data: isCreator } = await supabase
         .from('createur')
         .select('id_w')
@@ -48,7 +47,6 @@ export async function GET(request: Request) {
         targetTable = 'createur';
         redirectPath = '/creators/dashboard';
       } else {
-        // Sinon on cherche dans 'marque' (vérifier si c'est id ou id_w ici aussi)
         const { data: isBrand } = await supabase
           .from('marque')
           .select('id')
@@ -73,13 +71,13 @@ export async function GET(request: Request) {
           avatar_url: user.user_metadata.avatar_url,
         };
 
-        // On adapte la clé d'ID selon la table cible
+        // On adapte la clé d'ID selon la table cible (Correction des slashs ici)
         let conflictColumn = 'id';
         if (targetTable === 'createur') {
-          insertData.id_w = user.id; /
+          insertData.id_w = user.id; 
           conflictColumn = 'id_w';
         } else {
-          insertData.id = user.id; /
+          insertData.id = user.id; 
           conflictColumn = 'id';
         }
 
@@ -89,13 +87,13 @@ export async function GET(request: Request) {
 
         if (upsertError) {
             console.error("Erreur lors de la création du profil Google:", upsertError);
-            // Si erreur RLS ici, c'est que la Policy d'INSERT manque encore
             return NextResponse.redirect(`${origin}/auth/login?error=db_error`);
         }
       }
 
       // 4. Redirection finale vers le bon Dashboard
       const finalResponse = NextResponse.redirect(`${origin}${redirectPath}`)
+      // Force le navigateur à ne pas mettre en cache la redirection
       finalResponse.headers.set('Cache-Control', 'no-store, max-age=0')
       return finalResponse
     }

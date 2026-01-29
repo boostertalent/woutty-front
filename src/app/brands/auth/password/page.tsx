@@ -90,8 +90,12 @@ export default function BrandFinalStep() {
       localStorage.clear();
       router.push('/brands/auth/success');
 
-    } catch (err: any) {
-      setError(err.message || "Une erreur est survenue.");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError(String(err) || "Une erreur est survenue.");
+      }
     } finally {
       setLoading(false);
     }

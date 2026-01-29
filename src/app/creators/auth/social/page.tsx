@@ -59,7 +59,6 @@ export default function SocialMediaSelection() {
 
       if (!email) throw new Error("Détails d'inscription manquants. Veuillez recommencer.");
 
-      // Conversion en entier pour le type int4 de la base
       const ageInt = ageRaw ? parseInt(ageRaw, 10) : null;
 
       const { data, error: authError } = await supabase.auth.signUp({
@@ -79,7 +78,6 @@ export default function SocialMediaSelection() {
       if (authError) throw authError;
 
       if (data.user) {
-        // On ne vide pas le storage ici car RegistrationSuccess en a besoin pour afficher l'email
         router.push('/creators/auth/success');
       }
 
@@ -154,18 +152,19 @@ export default function SocialMediaSelection() {
         </button>
 
         <div className="bg-gray-50/50 rounded-3xl p-6 border border-gray-100 space-y-4 mb-8">
+            <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest text-center mb-2">Créer votre mot de passe</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <label className="text-xs font-bold text-gray-600">Mot de passe</label>
                     <div className="relative">
-                        <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 bg-white text-black font-bold" />
+                        <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 bg-white text-black font-bold outline-none focus:border-[#ceaf4a]" />
                         <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
                     </div>
                 </div>
                 <div className="space-y-2">
                     <label className="text-xs font-bold text-gray-600">Confirmation</label>
                     <div className="relative">
-                        <input type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={`w-full px-5 py-3.5 rounded-2xl border bg-white text-black font-bold ${isPasswordMatch ? 'border-green-500' : 'border-gray-200'}`} />
+                        <input type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={`w-full px-5 py-3.5 rounded-2xl border bg-white text-black font-bold outline-none ${isPasswordMatch ? 'border-green-500' : 'border-gray-200'}`} />
                         <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">{showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
                     </div>
                 </div>

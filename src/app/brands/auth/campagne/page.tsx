@@ -1,12 +1,19 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Calendar, ChevronLeft, Loader2 } from 'lucide-react';
+import { Calendar, ChevronLeft, Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CreateCampaign() {
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  
+  const [formData, setFormData] = useState<{
+    title: string;
+    objectives: string[];
+    customObjective: string;
+    startDate: string;
+    endDate: string;
+  }>({
     title: '',
     objectives: [] as string[],
     customObjective: '',
@@ -14,11 +21,15 @@ export default function CreateCampaign() {
     endDate: ''
   });
 
+  // Obtenir la date d'aujourd'hui au format YYYY-MM-DD pour l'attribut "min"
+  const today = new Date().toISOString().split('T')[0];
+
   useEffect(() => {
     const saved = localStorage.getItem('campaign_step_1');
     if (saved) {
       try {
-        setFormData(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        setFormData(parsed);
       } catch (e) {
         console.error("Erreur de lecture du localStorage", e);
       }
@@ -26,7 +37,9 @@ export default function CreateCampaign() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('campaign_step_1', JSON.stringify(formData));
+    if (formData.title !== '' || formData.objectives.length > 0) {
+      localStorage.setItem('campaign_step_1', JSON.stringify(formData));
+    }
   }, [formData]);
 
   const steps = [1, 2, 3, 4];
@@ -43,14 +56,26 @@ export default function CreateCampaign() {
     });
   };
 
+  // --- LOGIQUE DE VALIDATION ---
+  
+  // Vérifie si la date de fin est après ou égale à la date de début
+  const isDateRangeValid = () => {
+    if (formData.startDate && formData.endDate) {
+      return new Date(formData.endDate) >= new Date(formData.startDate);
+    }
+    return true;
+  };
+
   const isStep1Valid = 
     formData.title.trim() !== '' && 
     formData.objectives.length > 0 && 
+    formData.startDate !== '' &&
+    formData.endDate !== '' &&
+    isDateRangeValid() &&
     (formData.objectives.includes('Autre') ? formData.customObjective.trim() !== '' : true);
 
   return (
     <main className="min-h-screen bg-[#F9FAFB] p-8 font-sans text-[#111827]">
-      {/* --- CSS POUR CACHER L'ICÔNE NATIVE DU NAVIGATEUR --- */}
       <style jsx global>{`
         input[type="date"]::-webkit-calendar-picker-indicator {
           display: none;
@@ -68,7 +93,7 @@ export default function CreateCampaign() {
         <p className="text-gray-500 text-sm">Définissez vos critères pour un matching IA optimal</p>
       </div>
 
-      {/* Stepper Dynamique */}
+      {/* Stepper */}
       <div className="max-w-xl mx-auto mb-12 relative">
         <div className="absolute top-1/2 left-0 w-full h-px bg-gray-200 -z-10 -translate-y-1/2"></div>
         <div className="flex justify-between items-center">
@@ -103,7 +128,7 @@ export default function CreateCampaign() {
                 value={formData.title}
                 onChange={(e) => setFormData({...formData, title: e.target.value})}
                 placeholder="Ex: Lancement campagne collection été 2026"
-                className="w-full px-5 py-4 rounded-xl border border-gray-200 focus:border-[#D4A017] focus:ring-4 focus:ring-[#D4A017]/5 outline-none transition-all placeholder:text-gray-300 italic"
+                className="w-full px-5 py-4 rounded-xl border border-gray-200 focus:border-[#D4A017] outline-none transition-all placeholder:text-gray-300 italic"
               />
             </div>
 
@@ -122,12 +147,7 @@ export default function CreateCampaign() {
                         onChange={() => handleObjectiveChange(obj)}
                         className="peer appearance-none w-5 h-5 rounded-md border border-gray-300 checked:bg-[#D4A017] checked:border-[#D4A017] transition-all"
                       />
-                      <svg 
-                        className="absolute w-3 h-3 text-white opacity-0 peer-checked:opacity-100 pointer-events-none" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
+                      <svg className="absolute w-3 h-3 text-white opacity-0 peer-checked:opacity-100 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
@@ -152,46 +172,53 @@ export default function CreateCampaign() {
             </div>
 
             {/* Dates */}
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-[15px] font-bold text-gray-700">Date début</label>
-                <div className="relative group">
-                  <input
-                    id="startDate"
-                    type="date"
-                    value={formData.startDate}
-                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    className="w-full px-5 py-4 pr-12 rounded-xl border border-gray-200 focus:border-[#D4A017] outline-none text-gray-700 transition-all cursor-pointer"
-                    onClick={() => (document.getElementById('startDate') as any)?.showPicker()}
-                  />
-                  <div 
-                    onClick={() => (document.getElementById('startDate') as any)?.showPicker()}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#D4A017] cursor-pointer transition-colors pointer-events-none"
-                  >
-                    <Calendar size={20} />
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[15px] font-bold text-gray-700">Date début</label>
+                  <div className="relative group">
+                    <input
+                      id="startDate"
+                      type="date"
+                      min={today}
+                      value={formData.startDate}
+                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                      className="w-full px-5 py-4 pr-12 rounded-xl border border-gray-200 focus:border-[#D4A017] outline-none text-gray-700 cursor-pointer"
+                      onClick={(e) => (e.target as any).showPicker?.()}
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                      <Calendar size={20} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[15px] font-bold text-gray-700">Date fin</label>
+                  <div className="relative group">
+                    <input
+                      id="endDate"
+                      type="date"
+                      min={formData.startDate || today}
+                      value={formData.endDate}
+                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                      className={`w-full px-5 py-4 pr-12 rounded-xl border outline-none text-gray-700 cursor-pointer transition-all ${
+                        !isDateRangeValid() ? "border-red-400 ring-4 ring-red-50" : "border-gray-200 focus:border-[#D4A017]"
+                      }`}
+                      onClick={(e) => (e.target as any).showPicker?.()}
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                      <Calendar size={20} />
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[15px] font-bold text-gray-700">Date fin</label>
-                <div className="relative group">
-                  <input
-                    id="endDate"
-                    type="date"
-                    value={formData.endDate}
-                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    className="w-full px-5 py-4 pr-12 rounded-xl border border-gray-200 focus:border-[#D4A017] outline-none text-gray-700 transition-all cursor-pointer"
-                    onClick={() => (document.getElementById('endDate') as any)?.showPicker()}
-                  />
-                  <div 
-                    onClick={() => (document.getElementById('endDate') as any)?.showPicker()}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#D4A017] cursor-pointer transition-colors pointer-events-none"
-                  >
-                    <Calendar size={20} />
-                  </div>
+              {!isDateRangeValid() && (
+                <div className="flex items-center gap-2 text-red-500 text-xs font-bold animate-in slide-in-from-left-2">
+                  <AlertCircle size={14} />
+                  <span>La date de fin doit être postérieure à la date de début.</span>
                 </div>
-              </div>
+              )}
             </div>
           </form>
         </div>
@@ -210,8 +237,8 @@ export default function CreateCampaign() {
             className={`
               flex items-center justify-center min-w-[160px] px-12 py-3.5 rounded-xl font-bold transition-all shadow-lg
               ${isStep1Valid && !loading
-                ? "bg-[#D4A017] text-white shadow-[#D4A017]/20 hover:bg-[#B88A14] cursor-pointer" 
-                : "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none pointer-events-none"}
+                ? "bg-[#D4A017] text-white shadow-[#D4A017]/20 hover:bg-[#B88A14]" 
+                : "bg-gray-100 text-gray-400 cursor-not-allowed pointer-events-none"}
             `}
           >
             {loading ? <Loader2 className="animate-spin" size={20} /> : "continuer"}

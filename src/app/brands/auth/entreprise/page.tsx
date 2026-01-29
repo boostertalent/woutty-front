@@ -121,7 +121,7 @@ export default function EntrepriseDetails() {
               <input
                 type="tel"
                 name="phone"
-                placeholder="+33 6..."
+                placeholder="+221..."
                 required
                 value={formData.phone}
                 onChange={handleChange}
