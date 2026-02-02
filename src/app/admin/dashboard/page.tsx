@@ -1,20 +1,19 @@
-"use client";
+"use client"; // Indique à Next.js que ce composant s'exécute côté client
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
-// AJOUT DE 'ArrowUpRight' ICI 👇
+import { useRouter } from 'next/navigation'; // Hook Next.js pour la navigation
+import { createBrowserClient } from '@supabase/ssr'; // Client Supabase côté navigateur
 import { 
   Users, Building2, BarChart3, ShieldCheck, Search, 
-  Bell, MoreVertical, TrendingUp, Calendar, User, LogOut, Loader2,
+  Bell, TrendingUp, Calendar, LogOut, Loader2,
   ArrowUpRight 
-} from 'lucide-react';
+} from 'lucide-react'; // Icônes
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, 
   Tooltip, ResponsiveContainer 
-} from 'recharts';
+} from 'recharts'; // Composants graphiques
 
-// --- DONNÉES SIMULÉES ---
+// --- DONNÉES SIMULÉES POUR LE GRAPHIQUE ---
 const activityData = [
   { month: 'Juil', createurs: 40, marques: 24 },
   { month: 'Août', createurs: 150, marques: 56 },
@@ -24,7 +23,7 @@ const activityData = [
   { month: 'Déc', createurs: 600, marques: 250 },
 ];
 
-// --- TYPES ---
+// --- TYPES TYPESCRIPT ---
 interface DashboardStats {
   creators: number;
   brands: number;
@@ -38,31 +37,37 @@ interface AdminUser {
 }
 
 export default function AdminDashboard() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<DashboardStats>({ creators: 0, brands: 0, campaigns: 0 });
-  const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
+  const router = useRouter(); // Hook pour navigation programmatique
+  const [loading, setLoading] = useState(true); // État du chargement
+  const [stats, setStats] = useState<DashboardStats>({ creators: 0, brands: 0, campaigns: 0 }); // Statistiques
+  const [adminUser, setAdminUser] = useState<AdminUser | null>(null); // Info admin
 
+  // Initialisation du client Supabase
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
+  // --- EFFECT POUR CHARGER LES DONNÉES ---
   useEffect(() => {
     fetchDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // --- FONCTION DE RÉCUPÉRATION DES DONNÉES ---
   const fetchDashboardData = async () => {
     try {
-      setLoading(true);
+      setLoading(true); // active le chargement
 
+      // Récupère l'utilisateur connecté
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
-        router.push('/auth/login');
+        router.push('/auth/login'); // Redirection si non connecté
         return;
       }
 
+      // Récupère le profil de l'utilisateur
       const { data: profile } = await supabase
         .from('profiles')
         .select('full_name, role')
@@ -70,52 +75,59 @@ export default function AdminDashboard() {
         .single();
 
       if (profile?.role !== 'admin') {
-         // Sécurité : redirection si pas admin (à décommenter plus tard)
-         // router.push('/'); 
+        // router.push('/'); // Sécurité admin (optionnel)
       }
 
+      // Mise à jour de l'état de l'utilisateur admin
       setAdminUser({
         name: profile?.full_name || user.email?.split('@')[0] || 'Admin',
         email: user.email || '',
         initials: (profile?.full_name || 'AD').substring(0, 2).toUpperCase()
       });
 
+      // Comptage des créateurs
       const { count: creatorsCount } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .eq('role', 'creator');
 
+      // Comptage des marques
       const { count: brandsCount } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .eq('role', 'brand');
 
+      // Mise à jour des stats
       setStats({
         creators: creatorsCount || 0,
         brands: brandsCount || 0,
-        campaigns: 142
+        campaigns: 142 // valeur statique pour l'exemple
       });
 
     } catch (error) {
       console.error("Erreur dashboard:", error);
     } finally {
-      setLoading(false);
+      setLoading(false); // Fin du chargement
     }
   };
 
+  // --- FONCTION DE DÉCONNEXION ---
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push('/auth/login');
-    router.refresh();
+    await supabase.auth.signOut(); // Déconnexion
+    router.push('/auth/login'); // Redirection login
+    router.refresh(); // Rafraîchissement
   };
 
+  // --- RENDU PRINCIPAL ---
   return (
     <div className="min-h-screen bg-[#f8f9fa] flex font-sans text-gray-900">
       
       {/* SIDEBAR */}
       <aside className="w-64 bg-white border-r border-gray-100 hidden md:flex flex-col sticky top-0 h-screen z-20">
         <div className="p-8">
-          <h2 className="text-2xl font-bold text-[#ceaf4a]">Woutty <span className="text-gray-900 text-sm block font-medium">Administration</span></h2>
+          <h2 className="text-2xl font-bold text-[#ceaf4a]">
+            Woutty <span className="text-gray-900 text-sm block font-medium">Administration</span>
+          </h2>
         </div>
         
         <nav className="flex-1 px-4 space-y-2">
@@ -292,8 +304,7 @@ export default function AdminDashboard() {
   );
 }
 
-// --- SOUS-COMPOSANTS ---
-
+// --- COMPOSANTS INTERNES ---
 function NavItem({ icon, label, active = false }: { icon: any, label: string, active?: boolean }) {
   return (
     <div className={`flex items-center gap-3 px-4 py-3 rounded-2xl cursor-pointer transition-all duration-200 group ${
@@ -303,7 +314,6 @@ function NavItem({ icon, label, active = false }: { icon: any, label: string, ac
     }`}>
       {icon}
       <span className="text-sm font-medium">{label}</span>
-      {/* C'est ici que l'icône était utilisée sans être importée */}
       {!active && <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
         <ArrowUpRight size={14} />
       </div>}

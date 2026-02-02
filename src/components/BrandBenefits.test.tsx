@@ -1,10 +1,8 @@
-import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import BrandBenefits from './BrandBenefits';
+import { render } from '@testing-library/react';
+import Component from './BrandBenefits';
 
 describe('BrandBenefits', () => {
   it('renders without crashing', () => {
-    render(<BrandBenefits />);
-    expect(true).toBe(true);
+    render(<Component />);
   });
 });

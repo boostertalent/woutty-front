@@ -1,142 +1,124 @@
-"use client";
+"use client"; 
+// Indique à Next.js que ce composant s’exécute côté client
 
-import { useEffect, useState } from "react";
-import { createBrowserClient } from "@supabase/ssr"; // Utilisation du client SSR pour plus de fiabilité
-import { useRouter } from "next/navigation";
-import { Lock, Loader2, CheckCircle2, AlertCircle, ShieldCheck } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState } from "react"; 
+// Hooks React pour gérer l’état et les effets
+
+import { createBrowserClient } from "@supabase/ssr"; 
+// Client Supabase compatible Next.js (évite les erreurs SSR/Jest)
+
+import { useRouter } from "next/navigation"; 
+// Router Next.js (App Router)
+
+import { Lock, Loader2, CheckCircle2, AlertCircle, ShieldCheck } from "lucide-react"; 
+// Icônes (à mocker en test)
+
+import { motion, AnimatePresence } from "framer-motion"; 
+// Animations (à mocker en test)
 
 export default function ResetPasswordPage() {
-  const router = useRouter();
+  const router = useRouter(); // Gestion de la navigation
 
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
+  const [password, setPassword] = useState(""); // Mot de passe saisi
+  const [loading, setLoading] = useState(false); // État de chargement
+  const [error, setError] = useState<string | null>(null); // Message d’erreur
+  const [ready, setReady] = useState(false); // Indique si la session est valide
 
-  // Initialisation du client Supabase avec les clés de ton ami
+  // Initialisation du client Supabase avec les variables d’environnement
   const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? "http://localhost",
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "test-key"
   );
 
   useEffect(() => {
+    // Vérifie la présence d’une session valide
     const checkSession = async () => {
-      // Vérifie si l'utilisateur a un ticket de récupération valide
       const { data } = await supabase.auth.getSession();
-      if (data.session) {
+      if (data?.session) {
         setReady(true);
       }
     };
 
     checkSession();
 
-    // Écoute les changements d'état (PASSWORD_RECOVERY est déclenché par le lien d'email)
-    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "PASSWORD_RECOVERY" || session) {
-        setReady(true);
+    // Écoute les changements d’état d’authentification
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session) {
+          setReady(true);
+        }
       }
-    });
+    );
 
+    // Nettoyage du listener
     return () => {
-      listener.subscription.unsubscribe();
+      listener?.subscription?.unsubscribe();
     };
-  }, [supabase.auth]);
+  }, [supabase]);
 
+  // Soumission du formulaire de reset
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    // Mise à jour du mot de passe dans la base AUTH
     const { error } = await supabase.auth.updateUser({
-      password: password,
+      password,
     });
 
     if (error) {
-      setError(error.message);
+      setError(error.message); // Affiche l’erreur
       setLoading(false);
     } else {
-      // Succès : on déconnecte et on redirige vers le login
+      // Déconnexion + redirection vers login
       await supabase.auth.signOut();
       router.replace("/auth/login?reset=success");
     }
   };
 
+  // État intermédiaire tant que la session n’est pas prête
   if (!ready) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-gray-400 gap-4">
-        <Loader2 className="animate-spin" size={24} />
-        <p className="text-sm font-medium">Vérification de la session sécurisée...</p>
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <Loader2 className="animate-spin" />
+        <p>Vérification de la session sécurisée…</p>
       </div>
     );
   }
 
+  // UI principale
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
+    <div className="flex items-center justify-center min-h-screen">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }} // Animation d’entrée
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-[420px] bg-white p-8 rounded-[32px] shadow-2xl shadow-gray-200/50"
       >
-        <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-12 h-12 bg-[#ceaf4a]/10 rounded-2xl flex items-center justify-center text-[#ceaf4a] mb-4">
-            <ShieldCheck size={28} />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Nouveau mot de passe</h1>
-          <p className="text-xs text-gray-400 mt-2 font-medium uppercase tracking-widest">Sécurisez votre compte</p>
-        </div>
-
-        <form onSubmit={handleReset} className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-500 ml-1 uppercase">Mot de passe</label>
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-              <input
-                type="password"
-                required
-                minLength={8}
-                placeholder="Minimum 8 caractères"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-gray-50/50 border border-gray-100 px-12 py-4 rounded-2xl text-black font-semibold outline-none focus:bg-white focus:ring-4 focus:ring-[#ceaf4a]/5 transition-all placeholder:text-gray-300 placeholder:font-normal"
-              />
-            </div>
-          </div>
+        <form onSubmit={handleReset}>
+          <Lock />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={8}
+          />
 
           <AnimatePresence>
             {error && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="flex items-center gap-2 p-3 rounded-xl bg-red-50 text-red-600 text-xs font-bold border border-red-100"
-              >
-                <AlertCircle size={14} />
+              <motion.div>
+                <AlertCircle />
                 {error}
               </motion.div>
             )}
           </AnimatePresence>
 
-          <button
-            disabled={loading}
-            className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold text-xs uppercase tracking-widest shadow-xl hover:bg-[#ceaf4a] active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:bg-gray-100 disabled:text-gray-400"
-          >
-            {loading ? (
-              <Loader2 className="animate-spin" size={18} />
-            ) : (
-              <>
-                Confirmer le changement
-                <CheckCircle2 size={18} />
-              </>
-            )}
+          <button disabled={loading} type="submit">
+            {loading ? <Loader2 className="animate-spin" /> : "Confirmer"}
+            <CheckCircle2 />
           </button>
         </form>
 
-        <div className="mt-8 text-center">
-          <p className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">
-            Woutty Security Protocol
-          </p>
-        </div>
+        <ShieldCheck />
       </motion.div>
     </div>
   );

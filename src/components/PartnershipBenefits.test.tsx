@@ -1,10 +1,8 @@
-import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import PartnershipBenefits from './PartnershipBenefits';
+import { render } from '@testing-library/react';
+import Component from './PartnershipBenefits';
 
 describe('PartnershipBenefits', () => {
   it('renders without crashing', () => {
-    render(<PartnershipBenefits />);
-    expect(true).toBe(true);
+    render(<Component />);
   });
 });

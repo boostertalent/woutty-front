@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Building2, Loader2, AlertCircle, ChevronRight } from 'lucide-react';
 
+// Liste des domaines possibles pour la sélection
 const DOMAINES = [
   "Mode & Beauté",
   "Technologie & SaaS",
@@ -21,6 +22,7 @@ export default function EntrepriseDetails() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // État du formulaire
   const [formData, setFormData] = useState({
     companyName: '',
     phone: '',
@@ -30,7 +32,7 @@ export default function EntrepriseDetails() {
     website: ''
   });
 
-  // Charger les données existantes si l'utilisateur revient en arrière
+  // Charger les données si l'utilisateur revient en arrière
   useEffect(() => {
     const savedName = localStorage.getItem('brand_company_name');
     if (savedName) {
@@ -45,20 +47,23 @@ export default function EntrepriseDetails() {
     }
   }, []);
 
-  const isFormValid = 
-    formData.companyName && 
-    formData.phone && 
-    formData.email && 
-    formData.domain && 
-    (formData.domain !== "Autre" || formData.customDomain);
+  // Validation simple du formulaire
+  const isFormValid =
+    formData.companyName.trim() !== '' &&
+    formData.phone.trim() !== '' &&
+    formData.email.trim() !== '' &&
+    formData.domain !== '' &&
+    (formData.domain !== "Autre" || formData.customDomain.trim() !== '');
 
+  // Gestion du changement de champ
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleContinue = (e: React.MouseEvent | React.FormEvent) => {
+  // Gestion du bouton Continuer
+  const handleContinue = (e: React.FormEvent | React.MouseEvent) => {
     e.preventDefault();
-    
+
     if (!isFormValid || loading) return;
 
     setLoading(true);
@@ -72,7 +77,7 @@ export default function EntrepriseDetails() {
       localStorage.setItem('brand_domain', finalDomain);
       localStorage.setItem('brand_website', formData.website);
 
-      router.push('/brands/auth/contact');
+      router.push('/brands/auth/contact'); // Passage à l'étape suivante
     } catch (err) {
       setError("Erreur lors de la préparation des données.");
     } finally {
@@ -83,18 +88,21 @@ export default function EntrepriseDetails() {
   return (
     <main className="min-h-screen bg-[#f3f3f3] flex flex-col items-center justify-center p-4 font-sans text-gray-900">
       <div className="bg-white rounded-[40px] shadow-sm w-full max-w-2xl p-8 md:p-12 border border-gray-100 relative">
-        
+
+        {/* En-tête */}
         <div className="text-center mb-10">
           <h1 className="text-4xl font-medium mb-2">Votre entreprise/Marque</h1>
           <p className="text-gray-500 font-medium">Présentez votre marque/Entreprise</p>
         </div>
 
+        {/* Icône */}
         <div className="flex justify-center mb-12">
           <div className="w-28 h-28 bg-[#fdf2d0] rounded-full flex items-center justify-center border-4 border-white shadow-sm">
             <Building2 size={48} className="text-[#ceaf4a]" />
           </div>
         </div>
 
+        {/* Formulaire */}
         <form onSubmit={handleContinue} className="space-y-6 max-w-lg mx-auto">
           {error && (
             <div className="bg-red-50 text-red-600 p-4 rounded-2xl flex items-center gap-2 text-sm font-bold border border-red-100 animate-in fade-in">
@@ -102,6 +110,7 @@ export default function EntrepriseDetails() {
             </div>
           )}
 
+          {/* Nom de l'entreprise */}
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Nom Marque/Entreprise*</label>
             <input
@@ -115,6 +124,7 @@ export default function EntrepriseDetails() {
             />
           </div>
 
+          {/* Contact */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Tel *</label>
@@ -142,6 +152,7 @@ export default function EntrepriseDetails() {
             </div>
           </div>
 
+          {/* Domaine et site web */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Domaine *</label>
@@ -177,6 +188,7 @@ export default function EntrepriseDetails() {
             </div>
           </div>
 
+          {/* Domaine personnalisé si "Autre" */}
           {formData.domain === "Autre" && (
             <div className="animate-in slide-in-from-top-2 duration-300 fade-in">
               <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Précisez votre domaine *</label>
@@ -191,6 +203,7 @@ export default function EntrepriseDetails() {
             </div>
           )}
 
+          {/* Boutons */}
           <div className="flex justify-between items-center mt-12 pt-4">
             <Link 
               href="/auth" 

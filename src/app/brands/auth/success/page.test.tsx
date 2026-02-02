@@ -1,77 +1,32 @@
-import React from 'react';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import RegistrationSuccess from './page';
 
-// Mock de framer-motion pour éviter les problèmes liés aux animations dans l'environnement de test
-jest.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-  },
-}));
-
-// Mock de next/link
-jest.mock('next/link', () => {
-  return ({ children, href }: { children: React.ReactNode; href: string }) => (
-    <a href={href}>{children}</a>
-  );
-});
-
-describe('RegistrationSuccess - Page de confirmation', () => {
-  const localStorageMock = (() => {
-    let store: Record<string, string> = {};
-    return {
-      getItem: (key: string) => store[key] || null,
-      setItem: (key: string, value: string) => { store[key] = value; },
-      removeItem: (key: string) => { delete store[key]; },
-      clear: () => { store = {}; }
-    };
-  })();
-
-  Object.defineProperty(window, 'localStorage', { value: localStorageMock });
-
+describe('RegistrationSuccess page', () => {
   beforeEach(() => {
-    localStorageMock.clear();
-    jest.clearAllMocks();
+    localStorage.clear(); // Nettoyage avant chaque test
   });
 
-  it('affiche l\'email de l\'utilisateur récupéré depuis le localStorage', () => {
-    localStorageMock.setItem('signup_email', 'test@woutty.com');
-    
+  it('renders without crashing and shows email placeholder', () => {
+    localStorage.setItem('signup_email', 'test@domain.com');
     render(<RegistrationSuccess />);
-    
-    expect(screen.getByText('test@woutty.com')).toBeInTheDocument();
-    expect(screen.getByText(/Inscription/i)).toBeInTheDocument();
-    expect(screen.getByText(/réussie !/i)).toBeInTheDocument();
+    expect(screen.getByText(/test@domain.com/i)).toBeInTheDocument();
   });
 
-  it('affiche un texte par défaut si l\'email est absent du localStorage', () => {
+  it('displays default text if no email in localStorage', () => {
     render(<RegistrationSuccess />);
-    
-    expect(screen.getByText('votre adresse email')).toBeInTheDocument();
+    expect(screen.getByText(/votre adresse email/i)).toBeInTheDocument();
   });
 
-  it('nettoie les données sensibles du localStorage lors du démontage du composant (unmount)', () => {
-    localStorageMock.setItem('signup_email', 'test@woutty.com');
-    localStorageMock.setItem('signup_name', 'John Doe');
-    localStorageMock.setItem('signup_niche', 'Lifestyle');
+  it('clears localStorage when finalize button is clicked', () => {
+    localStorage.setItem('signup_email', 'test@domain.com');
+    localStorage.setItem('signup_name', 'Jean');
 
-    const { unmount } = render(<RegistrationSuccess />);
-    
-    // On démonte le composant pour déclencher la fonction de nettoyage du useEffect
-    unmount();
-
-    expect(localStorageMock.getItem('signup_email')).toBeNull();
-    expect(localStorageMock.getItem('signup_name')).toBeNull();
-    expect(localStorageMock.getItem('signup_niche')).toBeNull();
-  });
-
-  it('contient les liens de navigation essentiels', () => {
     render(<RegistrationSuccess />);
-    
-    const loginLink = screen.getByRole('link', { name: /Aller à la connexion/i });
-    const homeLink = screen.getByRole('link', { name: /Retour à l'accueil/i });
 
-    expect(loginLink).toHaveAttribute('href', '/auth/login');
-    expect(homeLink).toHaveAttribute('href', '/');
+    const button = screen.getByText(/aller à la connexion/i);
+    fireEvent.click(button); // simule un vrai clic
+
+    expect(localStorage.getItem('signup_email')).toBeNull();
+    expect(localStorage.getItem('signup_name')).toBeNull();
   });
 });

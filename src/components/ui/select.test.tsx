@@ -1,10 +1,8 @@
-import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import select from './select';
+import { render } from '@testing-library/react';
+import Component from './select';
 
 describe('select', () => {
   it('renders without crashing', () => {
-    render(<select />);
-    expect(true).toBe(true);
+    render(<Component />);
   });
 });

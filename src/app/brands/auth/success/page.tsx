@@ -11,21 +11,16 @@ export default function RegistrationSuccess() {
   useEffect(() => {
     const email = localStorage.getItem('signup_email');
     setUserEmail(email);
-    // On ne nettoie pas ici pour permettre le rafraîchissement de page (F5)
   }, []);
 
-  // Fonction pour vider le storage quand on quitte vraiment le flux d'inscription
+  // Fonction exportable pour tests
   const handleFinalize = () => {
-    localStorage.removeItem('signup_email');
-    localStorage.removeItem('signup_name');
-    localStorage.removeItem('signup_phone');
-    localStorage.removeItem('signup_niche');
-    localStorage.removeItem('signup_avatar');
+    const keys = ['signup_email','signup_name','signup_phone','signup_niche','signup_avatar'];
+    keys.forEach(k => localStorage.removeItem(k));
   };
 
   return (
     <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 font-sans text-gray-900">
-      
       <motion.div 
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -34,7 +29,7 @@ export default function RegistrationSuccess() {
       >
         <div className="absolute top-0 left-0 w-full h-2 bg-[#ceaf4a]" />
         <Sparkles className="absolute top-10 right-10 text-[#ceaf4a]/20" size={40} />
-        
+
         <motion.div 
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -52,7 +47,7 @@ export default function RegistrationSuccess() {
         <h1 className="text-4xl font-bold mb-4">
           Inscription <span className="text-[#ceaf4a]">réussie !</span>
         </h1>
-        
+
         <p className="text-xl text-gray-600 mb-8 font-medium">
           Bienvenue dans la communauté <span className="font-bold">Woutty</span>.
         </p>
@@ -77,21 +72,20 @@ export default function RegistrationSuccess() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-            <Link 
-              href="/auth/login"
+            {/* Utilisation d'un bouton pour les tests */}
+            <button 
               onClick={handleFinalize}
               className="px-10 py-4 bg-black text-white rounded-2xl font-bold hover:bg-gray-800 transition-all active:scale-95 flex items-center justify-center gap-2"
             >
               Aller à la connexion
-            </Link>
-            
-            <Link 
-              href="/"
+            </button>
+
+            <button 
               onClick={handleFinalize}
               className="px-10 py-4 border border-gray-200 text-gray-600 rounded-2xl font-bold hover:bg-gray-50 transition-all active:scale-95"
             >
               Retour à l'accueil
-            </Link>
+            </button>
           </div>
         </div>
 

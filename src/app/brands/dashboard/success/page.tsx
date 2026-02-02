@@ -18,7 +18,7 @@ export default function MatchingAnalysis() {
         }
         return prev + 1;
       });
-    }, 40); // Environ 4 secondes au total
+    }, 40);
 
     return () => clearInterval(timer);
   }, []);
@@ -28,13 +28,15 @@ export default function MatchingAnalysis() {
     if (progress === 60) setStatus("Calcul du ROI prédictif...");
     if (progress === 90) setStatus("Finalisation de la sélection...");
     if (progress === 100) {
-      // Redirection finale après l'animation
       setTimeout(() => router.push('/brands/dashboard'), 1000);
     }
   }, [progress, router]);
 
   return (
-    <main className="min-h-screen bg-[#F9FAFB] flex items-center justify-center p-8">
+    <main
+      data-testid="matching-analysis-page"
+      className="min-h-screen bg-[#F9FAFB] flex items-center justify-center p-8"
+    >
       <div className="max-w-md w-full text-center space-y-8 animate-in fade-in zoom-in duration-700">
         <div className="relative inline-block">
           <div className="w-24 h-24 bg-[#D4A017]/10 rounded-full flex items-center justify-center mx-auto">
@@ -55,7 +57,7 @@ export default function MatchingAnalysis() {
         </div>
 
         <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
-          <div 
+          <div
             className="bg-[#D4A017] h-full transition-all duration-300 ease-out"
             style={{ width: `${progress}%` }}
           />

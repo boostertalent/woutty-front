@@ -11,16 +11,18 @@ export default function Step4() {
   const steps = [1, 2, 3, 4];
   const MIN_BUDGET_CFA = 15000;
 
+  // Initialisation du client Supabase
   const [supabase] = useState(() => createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   ));
-  
+
   const [budget, setBudget] = useState<string>(""); 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showError, setShowError] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
+  // Récupération du budget depuis localStorage
   useEffect(() => {
     const saved = localStorage.getItem('campaign_step_4');
     if (saved) {
@@ -31,19 +33,22 @@ export default function Step4() {
     }
   }, []);
 
+  // Sauvegarde automatique
   useEffect(() => {
     localStorage.setItem('campaign_step_4', JSON.stringify({ budget, currency: "CFA" }));
   }, [budget]);
 
+  // Gestion de la saisie numérique
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    if (/^[0-9]*$/.test(val)) {
+    if (/^[0-9]*$/.test(val)) { // seulement chiffres
       setBudget(val);
       setShowError(false);
       setServerError(null);
     }
   };
 
+  // Soumission finale
   const handleFinalSubmit = async () => {
     const valInCFA = Number(budget);
 
@@ -64,43 +69,38 @@ export default function Step4() {
       const s2 = JSON.parse(localStorage.getItem('campaign_step_2') || '{}');
       const s3 = JSON.parse(localStorage.getItem('campaign_step_3') || '{}');
 
-      // Nettoyage des données "Autre"
+      // Conversion "Autre" en valeur personnalisée
       const finalObjectives = s1.objectives?.map((obj: string) => obj === "Autre" ? s1.customObjective : obj) || [];
       const finalInterests = s2.selectedInterests?.map((int: string) => int === "Autre" ? s2.customInterest : int) || [];
       const finalCountry = s2.selectedCountry === "Autre" ? s2.customCountry : (s2.selectedCountry || "Non défini");
       const finalTone = s3.ton === "Autre" ? s3.customTone : (s3.ton || "Inspirant");
 
-      // PAYLOAD CORRIGÉ : Conversion explicite en Number pour le dynamisme du Dashboard
+      // Payload final pour insertion dans Supabase
       const finalPayload = {
         title: s1.title || "Sans titre",
-        objectives: finalObjectives, 
+        objectives: finalObjectives,
         start_date: s1.startDate,
         end_date: s1.endDate,
-        age_min_cible: Number(s2.ageRange?.min) || 13, 
+        age_min_cible: Number(s2.ageRange?.min) || 13,
         age_max_cible: Number(s2.ageRange?.max) || 80,
-        country: finalCountry, 
+        country: finalCountry,
         interests: finalInterests,
         nb_publications: Number(s3.nbPublications) || 0,
         formats: s3.formats || [],
         tone: finalTone,
-        budget: Number(valInCFA), // Garantie du type numérique
+        budget: Number(valInCFA),
         currency: "CFA",
         status: 'active',
-        id_w: session.user.id 
+        id_w: session.user.id
       };
 
       const { error } = await supabase.from('campaigns').insert([finalPayload]);
-      
       if (error) throw error;
 
       // Nettoyage LocalStorage
-      localStorage.removeItem('campaign_step_1');
-      localStorage.removeItem('campaign_step_2');
-      localStorage.removeItem('campaign_step_3');
-      localStorage.removeItem('campaign_step_4');
+      ['campaign_step_1','campaign_step_2','campaign_step_3','campaign_step_4'].forEach(key => localStorage.removeItem(key));
 
       router.push('/brands/dashboard/success');
-
     } catch (err: any) {
       console.error("Erreur technique:", err);
       setServerError(err.message || "Une erreur est survenue lors de la création.");
@@ -119,6 +119,7 @@ export default function Step4() {
         <p className="text-gray-400 text-sm font-medium">Définissez votre enveloppe budgétaire</p>
       </div>
 
+      {/* Stepper */}
       <div className="max-w-xl mx-auto mb-12 flex justify-between items-center relative">
         <div className="absolute top-1/2 left-0 w-full h-px bg-gray-200 -z-10"></div>
         {steps.map((s) => (
@@ -136,7 +137,7 @@ export default function Step4() {
             </div>
             <h2 className="text-xl font-bold">Budget de la campagne</h2>
           </div>
-          
+
           <div className="space-y-4">
             <label className="text-[10px] font-black uppercase tracking-widest ml-1 text-gray-400">
               Montant de l'investissement (FCFA) *
@@ -151,9 +152,7 @@ export default function Step4() {
                 className={`w-full px-6 py-5 rounded-2xl border bg-white shadow-sm outline-none transition-all text-2xl font-bold text-black placeholder:text-gray-200
                   ${(showError || serverError) ? "border-red-200 ring-4 ring-red-50" : "border-gray-200 focus:border-[#D4A017] focus:ring-4 focus:ring-[#D4A017]/5"}`}
               />
-              <div className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 font-black text-sm uppercase">
-                FCFA
-              </div>
+              <div className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 font-black text-sm uppercase">FCFA</div>
             </div>
 
             <p className="text-[11px] text-gray-400 font-medium ml-1">
@@ -184,26 +183,14 @@ export default function Step4() {
         </div>
 
         <div className="flex justify-between items-center pt-10">
-          <Link href="/brands/auth/campagne3" className="text-gray-400 font-bold text-sm hover:text-black transition-all">
-            Retour
-          </Link>
-          
+          <Link href="/brands/auth/campagne3" className="text-gray-400 font-bold text-sm hover:text-black transition-all">Retour</Link>
           <button 
             onClick={handleFinalSubmit}
             disabled={isSubmitting}
             className="flex items-center justify-center gap-3 min-w-[220px] px-8 py-4 bg-[#D4A017] text-white rounded-2xl font-bold text-sm hover:bg-[#B88A14] transition-all shadow-xl disabled:bg-gray-100 disabled:text-gray-300"
           >
-            {isSubmitting ? (
-              <>
-                <Loader2 size={18} className="animate-spin" />
-                <span>Enregistrement...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles size={18} />
-                <span>Lancer le matching IA !</span>
-              </>
-            )}
+            {isSubmitting ? <><Loader2 size={18} className="animate-spin" /><span>Enregistrement...</span></> 
+            : <><Sparkles size={18} /><span>Lancer le matching IA !</span></>}
           </button>
         </div>
       </div>

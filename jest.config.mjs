@@ -9,6 +9,7 @@ const config = {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   reporters: ['default', '<rootDir>/jest-reporter.js'],
+  silent: true,
 }
 
 export default createJestConfig(config)

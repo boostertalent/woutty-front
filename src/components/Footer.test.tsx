@@ -1,10 +1,8 @@
-import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import Footer from './Footer';
+import { render } from '@testing-library/react';
+import Component from './Footer';
 
 describe('Footer', () => {
   it('renders without crashing', () => {
-    render(<Footer />);
-    expect(true).toBe(true);
+    render(<Component />);
   });
 });

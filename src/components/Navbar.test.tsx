@@ -1,10 +1,8 @@
-import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import Navbar from './Navbar';
+import { render } from '@testing-library/react';
+import Component from './Navbar';
 
 describe('Navbar', () => {
   it('renders without crashing', () => {
-    render(<Navbar />);
-    expect(true).toBe(true);
+    render(<Component />);
   });
 });
