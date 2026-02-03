@@ -246,7 +246,7 @@ export default function BrandDashboard() {
     setIsAssigning(false);
   }
 };
-  const handleDeleteCampaign = async (campaignId: string) => { // 1. Change number par string
+  const handleDeleteCampaign = async (campaignId: string) => { 
   if (!campaignId || campaignId === "undefined") {
     alert("❌ Erreur : ID de campagne manquant.");
     return;
@@ -562,14 +562,14 @@ export default function BrandDashboard() {
                           <Pencil size={18} />
                         </Link>
                         <button 
-                          onClick={() => handleDeleteCampaign(camp.id)} 
+                          onClick={() => handleDeleteCampaign(camp.id_t_campagne)} 
                           className="p-2 text-gray-400 hover:text-red-600 transition-colors"
                           title="Supprimer"
                         >
                           <Trash2 size={18} />
                         </button>
                         <Link 
-                          href={`/brands/dashboard/details/${camp.id}`} 
+                          href={`/brands/dashboard/details/${camp.id_t_campagne}`} 
                           className="ml-2 text-[10px] font-black text-[#111827] bg-gray-50 px-4 py-2 rounded-xl border border-gray-100 hover:bg-[#D4A017] hover:text-white hover:border-[#D4A017] transition-all uppercase tracking-widest"
                         >
                           Détails
