@@ -14,6 +14,7 @@ export default function CreateCreatorProfile() {
     age: ''
   });
 
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
 
@@ -23,7 +24,7 @@ export default function CreateCreatorProfile() {
     const savedName = localStorage.getItem('user_full_name');
     const savedPhone = localStorage.getItem('signup_phone');
     const savedAge = localStorage.getItem('signup_age');
-    const savedAvatar = localStorage.getItem('signup_avatar');
+    const savedAvatar = localStorage.getItem('signup_avatar_preview');
 
     if (savedEmail || savedName) {
       setFormData({
@@ -56,33 +57,51 @@ export default function CreateCreatorProfile() {
         alert("L'image est trop lourde (max 2Mo)");
         return;
       }
+
+      // Sauvegarder le fichier pour l'upload plus tard
+      setImageFile(file);
+
+      // Créer une prévisualisation
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+        const preview = reader.result as string;
+        setImagePreview(preview);
+        // Sauvegarder seulement la prévisualisation (pas le fichier complet)
+        try {
+          localStorage.setItem('signup_avatar_preview', preview);
+        } catch (error) {
+          console.warn("LocalStorage plein : la prévisualisation ne sera pas sauvegardée.");
+        }
       };
       reader.readAsDataURL(file);
     }
   };
 
-  // 2. SAUVEGARDE ET NAVIGATION (Clés synchronisées avec le reste du projet)
+  // 2. SAUVEGARDE ET NAVIGATION
   const handleContinue = () => {
     if (!isFormValid) {
       setShowErrors(true);
       return;
     }
 
-    // On utilise les clés que les pages suivantes attendent
+    // Sauvegarder les données du formulaire
     localStorage.setItem('onboarding_email', formData.email.trim().toLowerCase());
     localStorage.setItem('user_full_name', formData.fullName.trim());
     localStorage.setItem('signup_phone', formData.phone.trim());
     localStorage.setItem('signup_age', formData.age);
     
-    if (imagePreview) {
-      try {
-        localStorage.setItem('signup_avatar', imagePreview);
-      } catch (error) {
-        console.warn("LocalStorage plein : l'image ne sera pas sauvegardée localement.");
-      }
+    // Sauvegarder l'image comme fichier pour l'upload plus tard
+    if (imageFile) {
+      // Convertir le fichier en base64 pour le stockage temporaire
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        try {
+          localStorage.setItem('signup_avatar_file', reader.result as string);
+        } catch (error) {
+          console.warn("Impossible de sauvegarder l'image.");
+        }
+      };
+      reader.readAsDataURL(imageFile);
     }
     
     router.push("/creators/auth/niche");

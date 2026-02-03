@@ -1,44 +1,30 @@
 'use client';
-// Indique que le composant s’exécute côté client (hooks, router, window…)
 
 import { useState } from 'react';
-// Hook d’état React
-
 import { useRouter } from 'next/navigation';
-// Router App Router (mocké en test)
-
 import Link from 'next/link';
-// Lien Next.js (mocké en test)
-
 import { createBrowserClient } from '@supabase/ssr';
-// Client Supabase (mocké en test)
-
-import {
-  Loader2,
-  AlertCircle,
-  Mail,
-  Eye,
-  EyeOff,
-  ChevronLeft
+import { 
+  Loader2, 
+  AlertCircle, 
+  Mail, 
+  Eye, 
+  EyeOff, 
+  ChevronLeft,
+  Lock
 } from 'lucide-react';
-// Icônes (mockées en test)
-
-import { motion } from 'framer-motion';
-// Animation (mockée en test)
 
 export default function LoginPage() {
-  const router = useRouter(); // Navigation
-  const [loading, setLoading] = useState(false); // État du bouton
-  const [showPassword, setShowPassword] = useState(false); // Affichage mdp
-  const [errorMsg, setErrorMsg] = useState<string | null>(null); // Message erreur
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Données du formulaire
   const [formData, setFormData] = useState({
     identifier: '',
     password: '',
   });
 
-  // Client Supabase mémorisé une seule fois
   const [supabase] = useState(() =>
     createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -46,14 +32,12 @@ export default function LoginPage() {
     )
   );
 
-  // Soumission du formulaire
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();        // Empêche reload
-    setLoading(true);          // Active loader
-    setErrorMsg(null);         // Reset erreur
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg(null);
 
     try {
-      // Connexion Supabase
       const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.identifier.trim(),
         password: formData.password,
@@ -62,114 +46,108 @@ export default function LoginPage() {
       if (error || !data.user) throw error;
 
       const userId = data.user.id;
+      
+      const [creator, brand] = await Promise.all([
+        supabase.from('createur').select('id_w').eq('id_w', userId).maybeSingle(),
+        supabase.from('marque').select('id_w').eq('id_w', userId).maybeSingle()
+      ]);
 
-      // Synchronisation session
-      router.refresh();
-
-      // Vérifie créateur
-      const { data: creator } = await supabase
-        .from('createur')
-        .select('id_w')
-        .eq('id_w', userId)
-        .maybeSingle();
-
-      if (creator) {
-        setTimeout(() => router.push('/creators/dashboard'), 100);
-        return;
+      if (creator.data) {
+        router.replace('/creators/dashboard');
+      } else if (brand.data) {
+        router.replace('/brands/dashboard');
+      } else {
+        setErrorMsg("Profil introuvable.");
       }
-
-      // Vérifie marque
-      const { data: brand } = await supabase
-        .from('marque')
-        .select('id_w')
-        .eq('id_w', userId)
-        .maybeSingle();
-
-      if (brand) {
-        setTimeout(() => router.push('/brands/dashboard'), 100);
-        return;
-      }
-
-      // Aucun profil métier trouvé
-      setErrorMsg("Votre profil est en cours de configuration ou introuvable.");
-    } catch {
-      // Erreur globale
-      setErrorMsg("Identifiants incorrects ou compte non validé.");
+    } catch (err: any) {
+      setErrorMsg("Identifiants incorrects.");
     } finally {
-      setLoading(false); // Stop loader
-    }
-  };
-
-  // Connexion Google
-  const handleGoogleLogin = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-      if (error) throw error;
-    } catch {
-      setErrorMsg("Erreur lors de la connexion avec Google.");
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      {/* Lien retour accueil */}
-      <Link href="/">
-        <ChevronLeft /> Accueil
+    <div className="min-h-screen bg-white text-zinc-900 flex flex-col items-center justify-center p-4">
+      
+      {/* Bouton Retour */}
+      <Link href="/" className="absolute top-8 left-8 flex items-center gap-2 text-zinc-500 hover:text-zinc-900 transition-colors">
+        <ChevronLeft size={20} />
+        <span className="font-medium">Accueil</span>
       </Link>
 
-      {/* Carte animée */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <h1>Woutty</h1>
+      <div className="w-full max-w-[400px] space-y-8">
+        <div className="text-center">
+          <h1 className="text-4xl font-black tracking-tighter text-zinc-900">Woutty</h1>
+          <p className="text-zinc-500 mt-2 font-medium">Heureux de vous revoir</p>
+        </div>
 
-        {/* Bouton Google */}
-        <button type="button" onClick={handleGoogleLogin}>
+        {/* Bouton Google - Design Flat */}
+        <button 
+          type="button" 
+          className="w-full flex items-center justify-center gap-3 bg-zinc-100 text-zinc-700 font-bold py-3.5 px-4 rounded-xl hover:bg-zinc-200 transition-all"
+        >
+          <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
           Continuer avec Google
         </button>
 
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-white px-4 text-zinc-400 font-bold tracking-widest">Ou</span>
+        </div>
+
         {/* Formulaire */}
-        <form onSubmit={handleLogin}>
-          <Mail />
-          <input
-            type="email"
-            value={formData.identifier}
-            onChange={(e) =>
-              setFormData({ ...formData, identifier: e.target.value })
-            }
-          />
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div className="space-y-1">
+            <div className="relative">
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
+              <input
+                type="email"
+                placeholder="Email"
+                className="w-full bg-zinc-100 border-none rounded-xl py-4 pl-12 pr-4 focus:ring-2 focus:ring-yellow-400 outline-none transition-all text-zinc-900 font-medium"
+                value={formData.identifier}
+                onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
+                required
+              />
+            </div>
+          </div>
 
-          <input
-            type={showPassword ? 'text' : 'password'}
-            value={formData.password}
-            onChange={(e) =>
-              setFormData({ ...formData, password: e.target.value })
-            }
-          />
+          <div className="space-y-1">
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Mot de passe"
+                className="w-full bg-zinc-100 border-none rounded-xl py-4 pl-12 pr-12 focus:ring-2 focus:ring-yellow-400 outline-none transition-all text-zinc-900 font-medium"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                required
+              />
+              <button 
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
 
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-          >
-            {showPassword ? <EyeOff /> : <Eye />}
-          </button>
-
-          {/* Message d’erreur */}
           {errorMsg && (
-            <div>
-              <AlertCircle /> {errorMsg}
+            <div className="text-red-500 text-sm font-bold px-1 flex items-center gap-2">
+              <AlertCircle size={14} />
+              {errorMsg}
             </div>
           )}
 
-          {/* Submit */}
-          <button type="submit" disabled={loading}>
-            {loading ? <Loader2 /> : 'Accéder à mon espace'}
+          {/* Bouton Se connecter en JAUNE */}
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-black py-4 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="animate-spin" size={20} /> : 'SE CONNECTER'}
           </button>
         </form>
-      </motion.div>
+      </div>
     </div>
   );
 }

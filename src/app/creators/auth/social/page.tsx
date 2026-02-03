@@ -40,66 +40,150 @@ export default function SocialMediaSelection() {
     isPasswordMatch && 
     socials.length > 0 &&
     socials.every(s => s.platform !== '' && s.handle.trim().length >= 2);
-const handleFinish = async () => {
-  if (!isFormValid || loading) return;
-  
-  setLoading(true);
-  setError(null);
 
-  try {
-    const email = localStorage.getItem('onboarding_email');
-    const fullName = localStorage.getItem('user_full_name');
-    const phone = localStorage.getItem('signup_phone');
-    const ageRaw = localStorage.getItem('signup_age');
-    const nichesRaw = localStorage.getItem('signup_niche');
+  const handleFinish = async () => {
+    if (!isFormValid || loading) return;
     
-    // Sécurité : Vérification de l'email
-    if (!email) throw new Error("Détails d'inscription manquants (email).");
+    setLoading(true);
+    setError(null);
 
-    // Sécurité : Parsing de l'âge (évite le NaN)
-    const parsedAge = ageRaw ? parseInt(ageRaw, 10) : null;
-    const finalAge = isNaN(parsedAge as number) ? null : parsedAge;
+    try {
+      const email = localStorage.getItem('onboarding_email');
+      const fullName = localStorage.getItem('user_full_name');
+      const phone = localStorage.getItem('signup_phone');
+      const ageRaw = localStorage.getItem('signup_age');
+      const nichesRaw = localStorage.getItem('signup_niche');
+      const avatarBase64 = localStorage.getItem('signup_avatar_file');
+      
+      // Sécurité : Vérification de l'email
+      if (!email) throw new Error("Détails d'inscription manquants (email).");
 
-    // Sécurité : Parsing des niches
-    let niches = [];
-    try { 
-      niches = nichesRaw ? JSON.parse(nichesRaw) : []; 
-    } catch (e) { 
-      niches = []; 
-    }
+      // Sécurité : Parsing de l'âge
+      const parsedAge = ageRaw ? parseInt(ageRaw, 10) : null;
+      const finalAge = isNaN(parsedAge as number) ? null : parsedAge;
 
-    const { data, error: authError } = await supabase.auth.signUp({
-      email: email,
-      password: password,
-      options: {
-        data: {
-          full_name: fullName || "",
-          phone: phone || "",
-          age: finalAge, // Utilisation de la valeur sécurisée
-          user_niches: niches,
-          user_socials: socials.map(s => ({ platform: s.platform, handle: s.handle })),
-          role: "creator"
+      // Sécurité : Parsing des niches
+      let niches = [];
+      try { 
+        niches = nichesRaw ? JSON.parse(nichesRaw) : []; 
+      } catch (e) { 
+        niches = []; 
+      }
+
+      // 1. CRÉER LE COMPTE
+      const { data, error: authError } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+          data: {
+            full_name: fullName || "",
+            phone: phone || "",
+            age: finalAge,
+            user_niches: niches,
+            user_socials: socials.map(s => ({ platform: s.platform, handle: s.handle })),
+            role: "creator"
+          }
+        }
+      });
+
+      if (authError) throw authError;
+
+      if (!data.user) {
+        throw new Error("Erreur lors de la création du compte");
+      }
+
+      const userId = data.user.id;
+      console.log("✅ Compte créé:", userId);
+
+      // 2. UPLOAD DE L'AVATAR VERS SUPABASE STORAGE (si existe)
+      let avatarUrl = null;
+
+      if (avatarBase64) {
+        try {
+          console.log("📤 Upload de l'avatar...");
+
+          // Convertir base64 en Blob
+          const base64Response = await fetch(avatarBase64);
+          const blob = await base64Response.blob();
+
+          // Générer un nom de fichier unique
+          const fileExt = blob.type.split('/')[1] || 'jpg';
+          const fileName = `${userId}-${Date.now()}.${fileExt}`;
+          const filePath = `avatars/${fileName}`;
+
+          // Upload vers Supabase Storage
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('creator-avatars')
+            .upload(filePath, blob, {
+              contentType: blob.type,
+              upsert: false
+            });
+
+          if (uploadError) {
+            console.error("❌ Erreur upload avatar:", uploadError);
+          } else {
+            console.log("✅ Avatar uploadé:", filePath);
+
+            // Obtenir l'URL publique
+            const { data: { publicUrl } } = supabase.storage
+              .from('creator-avatars')
+              .getPublicUrl(filePath);
+
+            avatarUrl = publicUrl;
+            console.log("✅ URL publique:", avatarUrl);
+          }
+        } catch (uploadErr) {
+          console.error("⚠️ Erreur upload avatar (non bloquant):", uploadErr);
         }
       }
-    });
 
-    if (authError) throw authError;
+      // 3. CRÉER LE PROFIL CRÉATEUR DANS LA TABLE
+// 3. CRÉER OU METTRE À JOUR LE PROFIL (UPSERT)
+      const { error: profileError } = await supabase
+        .from('createur')
+        .upsert({
+          id_w: userId, // La clé primaire qui cause le conflit
+          full_name: fullName || "",
+          email: email,
+          phone: phone || "",
+          age: finalAge,
+          niche: niches,
+          avatar_url: avatarUrl,
+          role: 'creator',
+          // Usernames réseaux sociaux
+          instagram_username: socials.find(s => s.platform === 'instagram')?.handle || null,
+          youtube_username: socials.find(s => s.platform === 'youtube')?.handle || null,
+          tiktok_username: socials.find(s => s.platform === 'tiktok')?.handle || null,
+          twitter_username: socials.find(s => s.platform === 'twitter')?.handle || null,
+          snapchat_username: socials.find(s => s.platform === 'snapchat')?.handle || null,
+          facebook_username: socials.find(s => s.platform === 'facebook')?.handle || null,
+          user_socials: socials.map(s => ({ platform: s.platform, handle: s.handle }))
+        }, { 
+          onConflict: 'id_w' // Dit à Supabase d'ignorer l'erreur si l'id_w existe déjà et de faire un update
+        });
 
-    if (data.user) {
-      localStorage.clear(); // Plus propre de tout vider
+      if (profileError) {
+        // Si l'erreur persiste ici, c'est probablement un problème de nom de colonne ou de type de donnée
+        console.error("❌ Erreur SQL détaillée:", profileError);
+        throw new Error(`Erreur base de données: ${profileError.message}`);
+      }
+
+      console.log("✅ Profil finalisé avec succès");
+
+      // 4. NETTOYER ET REDIRIGER
+      localStorage.clear();
       router.push('/creators/auth/success');
-    }
 
-  } catch (err: any) {
-    console.error("Erreur Inscription détaillée:", err);
-    const friendlyError = err.message === "User already registered" 
-      ? "Cet email est déjà utilisé." 
-      : "Erreur technique : " + (err.message || "vérifiez votre connexion.");
-    setError(friendlyError);
-  } finally {
-    setLoading(false);
-  }
-};
+    } catch (err: any) {
+      console.error("❌ Erreur Inscription détaillée:", err);
+      const friendlyError = err.message === "User already registered" 
+        ? "Cet email est déjà utilisé." 
+        : "Erreur technique : " + (err.message || "vérifiez votre connexion.");
+      setError(friendlyError);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const updateSocial = (id: number, field: string, value: string) => {
     setSocials(socials.map(s => s.id === id ? { ...s, [field]: value } : s));
