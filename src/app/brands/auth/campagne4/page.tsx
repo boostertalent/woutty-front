@@ -75,6 +75,29 @@ export default function Step4() {
       const finalCountry = s2.selectedCountry === "Autre" ? s2.customCountry : (s2.selectedCountry || "Non défini");
       const finalTone = s3.ton === "Autre" ? s3.customTone : (s3.ton || "Inspirant");
 
+      // DÉTERMINATION AUTOMATIQUE DU STATUT BASÉ SUR LES DATES
+      const today = new Date();
+      const startDate = s1.startDate ? new Date(s1.startDate) : null;
+      const endDate = s1.endDate ? new Date(s1.endDate) : null;
+      
+      let status = 'pending'; // Valeur par défaut
+      
+      if (startDate && endDate) {
+        if (today < startDate) {
+          status = 'planned'; // La campagne est planifiée pour plus tard
+        } else if (today >= startDate && today <= endDate) {
+          status = 'active'; // La campagne est en cours
+        } else if (today > endDate) {
+          status = 'completed'; // La campagne est terminée
+        }
+      } else if (startDate && today >= startDate) {
+        // Si seulement la date de début est définie et qu'on est après
+        status = 'active';
+      } else if (startDate && today < startDate) {
+        // Si seulement la date de début est définie et qu'on est avant
+        status = 'planned';
+      }
+
       // Payload final pour insertion dans Supabase
       const finalPayload = {
         title: s1.title || "Sans titre",
@@ -91,8 +114,11 @@ export default function Step4() {
         budget: Number(valInCFA),
         currency: "CFA",
         status: 'active',
-        id_w: session.user.id
+        id_w: session.user.id 
       };
+
+      console.log("Envoi à Supabase - Statut:", status);
+      console.log("Données de la campagne:", finalPayload);
 
       const { error } = await supabase.from('campaigns').insert([finalPayload]);
       if (error) throw error;
@@ -176,9 +202,14 @@ export default function Step4() {
 
           <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-4">
             <Sparkles className="text-[#D4A017] shrink-0" size={20} />
-            <p className="text-xs text-gray-500 leading-relaxed font-medium">
-              Ce budget sera utilisé pour vous matcher avec les créateurs dont l'audience et les tarifs correspondent à vos objectifs.
-            </p>
+            <div>
+              <p className="text-xs text-gray-500 leading-relaxed font-medium">
+                Ce budget sera utilisé pour vous matcher avec les créateurs dont l'audience et les tarifs correspondent à vos objectifs.
+              </p>
+              <p className="text-[10px] text-gray-400 font-medium mt-2">
+                💡 Le statut de votre campagne sera automatiquement déterminé selon les dates que vous avez définies.
+              </p>
+            </div>
           </div>
         </div>
 

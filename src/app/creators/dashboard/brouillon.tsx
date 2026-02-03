@@ -391,3 +391,1005 @@ export default function CreatorDashboard() {
     </div>
   );
 }
+
+//
+
+"use client";
+
+import React, { useState } from 'react';
+import { 
+  BarChart3, 
+  Briefcase, 
+  Send, 
+  User, 
+  Instagram, 
+  Heart,
+  Eye,
+  MessageCircle,
+  Share2,
+  TrendingUp,
+  Globe
+} from 'lucide-react';
+
+export default function CreatorDashboard() {
+  const [activeTab, setActiveTab] = useState('performance');
+
+  const menuItems = [
+    { id: 'performance', name: 'Ma performance', icon: <BarChart3 size={18} /> },
+    { id: 'opportunites', name: 'Opportunités', icon: <Briefcase size={18} /> },
+    { id: 'campagnes', name: 'Mes campagnes', icon: <Send size={18} /> },
+    { id: 'profil', name: 'Mon profil', icon: <User size={18} /> },
+  ];
+
+  return (
+    <div className="flex min-h-screen bg-[#F8F9FA] font-sans text-[#111827]">
+      
+      {/* SIDEBAR */}
+      <aside className="w-64 bg-white border-r border-gray-100 flex flex-col p-6 sticky top-0 h-screen">
+        <div className="flex items-center gap-3 mb-10 px-2">
+          <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center bg-gray-50">
+            <User className="text-[#D4A017]" size={20} />
+          </div>
+          <span className="font-bold text-lg">Fatou</span>
+        </div>
+
+        <nav className="space-y-2">
+          {menuItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
+                activeTab === item.id 
+                ? 'bg-[#EBD8A3] text-[#D4A017]' 
+                : 'text-gray-500 hover:bg-gray-50'
+              }`}
+            >
+              {item.icon}
+              {item.name}
+            </button>
+          ))}
+        </nav>
+      </aside>
+
+      {/* MAIN CONTENT */}
+      <main className="flex-1 p-12 overflow-y-auto">
+        
+        {activeTab === 'performance' ? (
+          <section>
+            <header className="mb-12">
+              <h1 className="text-3xl font-serif font-bold mb-1">Dashboard Créateur</h1>
+              <p className="text-gray-500 text-sm">Gérez votre influence et vos revenus en temps réel.</p>
+            </header>
+
+            {/* PLATFORM CARDS */}
+            <div className="space-y-6 mb-12">
+              {/* Instagram Card */}
+              <div className="bg-white p-10 rounded-[32px] shadow-sm border border-gray-50">
+                <div className="flex items-center gap-2 mb-8">
+                  <Instagram size={20} className="text-[#D4A017]" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Instagram</span>
+                </div>
+                <div className="grid grid-cols-4 gap-4 text-center">
+                  <div>
+                    <p className="text-5xl font-bold">1 M</p>
+                    <p className="text-[10px] font-bold text-gray-300 uppercase mt-2 tracking-widest">Followers</p>
+                  </div>
+                  <div>
+                    <p className="text-5xl font-bold text-gray-100">—</p>
+                    <p className="text-[10px] font-bold text-gray-300 uppercase mt-2 tracking-widest">Follows</p>
+                  </div>
+                  <div>
+                    <p className="text-5xl font-bold text-gray-100">—</p>
+                    <p className="text-[10px] font-bold text-gray-300 uppercase mt-2 tracking-widest">Posts</p>
+                  </div>
+                  <div>
+                    <p className="text-5xl font-bold text-gray-100">—</p>
+                    <p className="text-[10px] font-bold text-gray-300 uppercase mt-2 tracking-widest">Engagement</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* TikTok Card */}
+              <div className="bg-white p-10 rounded-[32px] shadow-sm border border-gray-50">
+                <div className="flex items-center gap-2 mb-8">
+                  <span className="text-lg">🎵</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Tik Tok</span>
+                </div>
+                <div className="grid grid-cols-4 gap-4 text-center">
+                  <div>
+                    <p className="text-5xl font-bold">1 M</p>
+                    <p className="text-[10px] font-bold text-gray-300 uppercase mt-2 tracking-widest">Followers</p>
+                  </div>
+                  <div>
+                    <p className="text-5xl font-bold text-[#111827]">300</p>
+                    <p className="text-[10px] font-bold text-gray-300 uppercase mt-2 tracking-widest">Follows</p>
+                  </div>
+                  <div>
+                    <p className="text-5xl font-bold text-[#111827]">20</p>
+                    <p className="text-[10px] font-bold text-gray-300 uppercase mt-2 tracking-widest">Posts</p>
+                  </div>
+                  <div>
+                    <p className="text-5xl font-bold text-[#111827]">20%</p>
+                    <p className="text-[10px] font-bold text-gray-300 uppercase mt-2 tracking-widest">Engagement</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* POSTS SECTION */}
+            <h2 className="text-2xl font-bold mb-8">Mes posts</h2>
+            <div className="grid grid-cols-3 gap-6">
+              {[1, 2, 3].map((post) => (
+                <div key={post} className="relative rounded-[32px] overflow-hidden group shadow-lg">
+                  <img 
+                    src="https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=500&h=400&fit=crop" 
+                    className="w-full h-full object-cover aspect-[4/3]"
+                    alt="Post content"
+                  />
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[90%] bg-black/60 backdrop-blur-md rounded-full px-4 py-2 flex justify-between items-center border border-white/20">
+                    <div className="flex items-center gap-1 text-white text-[10px] font-bold"><Heart size={12} className="text-[#D4A017]" /> 2</div>
+                    <div className="flex items-center gap-1 text-white text-[10px] font-bold"><Send size={12} className="text-[#D4A017]" /> 2</div>
+                    <div className="flex items-center gap-1 text-white text-[10px] font-bold"><MessageCircle size={12} className="text-[#D4A017]" /> 2</div>
+                    <div className="flex items-center gap-1 text-white text-[10px] font-bold"><Eye size={12} className="text-[#D4A017]" /> 2</div>
+                    <div className="flex items-center gap-1 text-white text-[10px] font-bold text-[#D4A017] italic">% 2</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : activeTab === 'opportunites' ? (
+          <section>
+            <header className="mb-12">
+              <h1 className="text-3xl font-serif font-bold mb-1">Mes Opportunités</h1>
+              <p className="text-gray-500 text-sm">Gérez votre influence et vos revenus en temps réel.</p>
+            </header>
+
+            <div className="grid grid-cols-2 gap-8">
+              {/* Op 1 */}
+              <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-50 relative">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="w-12 h-12 bg-white border border-gray-100 rounded-xl flex items-center justify-center shadow-sm">
+                    <Briefcase className="text-[#D4A017]" size={24} />
+                  </div>
+                  <span className="text-[10px] font-bold text-[#22C55E] bg-[#F0FDF4] px-3 py-1 rounded-full">350,000 FCFA</span>
+                </div>
+                <h3 className="text-xl font-bold mb-1">Lancement cosmétique bio</h3>
+                <p className="text-gray-400 text-xs mb-4 uppercase tracking-tighter">Natural beauty</p>
+                <div className="flex gap-2 mb-8">
+                  <span className="px-3 py-1 bg-gray-50 rounded-full text-[10px] font-medium text-gray-400">Skincare</span>
+                  <span className="px-3 py-1 bg-gray-50 rounded-full text-[10px] font-medium text-gray-400">Beauty</span>
+                </div>
+                <button className="w-full py-4 bg-[#111827] text-white rounded-full font-bold text-sm hover:bg-black transition-colors">
+                  Postuler maintenant
+                </button>
+              </div>
+
+              {/* Op 2 */}
+              <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-50 relative">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="w-12 h-12 bg-white border border-gray-100 rounded-xl flex items-center justify-center shadow-sm">
+                    <Briefcase className="text-[#D4A017]" size={24} />
+                  </div>
+                  <span className="text-[10px] font-bold text-[#22C55E] bg-[#F0FDF4] px-3 py-1 rounded-full">50,000 FCFA</span>
+                </div>
+                <h3 className="text-xl font-bold mb-1">Lancement App Gaming</h3>
+                <p className="text-gray-400 text-xs mb-4 uppercase tracking-tighter">Playzone</p>
+                <div className="flex gap-2 mb-8">
+                  <span className="px-3 py-1 bg-gray-50 rounded-full text-[10px] font-medium text-gray-400">Tech</span>
+                  <span className="px-3 py-1 bg-gray-50 rounded-full text-[10px] font-medium text-gray-400">Live</span>
+                </div>
+                <button className="w-full py-4 bg-[#111827] text-white rounded-full font-bold text-sm hover:bg-black transition-colors">
+                  Postuler maintenant
+                </button>
+              </div>
+            </div>
+          </section>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full text-gray-300 font-bold uppercase tracking-widest">
+            En cours de développement
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+// dash cre
+"use client";
+
+import React, { useState, useMemo, useEffect } from 'react';
+import { createBrowserClient } from '@supabase/ssr'; 
+import { 
+  BarChart3, 
+  Briefcase, 
+  Send, 
+  User, 
+  Instagram, 
+  MessageCircle,
+  Heart,
+  Eye,
+  Share2,
+  Ghost,
+  Camera,
+  Settings,
+  LogOut,
+  Calendar,
+  X as CloseIcon,
+  Play,
+  Menu
+} from 'lucide-react';
+
+const XLogo = ({ size = 14 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932 6.064-6.932zm-1.294 19.497h2.039L6.486 3.24H4.298L17.607 20.65z" />
+  </svg>
+);
+
+export default function CreatorDashboard() {
+  // --- INITIALISATION CLIENT SUPABASE SSR ---
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  const [activeTab, setActiveTab] = useState('Ma performance');
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [selectedPost, setSelectedPost] = useState<any | null>(null); 
+  const [loading, setLoading] = useState(true);
+
+  // ÉTATS DES DONNÉES TABLES
+  const [selectedPlatforms, setSelectedPlatforms] = useState<any[]>([]);
+  const [allPosts, setAllPosts] = useState<any[]>([]);
+  const [opportunities, setOpportunities] = useState<any[]>([]);
+
+  const menuItems = [
+    { name: 'Ma performance', icon: <BarChart3 size={20} /> },
+    { name: 'Opportunités', icon: <Briefcase size={20} /> },
+    { name: 'Mes campagnes', icon: <Send size={20} /> },
+    { name: 'Mon profil', icon: <User size={20} /> },
+  ];
+
+  // --- FETCH DATA DEPUIS LES TABLES ---
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+
+      // 1. Fetch info_profile
+      const { data: profileData } = await supabase.from('info_profile').select('*');
+      if (profileData) {
+        setSelectedPlatforms(profileData.map(p => ({
+          id: p.id_w,
+          name: p.la_plateforme || 'Inconnu',
+          icon: p.la_plateforme?.toLowerCase().includes('insta') ? <Instagram size={14} /> : 
+                p.la_plateforme?.toLowerCase().includes('tik') ? <span className="text-[10px]">🎵</span> : 
+                p.la_plateforme?.toLowerCase().includes('snap') ? <Ghost size={14} /> : <XLogo size={14} />,
+          followers: p.nbre_followers >= 1000 ? `${(p.nbre_followers / 1000).toFixed(0)}K` : p.nbre_followers,
+          follows: p.nbre_follows,
+          posts: p.nbre_poste,
+          engagement: '2.4%' 
+        })));
+      }
+
+      // 2. Fetch info_poste
+      const { data: postData } = await supabase.from('info_poste').select('*').order('date_poste', { ascending: false });
+      if (postData) {
+        setAllPosts(postData.map(post => ({
+          id: post.id_w,
+          title: post.titre_poste,
+          date: new Date(post.date_poste).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }),
+          platform: post.id_plateforme === 1 ? 'Instagram' : 'TikTok', // Normalisé pour correspondre au filtrage
+          type: post.type_poste || 'image',
+          icon: post.id_plateforme === 1 ? <Instagram size={10} /> : <span className="text-[10px]">🎵</span>,
+          image: post.url_poste,
+          videoUrl: post.url_poste,
+          likes: post.nbre_like >= 1000 ? `${(post.nbre_like / 1000).toFixed(1)}K` : post.nbre_like,
+          views: post.nbre_vue >= 1000000 ? `${(post.nbre_vue / 1000000).toFixed(1)}M` : `${(post.nbre_vue / 1000).toFixed(1)}K`,
+          comments: post.nbre_commentaire,
+          shares: post.nbre_partage,
+          eng: '5%'
+        })));
+      }
+
+      // 3. Fetch campaigns
+      const { data: campData } = await supabase.from('campaigns').select('*').eq('status', 'active');
+      if (campData) {
+        setOpportunities(campData.map(c => ({
+          id: c.id,
+          title: c.title,
+          brand: "Annonceur vérifié",
+          price: `${c.budget.toLocaleString()} ${c.currency}`,
+          tags: c.interests || ["Sponsoring"]
+        })));
+      }
+      setLoading(false);
+    };
+
+    fetchData();
+  }, []);
+
+  // LOGIQUE DE FILTRAGE : Améliorée pour ignorer les espaces et les majuscules
+  const filteredPosts = useMemo(() => {
+    if (!activeFilter) return allPosts;
+    return allPosts.filter(post => {
+      const pName = post.platform.toLowerCase().replace(/\s/g, '');
+      const fName = activeFilter.toLowerCase().replace(/\s/g, '');
+      return pName.includes(fName) || fName.includes(pName);
+    });
+  }, [activeFilter, allPosts]);
+
+  if (loading) return <div className="h-screen w-full flex items-center justify-center font-bold text-[#D4A017] animate-pulse">Chargement des données...</div>;
+
+  return (
+    <div className="flex flex-col md:flex-row h-screen w-full bg-[#F9FAFB] font-sans overflow-hidden text-[#111827]">
+      
+      {/* MODAL DE LECTURE */}
+      {selectedPost && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-2 md:p-4 animate-in fade-in duration-200">
+          <button onClick={() => setSelectedPost(null)} className="absolute top-4 right-4 z-[110] text-white hover:rotate-90 transition-transform">
+            <CloseIcon size={28} />
+          </button>
+          
+          <div className="bg-white rounded-[24px] md:rounded-[40px] overflow-hidden max-w-4xl w-full flex flex-col md:flex-row max-h-[90vh] shadow-2xl overflow-y-auto md:overflow-hidden">
+            <div className="w-full md:flex-[1.5] bg-black flex items-center justify-center relative aspect-video md:aspect-auto">
+              {selectedPost.type === 'video' ? (
+                <video src={selectedPost.videoUrl} controls autoPlay className="w-full h-full object-contain" />
+              ) : (
+                <img src={selectedPost.image} className="w-full h-full object-cover" alt="" />
+              )}
+            </div>
+            
+            <div className="flex-1 p-6 md:p-8 flex flex-col justify-between bg-white">
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-[#D4A017]">{selectedPost.icon}</span>
+                  <span className="text-xs font-black uppercase tracking-widest">{selectedPost.platform}</span>
+                </div>
+                <h2 className="text-xl md:text-2xl font-serif font-bold mb-2">{selectedPost.title}</h2>
+                <p className="text-gray-400 text-sm flex items-center gap-2 mb-6">
+                  <Calendar size={14} /> Posté le {selectedPost.date}
+                </p>
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="p-4 bg-gray-50 rounded-2xl">
+                    <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">likes</p>
+                    <div className="flex items-center gap-2 font-black text-sm md:text-base"><Heart size={16} className="text-[#D4A017] fill-[#D4A017]" /> {selectedPost.likes}</div>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-2xl">
+                    <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">Vues</p>
+                    <div className="flex items-center gap-2 font-black text-sm md:text-base"><Eye size={16} className="text-[#D4A017]" /> {selectedPost.views}</div>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-2xl">
+                    <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">Commentaires</p>
+                    <div className="flex items-center gap-2 font-black text-sm md:text-base"> <MessageCircle size={11} className="text-[#D4A017]" /> {selectedPost.comments || '0'} </div>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-2xl">
+                    <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">Partages</p>
+                    <div className="flex items-center gap-2 font-black text-sm md:text-base"> <Share2 size={11} className="text-[#D4A017]" /> {selectedPost.shares || '0'} </div>
+                  </div>
+                   <div className="p-4 bg-gray-50 rounded-2xl">
+                    <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">Engagement</p>
+                    <div className="flex items-center gap-2 font-black text-sm md:text-base">{selectedPost.eng || '5%'}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SIDEBAR */}
+      <aside className="hidden md:flex w-64 bg-white border-r border-gray-100 flex-col p-6 h-full flex-shrink-0">
+        <div className="flex items-center gap-3 mb-10 px-2">
+          <div className="w-10 h-10 rounded-full border-2 border-[#D4A017] flex items-center justify-center p-0.5">
+            <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+               <User className="text-gray-400" size={20} />
+            </div>
+          </div>
+          <span className="font-serif font-bold text-lg">créateur</span>
+        </div>
+        <nav className="space-y-2">
+          {menuItems.map((item) => (
+            <button key={item.name} onClick={() => setActiveTab(item.name)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
+                activeTab === item.name ? 'bg-[#EBD8A3] text-[#D4A017]' : 'text-gray-500 hover:bg-gray-50'
+              }`}>
+              {item.icon} {item.name}
+            </button>
+          ))}
+        </nav>
+      </aside>
+
+      {/* MOBILE BOTTOM NAV */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around p-3 z-50">
+        {menuItems.map((item) => (
+          <button key={item.name} onClick={() => setActiveTab(item.name)}
+            className={`flex flex-col items-center gap-1 ${activeTab === item.name ? 'text-[#D4A017]' : 'text-gray-400'}`}>
+            {item.icon}
+            <span className="text-[10px] font-bold">{item.name.split(' ')[0]}</span>
+          </button>
+        ))}
+      </nav>
+
+      {/* MAIN CONTENT */}
+      <main className="flex-1 flex flex-col p-4 md:p-10 h-full overflow-hidden pb-20 md:pb-10">
+        <header className="mb-6 md:mb-8 flex-shrink-0">
+          <h1 className="text-2xl md:text-3xl font-serif font-bold">
+            {activeTab === 'Mes campagnes' ? 'Suivi contrats' : activeTab}
+          </h1>
+          <p className="text-gray-400 text-xs md:text-sm mt-1 font-medium italic uppercase tracking-wider">Gérez votre influence en temps réel.</p>
+        </header>
+
+        <div className="flex-1 overflow-y-auto pr-1 md:pr-0">
+          {activeTab === 'Ma performance' ? (
+            <div className="flex flex-col space-y-6 md:space-y-8">
+              
+              {/* PLATFORM CARDS */}
+              <div className="flex md:grid md:grid-cols-2 lg:grid-cols-4 gap-4 overflow-x-auto md:overflow-x-visible pb-4 md:pb-0 scrollbar-hide">
+                {selectedPlatforms.map((platform) => (
+                  <div key={platform.id} onClick={() => setActiveFilter(activeFilter === platform.name ? null : platform.name)}
+                    className={`min-w-[280px] md:min-w-0 p-4 rounded-[24px] border cursor-pointer transition-all shadow-sm ${
+                      activeFilter === platform.name ? 'bg-white border-[#D4A017] ring-2 ring-[#D4A017]/10' : 'bg-white border-gray-50'
+                    }`}>
+                    <div className="flex items-center gap-2 mb-4 text-[#D4A017]">
+                      <div className="p-1 border border-[#D4A017] rounded-md flex items-center justify-center">{platform.icon}</div>
+                      <span className="text-[9px] font-bold uppercase tracking-widest">{platform.name}</span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                      <div className="text-center">
+                        <p className="text-[10px] md:text-xs font-black">{platform.followers}</p>
+                        <p className="text-[6px] md:text-[7px] text-gray-300 uppercase font-bold">followers</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[10px] md:text-xs font-black">{platform.follows}</p>
+                        <p className="text-[6px] md:text-[7px] text-gray-300 uppercase font-bold">follows</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[10px] md:text-xs font-black">{platform.engagement}</p>
+                        <p className="text-[6px] md:text-[7px] text-gray-300 uppercase font-bold">Engagement</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[10px] md:text-xs font-black">{platform.posts}</p>
+                        <p className="text-[6px] md:text-[7px] text-gray-300 uppercase font-bold">Posts</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* POSTS GRID */}
+              <div>
+                <div className="relative flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-serif font-bold">
+                    {activeFilter ? `Mes posts ${activeFilter}` : 'Tous mes posts'}
+                  </h2>
+                  <div className="absolute left-1/2 -translate-x-1/2">
+                    {activeFilter && (
+                      <button onClick={() => setActiveFilter(null)} className="text-[10px] font-bold text-[#D4A017] underline uppercase tracking-widest hover:text-[#b08512] transition-colors">
+                        Tout afficher
+                      </button>
+                    )}
+                  </div>
+                  <div className="w-10 md:w-20"></div> 
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                  {filteredPosts.map((post) => (
+                    <div key={post.id} onClick={() => setSelectedPost(post)}
+                      className="relative rounded-[24px] overflow-hidden bg-gray-100 border-4 border-white shadow-md group cursor-pointer hover:shadow-xl transition-all">
+                      
+                      <div className="absolute top-3 left-3 z-10 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-2 border border-[#D4A017]/20">
+                        <span className="text-[#D4A017] flex items-center">{post.icon}</span>
+                        <span className="text-[8px] font-black uppercase text-[#111827]">{post.platform}</span>
+                      </div>
+
+                      <div className="absolute top-3 right-3 z-10 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-1.5 text-white border border-white/10">
+                        <Calendar size={10} className="text-[#D4A017]" />
+                        <span className="text-[8px] font-bold uppercase tracking-tighter">{post.date}</span>
+                      </div>
+
+                      <div className="aspect-[4/3] overflow-hidden">
+                        <img src={post.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="" />
+                      </div>
+
+                      {post.type === 'video' && (
+                        <div className="absolute inset-0 flex items-center justify-center z-10">
+                          <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/40">
+                            <Play fill="white" className="text-white ml-0.5" size={16} />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/90 via-black/40 to-transparent pt-12">
+                        <h4 className="text-white text-[11px] font-bold mb-2 ml-2 line-clamp-1">{post.title}</h4>
+                        <div className="w-full bg-black/60 backdrop-blur-md rounded-full px-3 py-2 flex justify-between items-center border border-white/20 text-white text-[8px] md:text-[9px] font-bold">
+                          <div className="flex items-center gap-1"><Heart size={11} className="text-[#D4A017] fill-[#D4A017]" /> {post.likes}</div>
+                          <div className="flex items-center gap-1"><MessageCircle size={11} className="text-[#D4A017] fill-[#D4A017]" /> {post.comments || '0'}</div>
+                          <div className="flex items-center gap-1"><Share2 size={11} className="text-[#D4A017]" /> {post.shares || '0'}</div>
+                          <div className="flex items-center gap-1"><Eye size={11} className="text-[#D4A017]" /> {post.views}</div>
+                          <div className="text-[#D4A017] italic font-black border-l border-white/20 pl-2">2.4%</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {filteredPosts.length === 0 && (
+                  <div className="text-center py-20 text-gray-400 font-serif italic">Aucun post trouvé pour cette plateforme.</div>
+                )}
+              </div>
+            </div>
+          ) : activeTab === 'Opportunités' ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
+              {opportunities.map((op) => (
+                <div key={op.id} className="bg-white p-6 md:p-8 rounded-[32px] shadow-sm border border-gray-50 relative group transition-all hover:shadow-xl">
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="w-12 h-12 bg-white border border-gray-100 rounded-xl flex items-center justify-center shadow-sm"><Briefcase className="text-[#D4A017]" size={24} /></div>
+                    <span className="text-[10px] font-bold text-[#22C55E] bg-[#F0FDF4] px-3 py-1.5 rounded-full border border-green-100">{op.price}</span>
+                  </div>
+                  <h3 className="text-xl font-bold mb-1">{op.title}</h3>
+                  <p className="text-gray-400 text-xs mb-4 uppercase font-medium">{op.brand}</p>
+                  <div className="flex flex-wrap gap-2 mb-8">
+                    {op.tags.map(tag => (
+                      <span key={tag} className="px-3 py-1 bg-gray-50 rounded-full text-[10px] font-bold text-gray-400 border border-gray-100">{tag}</span>
+                    ))}
+                  </div>
+                  <button className="w-full py-4 bg-[#111827] text-white rounded-full font-bold text-sm hover:bg-black shadow-lg">Postuler maintenant</button>
+                </div>
+              ))}
+            </div>
+          ) : activeTab === 'Mes campagnes' ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-50">
+                <div className="flex justify-between items-center mb-10">
+                  <div className="w-12 h-12 bg-white border border-gray-100 rounded-xl flex items-center justify-center shadow-sm"><Briefcase className="text-[#D4A017]" size={24} /></div>
+                  <span className="text-[10px] font-bold text-[#22C55E] bg-[#F0FDF4] px-4 py-1.5 rounded-full border border-green-100 uppercase tracking-widest">En cours</span>
+                </div>
+                <h3 className="text-2xl font-bold mb-10">Campagne active</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between text-[10px] font-bold uppercase text-gray-400 tracking-widest"><span>Livrables</span><span>5%</span></div>
+                  <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-[#EBD8A3] w-[5%]" /></div>
+                </div>
+              </div>
+            </div>
+          ) : activeTab === 'Mon profil' ? (
+            <div className="max-w-2xl w-full bg-white rounded-[32px] shadow-sm border border-gray-50 overflow-hidden mx-auto md:mx-0">
+              <div className="h-24 md:h-32 bg-[#EBD8A3] relative">
+                <div className="absolute -bottom-10 left-6 md:left-8">
+                  <div className="w-20 h-20 md:w-24 md:h-24 rounded-full border-4 border-white bg-gray-200 overflow-hidden relative group">
+                    <User className="w-full h-full p-4 text-gray-400" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"><Camera className="text-white" size={20} /></div>
+                  </div>
+                </div>
+              </div>
+              <div className="pt-14 pb-8 px-6 md:px-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                  <div>
+                    <h2 className="text-2xl font-bold">créateur</h2>
+                    <p className="text-gray-400 text-sm font-medium">Gestion du profil</p>
+                  </div>
+                  <button className="w-full md:w-auto px-6 py-2 border border-gray-200 rounded-full text-xs font-bold hover:bg-gray-50 transition-colors">Modifier le profil</button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-3"><Settings className="text-gray-400" size={18} /><span className="text-sm font-bold">Paramètres</span></div>
+                  <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-3 text-red-500 cursor-pointer"><LogOut size={18} /><span className="text-sm font-bold">Déconnexion</span></div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+
+
+//social
+"use client";
+
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { createBrowserClient } from '@supabase/ssr';
+import { 
+  ChevronLeft, Trash2, Globe, AlertCircle,
+  Instagram, Youtube, Twitter, 
+  Music2, MessageCircle, Eye, EyeOff, Loader2, ChevronDown
+} from 'lucide-react';
+
+const PLATFORMS = [
+  { id: 'tiktok', name: 'TikTok', icon: <Music2 size={18} />, prefix: '', placeholder: 'nom de profil' },
+  { id: 'instagram', name: 'Instagram', icon: <Instagram size={18} />, prefix: '', placeholder: 'nom de profil' },
+  { id: 'snapchat', name: 'Snapchat', icon: <MessageCircle size={18} />, prefix: '', placeholder: 'nom de profil' },
+  { id: 'twitter', name: 'Twitter / X', icon: <Twitter size={18} />, prefix: '', placeholder: 'nom de profil' },
+  { id: 'youtube', name: 'YouTube', icon: <Youtube size={18} />, prefix: '', placeholder: 'nom_de_la_chaine' },
+];
+
+export default function SocialMediaSelection() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [socials, setSocials] = useState([{ id: Date.now(), platform: '', handle: '' }]);
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  const isPasswordMatch = password.length > 0 && password === confirmPassword;
+  const isFormValid = 
+    password.length >= 6 && 
+    isPasswordMatch && 
+    socials.length > 0 &&
+    socials.every(s => s.platform !== '' && s.handle.trim().length >= 2);
+
+  const handleFinish = async () => {
+    if (!isFormValid || loading) return;
+    
+    setLoading(true);
+    setError(null);
+
+    try {
+      const email = localStorage.getItem('onboarding_email');
+      const fullName = localStorage.getItem('user_full_name');
+      const phone = localStorage.getItem('signup_phone');
+      const ageRaw = localStorage.getItem('signup_age');
+      const nichesRaw = localStorage.getItem('signup_niche');
+      
+      // 1. On transforme le tableau de niches en une seule chaîne (ex: "Mode, Voyage")
+      // Ton SQL utilise ->> (text), donc envoyer un Array JS peut parfois poser problème.
+      let nicheString = "";
+      try { 
+        const parsed = nichesRaw ? JSON.parse(nichesRaw) : []; 
+        nicheString = Array.isArray(parsed) ? parsed.join(', ') : String(parsed);
+      } catch (e) { 
+        nicheString = nichesRaw || ""; 
+      }
+
+      if (!email) throw new Error("Détails d'inscription manquants. Veuillez recommencer.");
+
+      // 2. Préparation de l'âge (doit être un nombre ou une chaîne vide pour le NULLIF du SQL)
+      const ageValue = ageRaw ? parseInt(ageRaw, 10) : "";
+
+      const { data, error: authError } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+          data: {
+            full_name: fullName || "",
+            phone: phone || "",
+            age: ageValue, 
+            user_niches: nicheString, // Correction : Clé exacte attendue par le SQL
+            user_socials: socials.map(s => ({ 
+              platform: s.platform, 
+              handle: s.handle.trim() 
+            })), // Format JSONB parfait pour jsonb_array_elements
+            role: 'creator'
+          }
+        }
+      });
+
+      if (authError) throw authError;
+
+      if (data.user) {
+        // Optionnel : vider le localStorage ici
+        localStorage.clear(); 
+        router.push('/creators/auth/success');
+      }
+
+    } catch (err: any) {
+      console.error("Erreur Inscription:", err);
+      setError(err.message || "Une erreur est survenue.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateSocial = (id: number, field: string, value: string) => {
+    setSocials(socials.map(s => s.id === id ? { ...s, [field]: value } : s));
+  };
+  
+  const getPlatformIcon = (id: string) => PLATFORMS.find(p => p.id === id)?.icon || <Globe size={18} />;
+
+  return (
+    <main className="min-h-screen bg-[#F3F4F6] flex flex-col items-center justify-center p-4 font-sans text-gray-900">
+      <div className="bg-white border border-gray-200 rounded-[32px] p-8 md:p-12 w-full max-w-2xl shadow-xl shadow-gray-200/50">
+        
+        <div className="text-center mb-10">
+            <h2 className="text-3xl font-black text-gray-900 mb-2">Vos Réseaux</h2>
+            <p className="text-gray-500 font-medium text-sm">Connectez vos plateformes pour finaliser votre profil</p>
+        </div>
+
+        <div className="space-y-4 mb-6">
+          {socials.map((social) => {
+            const selectedPlatformInfo = PLATFORMS.find(p => p.id === social.platform);
+            return (
+                <div key={social.id} className="group flex items-center bg-white border border-gray-200 rounded-2xl p-1.5 focus-within:border-[#ceaf4a] focus-within:ring-4 focus-within:ring-[#ceaf4a]/10 transition-all">
+                    <div className="relative min-w-[150px] md:min-w-[180px]">
+                        <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 rounded-xl">
+                            <span className={social.platform ? 'text-[#ceaf4a]' : 'text-gray-400'}>{getPlatformIcon(social.platform)}</span>
+                            <span className={`text-sm font-bold flex-1 truncate ${!social.platform ? 'text-gray-400' : 'text-gray-900'}`}>{selectedPlatformInfo ? selectedPlatformInfo.name : 'Plateforme'}</span>
+                            <ChevronDown size={14} className="text-gray-400" />
+                        </div>
+                        <select 
+                            value={social.platform} 
+                            onChange={(e) => updateSocial(social.id, 'platform', e.target.value)} 
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        >
+                            <option value="" disabled>Choisir...</option>
+                            {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                    </div>
+                    <div className="w-px h-8 bg-gray-200 mx-2" />
+                    <div className="flex-1 flex items-center">
+                        {selectedPlatformInfo?.prefix && <span className="text-black font-bold pl-2">{selectedPlatformInfo.prefix}</span>}
+                        <input 
+                            type="text" 
+                            placeholder={selectedPlatformInfo?.placeholder || "Pseudo..."}
+                            value={social.handle}
+                            onChange={(e) => updateSocial(social.id, 'handle', e.target.value)}
+                            disabled={!social.platform}
+                            className="w-full py-3 px-1 outline-none text-black font-bold bg-transparent text-sm"
+                        />
+                    </div>
+                    {socials.length > 1 && (
+                        <button onClick={() => setSocials(socials.filter(s => s.id !== social.id))} className="p-2 text-gray-300 hover:text-red-500"><Trash2 size={18} /></button>
+                    )}
+                </div>
+            );
+          })}
+        </div>
+
+        <button 
+            onClick={() => setSocials([...socials, { id: Date.now(), platform: '', handle: '' }])}
+            className="w-full py-4 border border-dashed border-gray-300 rounded-2xl text-gray-500 hover:text-[#ceaf4a] font-bold text-sm mb-8"
+        >
+            + Ajouter un réseau
+        </button>
+
+        <div className="bg-gray-50/50 rounded-3xl p-6 border border-gray-100 space-y-4 mb-8">
+            <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest text-center mb-2">Créer votre mot de passe</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-600">Mot de passe</label>
+                    <div className="relative">
+                        <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 bg-white text-black font-bold outline-none focus:border-[#ceaf4a]" />
+                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-600">Confirmation</label>
+                    <div className="relative">
+                        <input type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={`w-full px-5 py-3.5 rounded-2xl border bg-white text-black font-bold outline-none ${isPasswordMatch ? 'border-green-500' : 'border-gray-200'}`} />
+                        <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">{showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {error && <div className="bg-red-50 text-red-600 p-4 rounded-2xl mb-6 flex items-start gap-3 border border-red-100 font-bold text-sm"><AlertCircle size={20} /> {error}</div>}
+
+        <div className="flex justify-between items-center pt-6 border-t border-gray-100">
+          <Link href="/creators/auth/niche" className="text-gray-400 font-bold hover:text-black flex items-center gap-2 text-sm"><ChevronLeft size={18} /> Retour</Link>
+          <button 
+            onClick={handleFinish} 
+            disabled={!isFormValid || loading} 
+            className={`px-10 py-4 rounded-2xl font-bold transition-all text-sm uppercase flex items-center justify-center min-w-[200px] ${isFormValid && !loading ? "bg-[#ceaf4a] text-white shadow-xl" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
+          >
+            {loading ? <Loader2 className="animate-spin" /> : "Finaliser mon inscription"}
+          </button>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+
+
+
+
+// createur
+"use client";
+
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { createBrowserClient } from '@supabase/ssr';
+import { 
+  ChevronLeft, Trash2, Globe, AlertCircle,
+  Instagram, Youtube, Twitter, 
+  Music2, MessageCircle, Eye, EyeOff, Loader2, ChevronDown
+} from 'lucide-react';
+
+const PLATFORMS = [
+  { id: 'tiktok', name: 'TikTok', icon: <Music2 size={18} />, prefix: '', placeholder: 'nom de profil' },
+  { id: 'instagram', name: 'Instagram', icon: <Instagram size={18} />, prefix: '', placeholder: 'nom de profil' },
+  { id: 'snapchat', name: 'Snapchat', icon: <MessageCircle size={18} />, prefix: '', placeholder: 'nom de profil' },
+  { id: 'twitter', name: 'Twitter / X', icon: <Twitter size={18} />, prefix: '', placeholder: 'nom de profil' },
+  { id: 'youtube', name: 'YouTube', icon: <Youtube size={18} />, prefix: '', placeholder: 'nom_de_la_chaine' },
+];
+
+export default function SocialMediaSelection() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [socials, setSocials] = useState([{ id: Date.now(), platform: '', handle: '' }]);
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  const isPasswordMatch = password.length > 0 && password === confirmPassword;
+  const isFormValid = 
+    password.length >= 6 && 
+    isPasswordMatch && 
+    socials.length > 0 &&
+    socials.every(s => s.platform !== '' && s.handle.trim().length >= 2);
+const handleFinish = async () => {
+  if (!isFormValid || loading) return;
+  
+  setLoading(true);
+  setError(null);
+
+  try {
+    const email = localStorage.getItem('onboarding_email');
+    const fullName = localStorage.getItem('user_full_name');
+    const phone = localStorage.getItem('signup_phone');
+    const ageRaw = localStorage.getItem('signup_age');
+    const nichesRaw = localStorage.getItem('signup_niche');
+    
+    // Sécurité : Vérification de l'email
+    if (!email) throw new Error("Détails d'inscription manquants (email).");
+
+    // Sécurité : Parsing de l'âge (évite le NaN)
+    const parsedAge = ageRaw ? parseInt(ageRaw, 10) : null;
+    const finalAge = isNaN(parsedAge as number) ? null : parsedAge;
+
+    // Sécurité : Parsing des niches
+    let niches = [];
+    try { 
+      niches = nichesRaw ? JSON.parse(nichesRaw) : []; 
+    } catch (e) { 
+      niches = []; 
+    }
+
+    const { data, error: authError } = await supabase.auth.signUp({
+      email: email,
+      password: password,
+      options: {
+        data: {
+          full_name: fullName || "",
+          phone: phone || "",
+          age: finalAge, // Utilisation de la valeur sécurisée
+          user_niches: niches,
+          user_socials: socials.map(s => ({ platform: s.platform, handle: s.handle })),
+          role: "creator"
+        }
+      }
+    });
+
+    if (authError) throw authError;
+
+    if (data.user) {
+      localStorage.clear(); // Plus propre de tout vider
+      router.push('/creators/auth/success');
+    }
+
+  } catch (err: any) {
+    console.error("Erreur Inscription détaillée:", err);
+    const friendlyError = err.message === "User already registered" 
+      ? "Cet email est déjà utilisé." 
+      : "Erreur technique : " + (err.message || "vérifiez votre connexion.");
+    setError(friendlyError);
+  } finally {
+    setLoading(false);
+  }
+};
+
+  const updateSocial = (id: number, field: string, value: string) => {
+    setSocials(socials.map(s => s.id === id ? { ...s, [field]: value } : s));
+  };
+  
+  const getPlatformIcon = (id: string) => PLATFORMS.find(p => p.id === id)?.icon || <Globe size={18} />;
+
+  return (
+    <main className="min-h-screen bg-[#F3F4F6] flex flex-col items-center justify-center p-4 font-sans text-gray-900">
+      <div className="bg-white border border-gray-200 rounded-[32px] p-8 md:p-12 w-full max-w-2xl shadow-xl shadow-gray-200/50">
+        
+        <div className="text-center mb-10">
+            <h2 className="text-3xl font-black text-gray-900 mb-2">Vos Réseaux</h2>
+            <p className="text-gray-500 font-medium text-sm">Connectez vos plateformes pour finaliser votre profil</p>
+        </div>
+
+        <div className="space-y-4 mb-6">
+          {socials.map((social) => {
+            const selectedPlatformInfo = PLATFORMS.find(p => p.id === social.platform);
+            return (
+                <div key={social.id} className="group flex items-center bg-white border border-gray-200 rounded-2xl p-1.5 focus-within:border-[#ceaf4a] focus-within:ring-4 focus-within:ring-[#ceaf4a]/10 transition-all">
+                    <div className="relative min-w-[150px] md:min-w-[180px]">
+                        <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 rounded-xl">
+                            <span className={social.platform ? 'text-[#ceaf4a]' : 'text-gray-400'}>{getPlatformIcon(social.platform)}</span>
+                            <span className={`text-sm font-bold flex-1 truncate ${!social.platform ? 'text-gray-400' : 'text-gray-900'}`}>{selectedPlatformInfo ? selectedPlatformInfo.name : 'Plateforme'}</span>
+                            <ChevronDown size={14} className="text-gray-400" />
+                        </div>
+                        <select 
+                            value={social.platform} 
+                            onChange={(e) => updateSocial(social.id, 'platform', e.target.value)} 
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        >
+                            <option value="" disabled>Choisir...</option>
+                            {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                    </div>
+                    <div className="w-px h-8 bg-gray-200 mx-2" />
+                    <div className="flex-1 flex items-center">
+                        {selectedPlatformInfo?.prefix && <span className="text-black font-bold pl-2">{selectedPlatformInfo.prefix}</span>}
+                        <input 
+                            type="text" 
+                            placeholder={selectedPlatformInfo?.placeholder || "Pseudo..."}
+                            value={social.handle}
+                            onChange={(e) => updateSocial(social.id, 'handle', e.target.value)}
+                            disabled={!social.platform}
+                            className="w-full py-3 px-1 outline-none text-black font-bold bg-transparent text-sm"
+                        />
+                    </div>
+                    {socials.length > 1 && (
+                        <button onClick={() => setSocials(socials.filter(s => s.id !== social.id))} className="p-2 text-gray-300 hover:text-red-500"><Trash2 size={18} /></button>
+                    )}
+                </div>
+            );
+          })}
+        </div>
+
+        <button 
+            onClick={() => setSocials([...socials, { id: Date.now(), platform: '', handle: '' }])}
+            className="w-full py-4 border border-dashed border-gray-300 rounded-2xl text-gray-500 hover:text-[#ceaf4a] font-bold text-sm mb-8"
+        >
+            + Ajouter un réseau
+        </button>
+
+        <div className="bg-gray-50/50 rounded-3xl p-6 border border-gray-100 space-y-4 mb-8">
+            <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest text-center mb-2">Créer votre mot de passe</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-600">Mot de passe</label>
+                    <div className="relative">
+                        <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 bg-white text-black font-bold outline-none focus:border-[#ceaf4a]" />
+                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-600">Confirmation</label>
+                    <div className="relative">
+                        <input type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={`w-full px-5 py-3.5 rounded-2xl border bg-white text-black font-bold outline-none ${isPasswordMatch ? 'border-green-500' : 'border-gray-200'}`} />
+                        <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">{showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {error && <div className="bg-red-50 text-red-600 p-4 rounded-2xl mb-6 flex items-start gap-3 border border-red-100 font-bold text-sm"><AlertCircle size={20} /> {error}</div>}
+
+        <div className="flex justify-between items-center pt-6 border-t border-gray-100">
+          <Link href="/creators/auth/niche" className="text-gray-400 font-bold hover:text-black flex items-center gap-2 text-sm"><ChevronLeft size={18} /> Retour</Link>
+          <button 
+            onClick={handleFinish} 
+            disabled={!isFormValid || loading} 
+            className={`px-10 py-4 rounded-2xl font-bold transition-all text-sm uppercase flex items-center justify-center min-w-[200px] ${isFormValid && !loading ? "bg-[#ceaf4a] text-white shadow-xl" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
+          >
+            {loading ? <Loader2 className="animate-spin" /> : "Finaliser mon inscription"}
+          </button>
+        </div>
+      </div>
+    </main>
+  );
+}

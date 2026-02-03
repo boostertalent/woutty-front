@@ -40,54 +40,66 @@ export default function SocialMediaSelection() {
     isPasswordMatch && 
     socials.length > 0 &&
     socials.every(s => s.platform !== '' && s.handle.trim().length >= 2);
+const handleFinish = async () => {
+  if (!isFormValid || loading) return;
+  
+  setLoading(true);
+  setError(null);
 
-  const handleFinish = async () => {
-    if (!isFormValid || loading) return;
+  try {
+    const email = localStorage.getItem('onboarding_email');
+    const fullName = localStorage.getItem('user_full_name');
+    const phone = localStorage.getItem('signup_phone');
+    const ageRaw = localStorage.getItem('signup_age');
+    const nichesRaw = localStorage.getItem('signup_niche');
     
-    setLoading(true);
-    setError(null);
+    // Sécurité : Vérification de l'email
+    if (!email) throw new Error("Détails d'inscription manquants (email).");
 
-    try {
-      const email = localStorage.getItem('onboarding_email');
-      const fullName = localStorage.getItem('user_full_name');
-      const phone = localStorage.getItem('signup_phone');
-      const ageRaw = localStorage.getItem('signup_age');
-      const nichesRaw = localStorage.getItem('signup_niche');
-      
-      let niches = [];
-      try { niches = nichesRaw ? JSON.parse(nichesRaw) : []; } catch (e) { niches = []; }
+    // Sécurité : Parsing de l'âge (évite le NaN)
+    const parsedAge = ageRaw ? parseInt(ageRaw, 10) : null;
+    const finalAge = isNaN(parsedAge as number) ? null : parsedAge;
 
-      if (!email) throw new Error("Détails d'inscription manquants. Veuillez recommencer.");
-
-      const ageInt = ageRaw ? parseInt(ageRaw, 10) : null;
-
-      const { data, error: authError } = await supabase.auth.signUp({
-        email: email,
-        password: password,
-        options: {
-          data: {
-            full_name: fullName || "",
-            phone: phone || "",
-            age: ageInt, 
-            user_niches: niches,
-            user_socials: socials.map(s => ({ platform: s.platform, handle: s.handle }))
-          }
-        }
-      });
-
-      if (authError) throw authError;
-
-      if (data.user) {
-        router.push('/creators/auth/success');
-      }
-
-    } catch (err: any) {
-      console.error("Erreur Inscription:", err);
-      setError(err.message || "Une erreur est survenue.");
-    } finally {
-      setLoading(false);
+    // Sécurité : Parsing des niches
+    let niches = [];
+    try { 
+      niches = nichesRaw ? JSON.parse(nichesRaw) : []; 
+    } catch (e) { 
+      niches = []; 
     }
-  };
+
+    const { data, error: authError } = await supabase.auth.signUp({
+      email: email,
+      password: password,
+      options: {
+        data: {
+          full_name: fullName || "",
+          phone: phone || "",
+          age: finalAge, // Utilisation de la valeur sécurisée
+          user_niches: niches,
+          user_socials: socials.map(s => ({ platform: s.platform, handle: s.handle })),
+          role: "creator"
+        }
+      }
+    });
+
+    if (authError) throw authError;
+
+    if (data.user) {
+      localStorage.clear(); // Plus propre de tout vider
+      router.push('/creators/auth/success');
+    }
+
+  } catch (err: any) {
+    console.error("Erreur Inscription détaillée:", err);
+    const friendlyError = err.message === "User already registered" 
+      ? "Cet email est déjà utilisé." 
+      : "Erreur technique : " + (err.message || "vérifiez votre connexion.");
+    setError(friendlyError);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const updateSocial = (id: number, field: string, value: string) => {
     setSocials(socials.map(s => s.id === id ? { ...s, [field]: value } : s));

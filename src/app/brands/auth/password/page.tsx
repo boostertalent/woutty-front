@@ -25,6 +25,14 @@ export default function BrandFinalStep() {
   const isLongEnough = password.length >= 6;
   const isFormValid = isMatch && isLongEnough;
 
+  // Fonction utilitaire pour convertir proprement en nombre pour la table SQL
+  const parseToDouble = (value: string | null) => {
+    if (!value) return null;
+    const cleaned = value.replace(/\s/g, ''); // Enlève les espaces
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? null : parsed;
+  };
+
   const handleFinalSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFormValid || loading) return;
@@ -33,7 +41,7 @@ export default function BrandFinalStep() {
     setError(null);
 
     try {
-      // Récupération des infos du localStorage
+      // RÉCUPÉRATION DES DONNÉES DEPUIS LE LOCALSTORAGE
       const email = localStorage.getItem('brand_company_email');
       const companyName = localStorage.getItem('brand_company_name');
 
@@ -48,32 +56,47 @@ export default function BrandFinalStep() {
       if (authError) throw authError;
 
       if (authData.user) {
-        // 2️⃣ Nettoyage création automatique de trigger non désiré
-        await supabase.from('createur').delete().eq('id_w', authData.user.id);
+        // --- LE FIX FRONTEND ---
+        // On supprime immédiatement l'entrée créée par le trigger SQL dans 'createur'
+        // car le trigger actuel ne sait pas faire la différence entre une marque et un créateur.
+        await supabase
+          .from('createur')
+          .delete()
+          .eq('id_w', authData.user.id);
 
-        // 3️⃣ Insertion manuelle dans table 'marque'
-        const { error: dbError } = await supabase.from('marque').insert({
-          id_w: authData.user.id,
-          nom_marque: companyName,
-          email_marque: email,
-          telephone_marque: localStorage.getItem('brand_company_phone'),
-          domaine: localStorage.getItem('brand_domain'),
-          site_web: localStorage.getItem('brand_website'),
-          nom_contact: localStorage.getItem('brand_contact_fullname'),
-          fonction_contact: localStorage.getItem('brand_contact_function'),
-          email_professionnel: localStorage.getItem('brand_contact_professional_email'),
-          telephone_contact: localStorage.getItem('brand_contact_phone'),
-          role: 'brand'
-        });
-        if (dbError) throw new Error("Erreur création profil marque : " + dbError.message);
+        // 2. Insertion manuelle dans la table 'marque' avec toutes les infos
+        const { error: dbError } = await supabase
+          .from('marque') 
+          .insert({
+            id_w: authData.user.id,
+            nom_marque: companyName,
+            email_marque: email,
+            telephone_marque: localStorage.getItem('brand_company_phone'),
+            domaine: localStorage.getItem('brand_domain'),
+            site_web: localStorage.getItem('brand_website'),
+            nom_contact: localStorage.getItem('brand_contact_fullname'),
+            fonction_contact: localStorage.getItem('brand_contact_function'),
+            email_professionnel: localStorage.getItem('brand_contact_professional_email'),
+            telephone_contact: localStorage.getItem('brand_contact_phone'),
+            role: 'brand'
+          });
+
+        if (dbError) {
+          console.error("Erreur DB Marque:", dbError);
+          throw new Error("Erreur lors de la création du profil marque : " + dbError.message);
+        }
       }
 
-      // 4️⃣ Nettoyage localStorage et redirection
+      // 3. Succès et nettoyage
       localStorage.clear();
       router.push('/brands/auth/success');
 
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err) || "Erreur inconnue");
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError(String(err) || "Une erreur est survenue.");
+      }
     } finally {
       setLoading(false);
     }
@@ -95,7 +118,7 @@ export default function BrandFinalStep() {
           
           {/* Affichage erreurs */}
           {error && (
-            <div className="bg-red-50 text-red-600 p-4 rounded-2xl flex items-center gap-3 text-sm font-bold border border-red-100 animate-in fade-in">
+            <div className="bg-red-50 text-red-600 p-4 rounded-2xl flex items-center gap-3 text-sm font-bold border border-red-100">
               <AlertCircle size={18} /> {error}
             </div>
           )}

@@ -17,7 +17,7 @@ export default function CreateCreatorProfile() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
 
-  // 1. CHARGEMENT DES DONNÉES (Correction des clés pour matcher avec SocialMediaSelection)
+  // 1. CHARGEMENT DES DONNÉES 
   useEffect(() => {
     const savedEmail = localStorage.getItem('onboarding_email');
     const savedName = localStorage.getItem('user_full_name');
