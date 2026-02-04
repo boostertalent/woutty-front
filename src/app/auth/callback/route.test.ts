@@ -1,37 +1,44 @@
-// Import du handler GET
-import { GET } from './route'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
 
-// Mock de NextResponse
-jest.mock('next/server', () => ({
-  NextResponse: {
-    redirect: jest.fn((url: string) => ({ redirectedTo: url })),
-  },
-}))
+export async function GET(request: Request) {
+  const { searchParams, origin } = new URL(request.url)
+  const code = searchParams.get('code')
+  // "next" est le paramètre de redirection après succès (souvent /dashboard)
+  const next = searchParams.get('next') ?? '/'
 
-// Mock des cookies Next.js
-jest.mock('next/headers', () => ({
-  cookies: () => ({
-    get: jest.fn(),
-    set: jest.fn(),
-  }),
-}))
+  if (code) {
+    // ÉTAPE CRUCIALE : On attend les cookies ici
+    const cookieStore = await cookies()
 
-describe('GET /auth/callback', () => {
-
-  it('redirige vers login si aucun code OAuth', async () => {
-
-    // Création d'une requête sans paramètre "code"
-    const request = new Request(
-      'http://localhost/auth/callback'
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          // Utilisation de l'instance déjà résolue
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            cookieStore.set({ name, value, ...options })
+          },
+          remove(name: string, options: CookieOptions) {
+            cookieStore.delete({ name, ...options })
+          },
+        },
+      }
     )
 
-    // Appel du handler
-    const response: any = await GET(request)
+    // Échange le code contre une session
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    
+    if (!error) {
+      return NextResponse.redirect(`${origin}${next}`)
+    }
+  }
 
-    // Vérification de la redirection
-    expect(response.redirectedTo).toContain(
-      '/auth/login?error=auth_failed'
-    )
-  })
-
-})
+  // En cas d'erreur, redirection vers une page d'erreur ou login
+  return NextResponse.redirect(`${origin}/auth/auth-code-error`)
+}

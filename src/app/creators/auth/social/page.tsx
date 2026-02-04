@@ -137,7 +137,6 @@ export default function SocialMediaSelection() {
         }
       }
 
-      // 3. CRÉER LE PROFIL CRÉATEUR DANS LA TABLE
 // 3. CRÉER OU METTRE À JOUR LE PROFIL (UPSERT)
       const { error: profileError } = await supabase
         .from('createur')

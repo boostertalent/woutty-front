@@ -456,7 +456,7 @@ export default function BrandDashboard() {
           </div>
 
           {/* STATISTIQUES */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+          <div className="text-sm text-gray-600 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
             <StatCard 
               title="Budget Total" 
               value={`${stats.totalBudget.toLocaleString('fr-FR')} CFA`} 
@@ -555,7 +555,7 @@ export default function BrandDashboard() {
                       
                       <div className="flex gap-2 shrink-0">
                         <Link 
-                          href={`/brands/auth/edit/${camp.id}`} 
+                          href={`/brands/auth/edit/${camp.id_t_campagne}`} 
                           className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
                           title="Modifier"
                         >

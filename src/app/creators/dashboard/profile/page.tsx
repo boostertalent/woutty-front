@@ -1,4 +1,4 @@
- "use client";
+"use client";
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { 
   ArrowLeft, Save, Loader2, User, Mail, Phone, Calendar,
   AlertCircle, Check, Instagram, Youtube, Facebook, Camera,
-  Upload, X
+  Upload, X, Edit2, Eye
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 
@@ -28,6 +28,7 @@ export default function CreatorProfile() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   
   const [creatorData, setCreatorData] = useState({
     full_name: '',
@@ -70,6 +71,7 @@ export default function CreatorProfile() {
         setError("Impossible de charger les données");
       } else if (data) {
         console.log("✅ Données chargées:", data);
+        
         setCreatorData({
           full_name: data.full_name || '',
           email: data.email || session.user.email || '',
@@ -122,13 +124,11 @@ export default function CreatorProfile() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Vérifier le type de fichier
     if (!file.type.startsWith('image/')) {
       setError("Veuillez sélectionner une image");
       return;
     }
 
-    // Vérifier la taille (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
       setError("L'image ne doit pas dépasser 2MB");
       return;
@@ -145,19 +145,16 @@ export default function CreatorProfile() {
       const fileName = `${session.user.id}-${Date.now()}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
 
-      // Upload vers Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('creator-avatars')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      // Obtenir l'URL publique
       const { data: { publicUrl } } = supabase.storage
         .from('creator-avatars')
         .getPublicUrl(filePath);
 
-      // Mettre à jour l'état
       setCreatorData({
         ...creatorData,
         avatar_url: publicUrl
@@ -186,7 +183,6 @@ export default function CreatorProfile() {
         return;
       }
 
-      // Préparer les données
       const updateData = {
         full_name: creatorData.full_name,
         email: creatorData.email,
@@ -202,7 +198,6 @@ export default function CreatorProfile() {
         snapchat_username: creatorData.snapchat_username
       };
 
-      // Vérifier si le profil existe
       const { data: existingData } = await supabase
         .from('createur')
         .select('*')
@@ -212,13 +207,11 @@ export default function CreatorProfile() {
       let result;
       
       if (existingData) {
-        // Mettre à jour
         result = await supabase
           .from('createur')
           .update(updateData)
           .eq('id_w', session.user.id);
       } else {
-        // Créer
         result = await supabase
           .from('createur')
           .insert({
@@ -234,11 +227,8 @@ export default function CreatorProfile() {
 
       console.log("✅ Profil sauvegardé");
       setSuccess(true);
-      
-      // Rediriger après 2 secondes
-      setTimeout(() => {
-        router.push('/creators/dashboard');
-      }, 2000);
+      setEditMode(false);
+      await fetchCreatorData();
       
     } catch (err: any) {
       console.error("❌ Erreur sauvegarde:", err);
@@ -272,12 +262,26 @@ export default function CreatorProfile() {
             </button>
           </Link>
           
-          <h1 className="text-3xl font-serif font-bold text-[#111827] mb-2">
-            Mon profil
-          </h1>
-          <p className="text-gray-400 text-sm">
-            Gérez vos informations personnelles et professionnelles
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-serif font-bold text-[#111827] mb-2">
+                Mon profil
+              </h1>
+              <p className="text-gray-400 text-sm">
+                {editMode ? 'Modifiez vos informations' : 'Consultez vos informations'}
+              </p>
+            </div>
+            
+            {!editMode && (
+              <button
+                onClick={() => setEditMode(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-[#D4A017] text-white rounded-xl font-bold hover:bg-[#B88A14] transition-all"
+              >
+                <Edit2 size={18} />
+                Modifier
+              </button>
+            )}
+          </div>
         </div>
 
         {/* MESSAGES */}
@@ -299,17 +303,20 @@ export default function CreatorProfile() {
             <Check className="text-green-500 mt-0.5" size={20} />
             <div>
               <p className="font-bold text-green-700">Succès !</p>
-              <p className="text-sm text-green-600">Votre profil a été mis à jour. Redirection...</p>
+              <p className="text-sm text-green-600">Votre profil a été mis à jour</p>
             </div>
           </div>
         )}
 
         {/* FORMULAIRE */}
-<form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           
           {/* AVATAR */}
           <div className="bg-white rounded-[32px] p-6 md:p-8 border border-gray-100 shadow-sm">
-            <h2 className="text-xl font-bold mb-6 text-gray-900">Photo de profil</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold">Photo de profil</h2>
+              {!editMode && <Eye size={20} className="text-gray-400" />}
+            </div>
             
             <div className="flex items-center gap-6">
               <div className="relative">
@@ -333,28 +340,33 @@ export default function CreatorProfile() {
                 )}
               </div>
               
-              <div className="flex-1">
-                <label className="inline-flex items-center gap-2 px-6 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-sm text-gray-700 hover:bg-gray-100 transition-all cursor-pointer">
-                  <Upload size={16} className="text-[#D4A017]" />
-                  Changer la photo
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    onChange={handleAvatarUpload}
-                    disabled={uploadingAvatar}
-                    className="hidden"
-                  />
-                </label>
-                <p className="text-xs text-gray-500 mt-2">
-                  JPG, PNG ou GIF. Max 2MB.
-                </p>
-              </div>
+              {editMode && (
+                <div className="flex-1">
+                  <label className="inline-flex items-center gap-2 px-6 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-sm hover:bg-gray-100 transition-all cursor-pointer">
+                    <Upload size={16} />
+                    Changer la photo
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleAvatarUpload}
+                      disabled={uploadingAvatar}
+                      className="hidden"
+                    />
+                  </label>
+                  <p className="text-xs text-gray-400 mt-2">
+                    JPG, PNG ou GIF. Max 2MB.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* INFORMATIONS PERSONNELLES */}
           <div className="bg-white rounded-[32px] p-6 md:p-8 border border-gray-100 shadow-sm">
-            <h2 className="text-xl font-bold mb-6 text-gray-900">Informations personnelles</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold">Informations personnelles</h2>
+              {!editMode && <Eye size={20} className="text-gray-400" />}
+            </div>
             
             <div className="grid md:grid-cols-2 gap-6">
               {/* NOM COMPLET */}
@@ -363,15 +375,21 @@ export default function CreatorProfile() {
                   <User size={16} className="text-[#D4A017]" />
                   Nom complet *
                 </label>
-                <input
-                  type="text"
-                  name="full_name"
-                  value={creatorData.full_name}
-                  onChange={handleChange}
-                  required
-                  placeholder="Ex: John Doe"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-[#D4A017] focus:border-[#D4A017] outline-none transition-all placeholder:text-gray-400"
-                />
+                {editMode ? (
+                  <input
+                    type="text"
+                    name="full_name"
+                    value={creatorData.full_name}
+                    onChange={handleChange}
+                    required
+                    placeholder="Ex: John Doe"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all"
+                  />
+                ) : (
+                  <p className="px-4 py-3 bg-gray-50 rounded-xl text-gray-700 font-medium">
+                    {creatorData.full_name || '—'}
+                  </p>
+                )}
               </div>
 
               {/* EMAIL */}
@@ -380,15 +398,21 @@ export default function CreatorProfile() {
                   <Mail size={16} className="text-[#D4A017]" />
                   Email *
                 </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={creatorData.email}
-                  onChange={handleChange}
-                  required
-                  placeholder="email@exemple.com"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-[#D4A017] focus:border-[#D4A017] outline-none transition-all placeholder:text-gray-400"
-                />
+                {editMode ? (
+                  <input
+                    type="email"
+                    name="email"
+                    value={creatorData.email}
+                    onChange={handleChange}
+                    required
+                    placeholder="email@exemple.com"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all"
+                  />
+                ) : (
+                  <p className="px-4 py-3 bg-gray-50 rounded-xl text-gray-700 font-medium">
+                    {creatorData.email || '—'}
+                  </p>
+                )}
               </div>
 
               {/* TÉLÉPHONE */}
@@ -397,14 +421,20 @@ export default function CreatorProfile() {
                   <Phone size={16} className="text-[#D4A017]" />
                   Téléphone
                 </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={creatorData.phone}
-                  onChange={handleChange}
-                  placeholder="+221 77 123 45 67"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-[#D4A017] focus:border-[#D4A017] outline-none transition-all placeholder:text-gray-400"
-                />
+                {editMode ? (
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={creatorData.phone}
+                    onChange={handleChange}
+                    placeholder="+221 77 123 45 67"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all"
+                  />
+                ) : (
+                  <p className="px-4 py-3 bg-gray-50 rounded-xl text-gray-700 font-medium">
+                    {creatorData.phone || '—'}
+                  </p>
+                )}
               </div>
 
               {/* ÂGE */}
@@ -413,70 +443,99 @@ export default function CreatorProfile() {
                   <Calendar size={16} className="text-[#D4A017]" />
                   Âge
                 </label>
-                <input
-                  type="number"
-                  name="age"
-                  value={creatorData.age}
-                  onChange={handleChange}
-                  min="13"
-                  max="100"
-                  placeholder="25"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-[#D4A017] focus:border-[#D4A017] outline-none transition-all placeholder:text-gray-400"
-                />
+                {editMode ? (
+                  <input
+                    type="number"
+                    name="age"
+                    value={creatorData.age}
+                    onChange={handleChange}
+                    min="13"
+                    max="100"
+                    placeholder="25"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all"
+                  />
+                ) : (
+                  <p className="px-4 py-3 bg-gray-50 rounded-xl text-gray-700 font-medium">
+                    {creatorData.age ? `${creatorData.age} ans` : '—'}
+                  </p>
+                )}
               </div>
             </div>
 
             {/* NICHES */}
             <div className="mt-6">
               <label className="block text-sm font-bold text-gray-700 mb-3">
-                Thèmes
+                Domaines d'expertise
               </label>
-              <div className="flex flex-wrap gap-2">
-                {availableNiches.map((niche) => (
-                  <button
-                    key={niche}
-                    type="button"
-                    onClick={() => toggleNiche(niche)}
-                    className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
-                      creatorData.niche.includes(niche)
-                        ? 'bg-[#D4A017] text-white shadow-md shadow-[#D4A017]/20'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-transparent'
-                    }`}
-                  >
-                    {niche}
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Sélectionnez vos domaines de prédilection (plusieurs choix possibles)
-              </p>
+              {editMode ? (
+                <div className="flex flex-wrap gap-2">
+                  {availableNiches.map((niche) => (
+                    <button
+                      key={niche}
+                      type="button"
+                      onClick={() => toggleNiche(niche)}
+                      className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                        creatorData.niche.includes(niche)
+                          ? 'bg-[#D4A017] text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {niche}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {creatorData.niche.length > 0 ? (
+                    creatorData.niche.map((niche) => (
+                      <span
+                        key={niche}
+                        className="px-4 py-2 rounded-full text-sm font-bold bg-[#D4A017]/10 text-[#D4A017]"
+                      >
+                        {niche}
+                      </span>
+                    ))
+                  ) : (
+                    <p className="text-gray-400 italic">Aucun domaine sélectionné</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
           {/* RÉSEAUX SOCIAUX */}
           <div className="bg-white rounded-[32px] p-6 md:p-8 border border-gray-100 shadow-sm">
-            <h2 className="text-xl font-bold mb-6 text-gray-900">Réseaux sociaux</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold">Réseaux sociaux</h2>
+              {!editMode && <Eye size={20} className="text-gray-400" />}
+            </div>
             
-            <div className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
               {/* INSTAGRAM */}
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                   <Instagram size={16} className="text-[#E4405F]" />
                   Instagram
                 </label>
-                <div className="flex">
-                  <span className="inline-flex items-center px-4 bg-gray-50 border border-r-0 border-gray-200 rounded-l-xl text-gray-500 text-sm">
-                    @
-                  </span>
-                  <input
-                    type="text"
-                    name="instagram_username"
-                    value={creatorData.instagram_username}
-                    onChange={handleChange}
-                    placeholder="votre_profil"
-                    className="flex-1 px-4 py-3 border border-gray-200 rounded-r-xl text-gray-900 focus:ring-2 focus:ring-[#D4A017] focus:border-[#D4A017] outline-none transition-all"
-                  />
-                </div>
+                {editMode ? (
+                  <div className="flex">
+                    <span className="inline-flex items-center px-4 bg-gray-50 border border-r-0 border-gray-200 rounded-l-xl text-gray-500 text-sm">
+                      @
+                    </span>
+                    <input
+                      type="text"
+                      name="instagram_username"
+                      value={creatorData.instagram_username}
+                      onChange={handleChange}
+                      placeholder="votre_nom"
+                      className="flex-1 px-4 py-3 border border-gray-200 rounded-r-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all"
+                    />
+                  </div>
+                ) : (
+                  <p className="px-4 py-3 bg-gray-50 rounded-xl text-gray-700 font-medium">
+                    {creatorData.instagram_username ? `@${creatorData.instagram_username}` : '—'}
+                  </p>
+                )}
               </div>
 
               {/* YOUTUBE */}
@@ -485,19 +544,25 @@ export default function CreatorProfile() {
                   <Youtube size={16} className="text-[#FF0000]" />
                   YouTube
                 </label>
-                <div className="flex">
-                  <span className="inline-flex items-center px-4 bg-gray-50 border border-r-0 border-gray-200 rounded-l-xl text-gray-500 text-sm">
-                    @
-                  </span>
-                  <input
-                    type="text"
-                    name="youtube_username"
-                    value={creatorData.youtube_username}
-                    onChange={handleChange}
-                    placeholder="votre_chaine"
-                    className="flex-1 px-4 py-3 border border-gray-200 rounded-r-xl text-gray-900 focus:ring-2 focus:ring-[#D4A017] focus:border-[#D4A017] outline-none transition-all"
-                  />
-                </div>
+                {editMode ? (
+                  <div className="flex">
+                    <span className="inline-flex items-center px-4 bg-gray-50 border border-r-0 border-gray-200 rounded-l-xl text-gray-500 text-sm">
+                      @
+                    </span>
+                    <input
+                      type="text"
+                      name="youtube_username"
+                      value={creatorData.youtube_username}
+                      onChange={handleChange}
+                      placeholder="votre_chaine"
+                      className="flex-1 px-4 py-3 border border-gray-200 rounded-r-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all"
+                    />
+                  </div>
+                ) : (
+                  <p className="px-4 py-3 bg-gray-50 rounded-xl text-gray-700 font-medium">
+                    {creatorData.youtube_username ? `@${creatorData.youtube_username}` : '—'}
+                  </p>
+                )}
               </div>
 
               {/* TIKTOK */}
@@ -506,40 +571,52 @@ export default function CreatorProfile() {
                   <span className="text-sm">🎵</span>
                   TikTok
                 </label>
-                <div className="flex">
-                  <span className="inline-flex items-center px-4 bg-gray-50 border border-r-0 border-gray-200 rounded-l-xl text-gray-500 text-sm">
-                    @
-                  </span>
-                  <input
-                    type="text"
-                    name="tiktok_username"
-                    value={creatorData.tiktok_username}
-                    onChange={handleChange}
-                    placeholder="votre_nom"
-                    className="flex-1 px-4 py-3 border border-gray-200 rounded-r-xl text-gray-900 focus:ring-2 focus:ring-[#D4A017] focus:border-[#D4A017] outline-none transition-all"
-                  />
-                </div>
+                {editMode ? (
+                  <div className="flex">
+                    <span className="inline-flex items-center px-4 bg-gray-50 border border-r-0 border-gray-200 rounded-l-xl text-gray-500 text-sm">
+                      @
+                    </span>
+                    <input
+                      type="text"
+                      name="tiktok_username"
+                      value={creatorData.tiktok_username}
+                      onChange={handleChange}
+                      placeholder="votre_nom"
+                      className="flex-1 px-4 py-3 border border-gray-200 rounded-r-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all"
+                    />
+                  </div>
+                ) : (
+                  <p className="px-4 py-3 bg-gray-50 rounded-xl text-gray-700 font-medium">
+                    {creatorData.tiktok_username ? `@${creatorData.tiktok_username}` : '—'}
+                  </p>
+                )}
               </div>
 
               {/* X (TWITTER) */}
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2 text-gray-900">
+                <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                   <XLogo size={16} />
                   X (Twitter)
                 </label>
-                <div className="flex">
-                  <span className="inline-flex items-center px-4 bg-gray-50 border border-r-0 border-gray-200 rounded-l-xl text-gray-500 text-sm">
-                    @
-                  </span>
-                  <input
-                    type="text"
-                    name="twitter_username"
-                    value={creatorData.twitter_username}
-                    onChange={handleChange}
-                    placeholder="votre_nom"
-                    className="flex-1 px-4 py-3 border border-gray-200 rounded-r-xl text-gray-900 focus:ring-2 focus:ring-[#D4A017] focus:border-[#D4A017] outline-none transition-all"
-                  />
-                </div>
+                {editMode ? (
+                  <div className="flex">
+                    <span className="inline-flex items-center px-4 bg-gray-50 border border-r-0 border-gray-200 rounded-l-xl text-gray-500 text-sm">
+                      @
+                    </span>
+                    <input
+                      type="text"
+                      name="twitter_username"
+                      value={creatorData.twitter_username}
+                      onChange={handleChange}
+                      placeholder="votre_nom"
+                      className="flex-1 px-4 py-3 border border-gray-200 rounded-r-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all"
+                    />
+                  </div>
+                ) : (
+                  <p className="px-4 py-3 bg-gray-50 rounded-xl text-gray-700 font-medium">
+                    {creatorData.twitter_username ? `@${creatorData.twitter_username}` : '—'}
+                  </p>
+                )}
               </div>
 
               {/* FACEBOOK */}
@@ -548,19 +625,25 @@ export default function CreatorProfile() {
                   <Facebook size={16} className="text-[#1877F2]" />
                   Facebook
                 </label>
-                <div className="flex">
-                  <span className="inline-flex items-center px-4 bg-gray-50 border border-r-0 border-gray-200 rounded-l-xl text-gray-500 text-sm">
-                    @
-                  </span>
-                  <input
-                    type="text"
-                    name="facebook_username"
-                    value={creatorData.facebook_username}
-                    onChange={handleChange}
-                    placeholder="votre_nom"
-                    className="flex-1 px-4 py-3 border border-gray-200 rounded-r-xl text-gray-900 focus:ring-2 focus:ring-[#D4A017] focus:border-[#D4A017] outline-none transition-all"
-                  />
-                </div>
+                {editMode ? (
+                  <div className="flex">
+                    <span className="inline-flex items-center px-4 bg-gray-50 border border-r-0 border-gray-200 rounded-l-xl text-gray-500 text-sm">
+                      @
+                    </span>
+                    <input
+                      type="text"
+                      name="facebook_username"
+                      value={creatorData.facebook_username}
+                      onChange={handleChange}
+                      placeholder="votre_nom"
+                      className="flex-1 px-4 py-3 border border-gray-200 rounded-r-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all"
+                    />
+                  </div>
+                ) : (
+                  <p className="px-4 py-3 bg-gray-50 rounded-xl text-gray-700 font-medium">
+                    {creatorData.facebook_username ? `@${creatorData.facebook_username}` : '—'}
+                  </p>
+                )}
               </div>
 
               {/* SNAPCHAT */}
@@ -569,57 +652,68 @@ export default function CreatorProfile() {
                   <Camera size={16} className="text-[#FFFC00]" />
                   Snapchat
                 </label>
-                <div className="flex">
-                  <span className="inline-flex items-center px-4 bg-gray-50 border border-r-0 border-gray-200 rounded-l-xl text-gray-500 text-sm">
-                    @
-                  </span>
-                  <input
-                    type="text"
-                    name="snapchat_username"
-                    value={creatorData.snapchat_username}
-                    onChange={handleChange}
-                    placeholder="votre_nom"
-                    className="flex-1 px-4 py-3 border border-gray-200 rounded-r-xl text-gray-900 focus:ring-2 focus:ring-[#D4A017] focus:border-[#D4A017] outline-none transition-all"
-                  />
-                </div>
+                {editMode ? (
+                  <div className="flex">
+                    <span className="inline-flex items-center px-4 bg-gray-50 border border-r-0 border-gray-200 rounded-l-xl text-gray-500 text-sm">
+                      @
+                    </span>
+                    <input
+                      type="text"
+                      name="snapchat_username"
+                      value={creatorData.snapchat_username}
+                      onChange={handleChange}
+                      placeholder="votre_nom"
+                      className="flex-1 px-4 py-3 border border-gray-200 rounded-r-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all"
+                    />
+                  </div>
+                ) : (
+                  <p className="px-4 py-3 bg-gray-50 rounded-xl text-gray-700 font-medium">
+                    {creatorData.snapchat_username ? `@${creatorData.snapchat_username}` : '—'}
+                  </p>
+                )}
               </div>
             </div>
           </div>
 
           {/* BOUTONS */}
-          <div className="flex gap-4">
-            <Link href="/creators/dashboard" className="flex-1">
+          {editMode && (
+            <div className="flex gap-4">
               <button
                 type="button"
-                className="w-full py-4 border-2 border-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-50 hover:border-gray-300 transition-all"
+                onClick={() => {
+                  setEditMode(false);
+                  fetchCreatorData();
+                }}
+                className="flex-1 py-4 border-2 border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all"
               >
                 Annuler
               </button>
-            </Link>
-            
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 py-4 bg-[#D4A017] text-white rounded-xl font-bold hover:bg-[#B88A14] shadow-lg shadow-[#D4A017]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="animate-spin" size={20} />
-                  Enregistrement...
-                </>
-              ) : (
-                <>
-                  <Save size={20} />
-                  Enregistrer les modifications
-                </>
-              )}
-            </button>
-          </div>
+              
+              <button
+                type="submit"
+                disabled={saving}
+                className="flex-1 py-4 bg-[#D4A017] text-white rounded-xl font-bold hover:bg-[#B88A14] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="animate-spin" size={20} />
+                    Enregistrement...
+                  </>
+                ) : (
+                  <>
+                    <Save size={20} />
+                    Enregistrer
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </form>
+
         {/* NOTE */}
         <div className="mt-6 bg-blue-50 border border-blue-100 rounded-2xl p-4">
           <p className="text-sm text-blue-700">
-            <strong>💡 Conseil :</strong> Un profil complet et à jour augmente vos chances d'être sélectionné par les marques pour des campagnes.
+            <strong>💡 Conseil :</strong> Un profil complet et à jour augmente vos chances d'être sélectionné par les marques.
           </p>
         </div>
       </div>

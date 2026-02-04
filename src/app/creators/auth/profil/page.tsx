@@ -14,7 +14,6 @@ export default function CreateCreatorProfile() {
     age: ''
   });
 
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
 
@@ -24,7 +23,7 @@ export default function CreateCreatorProfile() {
     const savedName = localStorage.getItem('user_full_name');
     const savedPhone = localStorage.getItem('signup_phone');
     const savedAge = localStorage.getItem('signup_age');
-    const savedAvatar = localStorage.getItem('signup_avatar_preview');
+    const savedAvatar = localStorage.getItem('signup_avatar_file');
 
     if (savedEmail || savedName) {
       setFormData({
@@ -58,19 +57,19 @@ export default function CreateCreatorProfile() {
         return;
       }
 
-      // Sauvegarder le fichier pour l'upload plus tard
-      setImageFile(file);
-
-      // Créer une prévisualisation
+      // ✅ CORRECTION : Convertir IMMÉDIATEMENT en base64 et sauvegarder
       const reader = new FileReader();
       reader.onloadend = () => {
-        const preview = reader.result as string;
-        setImagePreview(preview);
-        // Sauvegarder seulement la prévisualisation (pas le fichier complet)
+        const base64String = reader.result as string;
+        
+        // Sauvegarder l'image pour la prévisualisation ET pour l'upload
+        setImagePreview(base64String);
+        
         try {
-          localStorage.setItem('signup_avatar_preview', preview);
+          localStorage.setItem('signup_avatar_file', base64String);
+          console.log("✅ Avatar sauvegardé dans localStorage");
         } catch (error) {
-          console.warn("LocalStorage plein : la prévisualisation ne sera pas sauvegardée.");
+          console.warn("❌ LocalStorage plein, l'image ne sera pas sauvegardée");
         }
       };
       reader.readAsDataURL(file);
@@ -90,19 +89,12 @@ export default function CreateCreatorProfile() {
     localStorage.setItem('signup_phone', formData.phone.trim());
     localStorage.setItem('signup_age', formData.age);
     
-    // Sauvegarder l'image comme fichier pour l'upload plus tard
-    if (imageFile) {
-      // Convertir le fichier en base64 pour le stockage temporaire
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        try {
-          localStorage.setItem('signup_avatar_file', reader.result as string);
-        } catch (error) {
-          console.warn("Impossible de sauvegarder l'image.");
-        }
-      };
-      reader.readAsDataURL(imageFile);
-    }
+    // L'image est déjà sauvegardée dans handleImageChange
+    console.log("📦 Données sauvegardées:", {
+      email: formData.email,
+      name: formData.fullName,
+      hasAvatar: !!localStorage.getItem('signup_avatar_file')
+    });
     
     router.push("/creators/auth/niche");
   };

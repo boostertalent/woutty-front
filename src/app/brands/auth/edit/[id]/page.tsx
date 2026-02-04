@@ -7,7 +7,8 @@ import { createBrowserClient } from '@supabase/ssr';
 
 export default function EditCampaign() {
   const params = useParams();
-  const id = params?.id;
+  // CORRECTION : On récupère "id" car le dossier est [id]
+  const id_t_campagne = params?.id; 
   const router = useRouter();
   
   const [loading, setLoading] = useState(true);
@@ -29,38 +30,7 @@ export default function EditCampaign() {
 
   const availableObjectives = ["Notoriété", "Ventes", "Engagement", "Conversions"];
 
-  useEffect(() => {
-    async function fetchCampaign() {
-      if (!id) return;
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('campaigns')
-          .select('*')
-          .eq('id', id)
-          .single();
-
-        if (error) throw error;
-        
-        if (data) {
-          setFormData({
-            title: data.title || '',
-            budget: data.budget?.toString() || '',
-            currency: 'CFA', 
-            description: data.description || '',
-            objectives: Array.isArray(data.objectives) ? data.objectives : [],
-            end_date: data.end_date || ''
-          });
-        }
-      } catch (err) {
-        console.error("Erreur:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchCampaign();
-  }, [id, supabase]);
-
+  // AJOUT : Fonction pour gérer la sélection des objectifs
   const toggleObjective = (obj: string) => {
     setFormData(prev => ({
       ...prev,
@@ -70,8 +40,44 @@ export default function EditCampaign() {
     }));
   };
 
+  useEffect(() => {
+    async function fetchCampaign() {
+      if (!id_t_campagne) return; 
+
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('campaigns')
+          .select('*')
+          .eq('id_t_campagne', id_t_campagne)
+          .single();
+
+        if (error) throw error;
+        
+        if (data) {
+          setFormData({
+            title: data.title || '',
+            budget: data.budget?.toString() || '',
+            currency: data.currency || 'CFA',
+            description: data.description || '',
+            objectives: Array.isArray(data.objectives) ? data.objectives : [],
+            end_date: data.end_date || ''
+          });
+        }
+      } catch (err: any) {
+        console.error("Erreur de chargement:", err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchCampaign();
+  }, [id_t_campagne, supabase]); 
+
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!id_t_campagne) return;
+
     setSaving(true);
     try {
       const { error } = await supabase
@@ -83,13 +89,14 @@ export default function EditCampaign() {
           end_date: formData.end_date,
           updated_at: new Date().toISOString()
         })
-        .eq('id', id);
+        .eq('id_t_campagne', id_t_campagne);
 
       if (error) throw error;
+      
       router.push('/brands/dashboard');
       router.refresh();
     } catch (error: any) {
-      alert("Erreur : " + error.message);
+      alert("Erreur lors de la mise à jour : " + error.message);
     } finally {
       setSaving(false);
     }
@@ -112,8 +119,6 @@ export default function EditCampaign() {
           input::-webkit-outer-spin-button,
           input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
           input[type=number] { -moz-appearance: textfield; }
-          
-          /* Rendre l'icône du calendrier jaune */
           input[type="date"]::-webkit-calendar-picker-indicator {
             filter: invert(68%) sepia(85%) saturate(350%) hue-rotate(355deg) brightness(95%) contrast(85%);
             cursor: pointer;
