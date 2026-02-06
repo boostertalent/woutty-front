@@ -219,7 +219,7 @@ export default function CreatorDashboard() {
 
       setAllPosts(posts);
 
-      // OPPORTUNITÉS : Campagnes attribuées mais PAS ENCORE acceptées
+      // ✅ OPPORTUNITÉS : TOUTES les campagnes attribuées (même terminées)
       const { data: pendingData } = await supabase
         .from('campaigns')
         .select(`
@@ -229,7 +229,7 @@ export default function CreatorDashboard() {
         .eq('assigned_creator_id', USER_ID)
         .or('creator_status.is.null,creator_status.eq.pending');
 
-      console.log("📋 Campagnes en attente:", pendingData?.length || 0);
+      console.log("📋 Campagnes attribuées (Opportunités):", pendingData?.length || 0);
       setPendingCampaigns(pendingData || []);
 
       // MES CAMPAGNES : Campagnes acceptées
@@ -282,7 +282,7 @@ export default function CreatorDashboard() {
       if (error) throw error;
 
       console.log("✅ Campagne acceptée");
-      await fetchData(); // Recharger les données
+      await fetchData();
     } catch (err: any) {
       console.error("❌ Erreur:", err);
       setError("Erreur lors de l'acceptation de la campagne");
@@ -301,7 +301,7 @@ export default function CreatorDashboard() {
         .from('campaigns')
         .update({ 
           creator_status: 'rejected',
-          assigned_creator_id: null // Retirer l'attribution
+          assigned_creator_id: null
         })
         .eq('id', campaignId);
 
@@ -553,7 +553,7 @@ export default function CreatorDashboard() {
           <h1 className="text-3xl font-serif font-bold">{activeTab}</h1>
           <p className="text-gray-400 text-sm mt-1">
             {activeTab === 'Ma performance' && 'Gérez votre influence en temps réel'}
-            {activeTab === 'Opportunités' && 'Campagnes proposées par les marques'}
+            {activeTab === 'Opportunités' && 'Campagnes qui vous ont été attribuées'}
             {activeTab === 'Mes campagnes' && 'Suivez vos contrats en cours'}
           </p>
         </header>
@@ -687,75 +687,114 @@ export default function CreatorDashboard() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {pendingCampaigns.map((campaign) => (
-                    <div key={campaign.id} className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Building2 size={16} className="text-[#D4A017]" />
-                            <p className="text-sm font-bold text-gray-500">
-                              {campaign.marque?.nom_marque || 'Marque'}
-                            </p>
+                  {pendingCampaigns.map((campaign) => {
+                    const progress = calculateProgress(campaign);
+                    const isCompleted = progress >= 100;
+                    const daysLeft = Math.max(0, Math.ceil((new Date(campaign.end_date).getTime() - new Date().getTime()) / (1000 * 3600 * 24)));
+                    
+                    return (
+                      <div key={campaign.id} className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Building2 size={16} className="text-[#D4A017]" />
+                              <p className="text-sm font-bold text-gray-500">
+                                {campaign.marque?.nom_marque || 'Marque'}
+                              </p>
+                            </div>
+                            <h3 className="text-xl font-bold mb-1">{campaign.title || 'Campagne'}</h3>
                           </div>
-                          <h3 className="text-xl font-bold mb-1">{campaign.title || 'Campagne'}</h3>
-                        </div>
-                        <span className="bg-yellow-50 text-yellow-600 text-xs font-bold px-3 py-1 rounded-full border border-yellow-100">
-                          Nouvelle
-                        </span>
-                      </div>
-                      
-                      <div className="space-y-3 mb-6">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-500">Budget</span>
-                          <span className="font-bold text-[#D4A017] text-lg">
-                            {parseFloat(campaign.budget || 0).toLocaleString('fr-FR')} CFA
+                          <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
+                            isCompleted 
+                              ? 'bg-green-50 text-green-600 border-green-100'
+                              : 'bg-yellow-50 text-yellow-600 border-yellow-100'
+                          }`}>
+                            {isCompleted ? '✓ Terminée' : 'Nouvelle'}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-500">Début</span>
-                          <span className="font-medium">{formatDate(campaign.start_date)}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-500">Fin</span>
-                          <span className="font-medium">{formatDate(campaign.end_date)}</span>
-                        </div>
-                        {campaign.marque?.domaine && (
-                          <div className="pt-2 border-t">
-                            <span className="text-xs text-gray-400">Secteur: </span>
-                            <span className="text-xs font-bold text-gray-600">{campaign.marque.domaine}</span>
+                        
+                        <div className="space-y-3 mb-6">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-500">Budget</span>
+                            <span className="font-bold text-[#D4A017] text-lg">
+                              {parseFloat(campaign.budget || 0).toLocaleString('fr-FR')} CFA
+                            </span>
                           </div>
-                        )}
-                      </div>
-                      
-                      <div className="flex gap-3">
-                        <button 
-                          onClick={() => handleRejectCampaign(campaign.id)}
-                          disabled={processingCampaign === campaign.id}
-                          className="flex-1 py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all disabled:opacity-50"
-                        >
-                          {processingCampaign === campaign.id ? (
-                            <Loader2 className="animate-spin mx-auto" size={20} />
-                          ) : (
-                            '✕ Refuser'
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-500">Début</span>
+                            <span className="font-medium">{formatDate(campaign.start_date)}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-500">Fin</span>
+                            <span className="font-medium">{formatDate(campaign.end_date)}</span>
+                          </div>
+                          {!isCompleted && daysLeft > 0 && (
+                            <div className="flex items-center justify-between text-sm bg-blue-50 p-2 rounded-lg">
+                              <span className="text-blue-600 font-medium">⏱️ Jours restants</span>
+                              <span className="font-bold text-blue-700">{daysLeft} jour{daysLeft > 1 ? 's' : ''}</span>
+                            </div>
                           )}
-                        </button>
-                        <button 
-                          onClick={() => handleAcceptCampaign(campaign.id)}
-                          disabled={processingCampaign === campaign.id}
-                          className="flex-1 py-3 bg-[#D4A017] text-white rounded-xl font-bold hover:bg-[#B88A14] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                        >
-                          {processingCampaign === campaign.id ? (
-                            <Loader2 className="animate-spin" size={20} />
-                          ) : (
-                            <>
-                              <Check size={20} />
-                              Accepter
-                            </>
+                          {campaign.marque?.domaine && (
+                            <div className="pt-2 border-t">
+                              <span className="text-xs text-gray-400">Secteur: </span>
+                              <span className="text-xs font-bold text-gray-600">{campaign.marque.domaine}</span>
+                            </div>
                           )}
-                        </button>
+                        </div>
+
+                        {/* Barre de progression */}
+                        <div className="mb-6">
+                          <div className="flex justify-between text-xs text-gray-500 mb-2">
+                            <span>Progression</span>
+                            <span className="font-bold text-[#D4A017]">{progress}%</span>
+                          </div>
+                          <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full transition-all duration-500 ${
+                                isCompleted 
+                                  ? 'bg-gradient-to-r from-green-500 to-green-600'
+                                  : 'bg-gradient-to-r from-[#D4A017] to-[#FFD700]'
+                              }`}
+                              style={{ width: `${progress}%` }}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-3">
+                          <button 
+                            onClick={() => handleRejectCampaign(campaign.id)}
+                            disabled={processingCampaign === campaign.id || isCompleted}
+                            className="flex-1 py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {processingCampaign === campaign.id ? (
+                              <Loader2 className="animate-spin mx-auto" size={20} />
+                            ) : (
+                              '✕ Refuser'
+                            )}
+                          </button>
+                          <button 
+                            onClick={() => handleAcceptCampaign(campaign.id)}
+                            disabled={processingCampaign === campaign.id || isCompleted}
+                            className="flex-1 py-3 bg-[#D4A017] text-white rounded-xl font-bold hover:bg-[#B88A14] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                          >
+                            {processingCampaign === campaign.id ? (
+                              <Loader2 className="animate-spin" size={20} />
+                            ) : isCompleted ? (
+                              <>
+                                <CheckCircle size={20} />
+                                Achevée
+                              </>
+                            ) : (
+                              <>
+                                <Check size={20} />
+                                Accepter
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

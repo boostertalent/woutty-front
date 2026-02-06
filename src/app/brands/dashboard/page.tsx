@@ -6,10 +6,17 @@ import { useRouter } from 'next/navigation';
 import { 
   Users, Zap, LogOut, ArrowRight, Sparkles,
   Pencil, Trash2, LayoutDashboard, Settings, X as CloseIcon, Check,
-  RefreshCw, Clock, TrendingUp, UserCheck
+  RefreshCw, Clock, TrendingUp, UserCheck, Instagram, Youtube, 
+  Music2, Camera, Mail, Phone, Loader2
 } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { createBrowserClient } from '@supabase/ssr';
+
+const XLogo = ({ size = 16 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932 6.064-6.932zm-1.294 19.497h2.039L6.486 3.24H4.298L17.607 20.65z" />
+  </svg>
+);
 
 export default function BrandDashboard() {
   const router = useRouter();
@@ -29,6 +36,9 @@ export default function BrandDashboard() {
   });
   const [brandInfo, setBrandInfo] = useState<any>(null);
   const [selectedCreator, setSelectedCreator] = useState<any | null>(null);
+  const [creatorDetails, setCreatorDetails] = useState<any | null>(null);
+  const [loadingCreatorDetails, setLoadingCreatorDetails] = useState(false);
+  const [showCampaignSelection, setShowCampaignSelection] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
 
   const determineStatusByDates = (startDateStr: string, endDateStr: string) => {
@@ -68,6 +78,173 @@ export default function BrandDashboard() {
     }
   };
 
+  // ✅ ALGORITHME DE SUGGESTION INTELLIGENT
+  const getSuggestedCreators = async (userCampaigns: any[]) => {
+    try {
+      const { data: allCreators, error } = await supabase
+        .from('createur')
+        .select('*')
+        .eq('role', 'creator');
+
+      if (error || !allCreators) {
+        console.error("❌ Erreur créateurs:", error);
+        return [];
+      }
+
+      // Extraire les niches des campagnes
+      const campaignNiches = userCampaigns
+        .map(c => c.niche)
+        .filter(Boolean)
+        .flat();
+
+      console.log("📊 Niches des campagnes:", campaignNiches);
+
+      // Calculer le score pour chaque créateur
+      const scoredCreators = allCreators.map(creator => {
+        let score = 0;
+        const reasons: string[] = [];
+
+        // CRITÈRE 1: Correspondance de niche (40 points)
+        if (campaignNiches.length > 0 && creator.niche) {
+          const creatorNiches = Array.isArray(creator.niche) ? creator.niche : [];
+          const nicheMatch = creatorNiches.some(cn => 
+            campaignNiches.some(campNiche => 
+              cn.toLowerCase().includes(campNiche.toLowerCase()) ||
+              campNiche.toLowerCase().includes(cn.toLowerCase())
+            )
+          );
+          
+          if (nicheMatch) {
+            score += 40;
+            reasons.push("Niche correspondante");
+          }
+        }
+
+        // CRITÈRE 2: Followers (30 points)
+        const totalFollowers = 
+          (creator.instagram_followers || 0) + 
+          (creator.youtube_followers || 0) + 
+          (creator.tiktok_followers || 0);
+
+        if (totalFollowers > 100000) {
+          score += 30;
+          reasons.push("Grande audience");
+        } else if (totalFollowers > 50000) {
+          score += 25;
+        } else if (totalFollowers > 10000) {
+          score += 20;
+        } else if (totalFollowers > 1000) {
+          score += 10;
+        }
+
+        // CRITÈRE 3: Budget adapté (20 points)
+        const avgBudget = userCampaigns.length > 0 
+          ? userCampaigns.reduce((sum, c) => sum + (parseFloat(c.budget) || 0), 0) / userCampaigns.length
+          : 0;
+
+        if (avgBudget > 0) {
+          const estimatedCost = totalFollowers * 10;
+          if (estimatedCost <= avgBudget * 1.2) {
+            score += 20;
+            reasons.push("Budget adapté");
+          } else if (estimatedCost <= avgBudget * 1.5) {
+            score += 10;
+          }
+        }
+
+        // CRITÈRE 4: Profil complet (10 points)
+        let profileScore = 0;
+        if (creator.avatar_url) profileScore += 3;
+        if (creator.full_name) profileScore += 2;
+        if (creator.phone) profileScore += 2;
+        if (creator.instagram_username || creator.youtube_username || creator.tiktok_username) profileScore += 3;
+        
+        score += profileScore;
+        if (profileScore >= 8) reasons.push("Profil complet");
+
+        // CRITÈRE 5: Déjà collaboré (Bonus 15 points)
+        const hasWorkedWith = userCampaigns.some(c => c.assigned_creator_id === creator.id_w);
+        if (hasWorkedWith) {
+          score += 15;
+          reasons.push("Déjà collaboré");
+        }
+
+        return {
+          ...creator,
+          matchScore: score,
+          matchReasons: reasons,
+          totalFollowers,
+          primaryPlatform: getPrimaryPlatform(creator)
+        };
+      });
+
+      // Trier et retourner top 5
+      const topCreators = scoredCreators
+        .filter(c => c.matchScore > 0)
+        .sort((a, b) => b.matchScore - a.matchScore)
+        .slice(0, 5);
+
+      console.log("✅ Top 5 créateurs suggérés:", topCreators.map(c => ({
+        name: c.full_name,
+        score: c.matchScore,
+        reasons: c.matchReasons
+      })));
+
+      return topCreators;
+
+    } catch (err) {
+      console.error("❌ Erreur suggestion:", err);
+      return [];
+    }
+  };
+
+  const getPrimaryPlatform = (creator: any) => {
+    const platforms = [
+      { name: 'Instagram', followers: creator.instagram_followers || 0 },
+      { name: 'YouTube', followers: creator.youtube_followers || 0 },
+      { name: 'TikTok', followers: creator.tiktok_followers || 0 }
+    ];
+    return platforms.sort((a, b) => b.followers - a.followers)[0]?.name || 'Plateforme';
+  };
+
+  // ✅ CHARGER LES DÉTAILS COMPLETS DU CRÉATEUR
+  const loadCreatorDetails = async (creatorId: string) => {
+    setLoadingCreatorDetails(true);
+    try {
+      const { data, error } = await supabase
+        .from('createur')
+        .select('*')
+        .eq('id_w', creatorId)
+        .single();
+
+      if (error) {
+        console.error("❌ Erreur détails créateur:", error);
+        return null;
+      }
+
+      console.log("✅ Détails créateur chargés:", data);
+      setCreatorDetails(data);
+      return data;
+    } catch (err) {
+      console.error("❌ Erreur:", err);
+      return null;
+    } finally {
+      setLoadingCreatorDetails(false);
+    }
+  };
+
+  // ✅ OUVRIR LE MODAL AVEC DÉTAILS
+  const handleCreatorClick = async (creator: any) => {
+    setSelectedCreator(creator);
+    setShowCampaignSelection(false);
+    await loadCreatorDetails(creator.id_w);
+  };
+
+  // ✅ PASSER À LA SÉLECTION DE CAMPAGNE
+  const proceedToCampaignSelection = () => {
+    setShowCampaignSelection(true);
+  };
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -75,42 +252,24 @@ export default function BrandDashboard() {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError || !session) {
-        console.error("❌ Pas de session:", sessionError);
         router.push('/auth/login');
         return;
       }
       
       const USER_ID = session.user.id;
-      console.log("👤 User ID:", USER_ID);
       
       // Récupérer la marque
-      const { data: brandData, error: brandError } = await supabase
+      const { data: brandData } = await supabase
         .from('marque')
         .select('*')
         .eq('id_w', USER_ID)
         .single();
       
-      if (brandError) {
-        console.warn("⚠️ Marque non trouvée:", brandError.message);
-      } else if (brandData) {
-        console.log("✅ Marque chargée:", brandData.nom_marque);
+      if (brandData) {
         setBrandInfo(brandData);
       }
       
-      // Récupérer les créateurs
-      const { data: creatorsData, error: creatorsError } = await supabase
-        .from('info_profile')
-        .select('*')
-        .order('nbre_followers', { ascending: false })
-        .limit(4);
-      
-      if (creatorsError) {
-        console.error("❌ Erreur créateurs:", creatorsError);
-      } else {
-        setCreators(creatorsData || []);
-      }
-      
-      // Récupérer les campagnes - CORRECTION ICI
+      // Récupérer les campagnes 
       const { data: campaignsData, error: campaignsError } = await supabase
         .from('campaigns')
         .select('*')
@@ -118,91 +277,49 @@ export default function BrandDashboard() {
         .order('created_at', { ascending: false });
       
       if (campaignsError) {
-        console.error("❌ Erreur campagnes:", campaignsError);
         setCampaigns([]);
-        // Reset stats si erreur
-        setStats({ 
-          totalBudget: 0, 
-          completedCampaigns: 0, 
-          ongoingCampaigns: 0,
-          totalCampaigns: 0
-        });
+        setStats({ totalBudget: 0, completedCampaigns: 0, ongoingCampaigns: 0, totalCampaigns: 0 });
       } else {
-        console.log("✅ Campagnes chargées:", campaignsData?.length || 0);
-        
         setCampaigns(campaignsData || []);
         
-        // CALCULER LES STATISTIQUES - CORRECTION
+        // Calculer les stats
         if (campaignsData && campaignsData.length > 0) {
           const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          
           let totalBudget = 0;
           let completedCampaigns = 0;
           let ongoingCampaigns = 0;
 
           campaignsData.forEach(campaign => {
-            // Budget - conversion en nombre
-            const budgetValue = campaign.budget;
-            let budget = 0;
-            
-            if (typeof budgetValue === 'number') {
-              budget = budgetValue;
-            } else if (typeof budgetValue === 'string') {
-              budget = parseFloat(budgetValue) || 0;
-            }
-            
+            const budget = parseFloat(campaign.budget) || 0;
             totalBudget += budget;
-            console.log(`💰 "${campaign.title}": ${budget} CFA`);
 
-            // Vérifier les dates
             if (campaign.start_date && campaign.end_date) {
               const start = new Date(campaign.start_date);
-              start.setHours(0, 0, 0, 0);
-              
               const end = new Date(campaign.end_date);
-              end.setHours(23, 59, 59, 999);
 
-              if (end.getTime() < today.getTime()) {
+              if (end < today) {
                 completedCampaigns++;
-                console.log(`✅ "${campaign.title}" → TERMINÉE`);
-              } else if (start.getTime() <= today.getTime() && end.getTime() >= today.getTime()) {
+              } else if (start <= today && end >= today) {
                 ongoingCampaigns++;
-                console.log(`🟡 "${campaign.title}" → EN COURS`);
-              } else {
-                console.log(`🟠 "${campaign.title}" → PLANIFIÉE`);
               }
-            } else {
-              console.log(`⚠️ "${campaign.title}" → Dates manquantes`);
             }
           });
 
-          console.log("📊 STATISTIQUES CALCULÉES:");
-          console.log(`   💰 Budget total: ${totalBudget}`);
-          console.log(`   ✅ Terminées: ${completedCampaigns}`);
-          console.log(`   🟡 En cours: ${ongoingCampaigns}`);
-          console.log(`   📝 Total: ${campaignsData.length}`);
-
-          // MISE À JOUR DES STATS
           setStats({ 
-            totalBudget: totalBudget, 
-            completedCampaigns: completedCampaigns, 
-            ongoingCampaigns: ongoingCampaigns,
+            totalBudget, 
+            completedCampaigns, 
+            ongoingCampaigns,
             totalCampaigns: campaignsData.length
           });
-        } else {
-          // Pas de campagnes
-          setStats({ 
-            totalBudget: 0, 
-            completedCampaigns: 0, 
-            ongoingCampaigns: 0,
-            totalCampaigns: 0
-          });
         }
+
+        // ✅ SUGGESTIONS INTELLIGENTES
+        const suggestedCreators = await getSuggestedCreators(campaignsData || []);
+        setCreators(suggestedCreators);
       }
       
     } catch (error: any) {
-      console.error("❌ Erreur générale:", error);
+      console.error("❌ Erreur:", error);
     } finally {
       setLoading(false);
     }
@@ -213,61 +330,56 @@ export default function BrandDashboard() {
   }, []);
 
   const handleAssignCampaign = async (campaignId: string) => {
-  // Récupération de l'ID du créateur (vérifie si c'est id_w ou id dans ton objet)
-  const creatorId = selectedCreator?.id_w;
+    const creatorId = selectedCreator?.id_w;
 
-  // PROTECTION CRITIQUE
-  if (!creatorId || creatorId === "undefined") {
-    console.error("ID Créateur manquant :", selectedCreator);
-    alert("Erreur : Impossible d'identifier le créateur.");
-    return;
-  }
+    if (!creatorId) {
+      alert("Erreur : Impossible d'identifier le créateur.");
+      return;
+    }
 
-  setIsAssigning(true);
-  
-  try {
-    const { error } = await supabase
-      .from('campaigns')
-      .update({ 
-        assigned_creator_id: creatorId, // Doit être un UUID valide
-        status: 'assigned'
-      })
-      .eq('id_t_campagne', campaignId);
-
-    if (error) throw error;
+    setIsAssigning(true);
     
-    alert("✅ Campagne attribuée !");
-    setSelectedCreator(null);
-    fetchData();
-    
-  } catch (error: any) {
-    alert("Erreur : " + error.message);
-  } finally {
-    setIsAssigning(false);
-  }
-};
+    try {
+      const { error } = await supabase
+        .from('campaigns')
+        .update({ 
+          assigned_creator_id: creatorId,
+          status: 'assigned'
+        })
+        .eq('id_t_campagne', campaignId);
+
+      if (error) throw error;
+      
+      alert("✅ Campagne attribuée !");
+      setSelectedCreator(null);
+      setCreatorDetails(null);
+      setShowCampaignSelection(false);
+      fetchData();
+      
+    } catch (error: any) {
+      alert("Erreur : " + error.message);
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
   const handleDeleteCampaign = async (campaignId: string) => { 
-  if (!campaignId || campaignId === "undefined") {
-    alert("❌ Erreur : ID de campagne manquant.");
-    return;
-  }
-
-  if (!confirm('Êtes-vous sûr de vouloir supprimer cette campagne ?')) return;
-  
-  try {
-    const { error } = await supabase
-      .from('campaigns')
-      .delete()
-      .eq('id_t_campagne', campaignId);
-
-    if (error) throw error;
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette campagne ?')) return;
     
-    alert('✅ Campagne supprimée avec succès !');
-    fetchData();
-  } catch (error: any) {
-    alert("❌ Erreur de suppression : " + error.message);
-  }
-};
+    try {
+      const { error } = await supabase
+        .from('campaigns')
+        .delete()
+        .eq('id_t_campagne', campaignId);
+
+      if (error) throw error;
+      
+      alert('✅ Campagne supprimée !');
+      fetchData();
+    } catch (error: any) {
+      alert("❌ Erreur : " + error.message);
+    }
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -294,96 +406,243 @@ export default function BrandDashboard() {
     { name: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/brands/dashboard', active: true },
     { name: 'Campagnes', icon: <Zap size={20} />, href: '/brands/auth/campagne' },
     { name: 'Collaborations', icon: <UserCheck size={20} />, href: '/brands/dashboard/collaborations' },
-    { name: 'Mon profil', icon: <Settings size={20} />, href: '/brands//dashboard/profile' },
+    { name: 'Mon profil', icon: <Settings size={20} />, href: '/brands/dashboard/profile' },
   ];
 
   return (
     <div className="flex min-h-screen bg-[#F9FAFB]">
       
-      {/* MODAL D'ATTRIBUTION */}
+      {/* MODAL DÉTAILLÉ DU CRÉATEUR */}
       {selectedCreator && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#111827]/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-[32px] w-full max-w-md p-8 shadow-2xl border border-gray-100">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#111827]/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white rounded-[32px] w-full max-w-3xl p-8 shadow-2xl border border-gray-100 my-8">
             
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-[#111827]">Attribuer une campagne</h3>
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-2xl font-bold text-[#111827]">
+                {showCampaignSelection ? 'Sélectionner une campagne' : 'Profil du créateur'}
+              </h3>
               <button 
-                onClick={() => setSelectedCreator(null)} 
+                onClick={() => {
+                  setSelectedCreator(null);
+                  setCreatorDetails(null);
+                  setShowCampaignSelection(false);
+                }} 
                 className="p-2 text-gray-400 hover:text-[#111827] transition-colors"
               >
                 <CloseIcon size={24} />
               </button>
             </div>
-            
-            <div className="flex items-center gap-4 p-4 bg-[#F9FAFB] rounded-[24px] border border-gray-50 mb-8">
-              <div className="w-14 h-14 rounded-full bg-gray-200 border-2 border-white shadow-sm overflow-hidden shrink-0">
-                {selectedCreator.url_photo_profile ? (
-                  <img src={selectedCreator.url_photo_profile} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-[#D4A017]/10 text-[#D4A017] font-bold">
-                    {selectedCreator.nom_complet?.charAt(0) || '?'}
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0">
-                <p className="font-bold text-[#111827] truncate">{selectedCreator.nom_complet || 'Créateur'}</p>
-                <p className="text-[10px] text-[#D4A017] font-black uppercase tracking-widest flex items-center gap-1">
-                  <Sparkles size={10} /> {selectedCreator.la_plateforme || 'Influenceur'}
-                </p>
-              </div>
-            </div>
 
-            <p className="text-[10px] font-black text-gray-400 uppercase mb-4 tracking-[0.2em] px-1">
-              Sélectionnez la campagne
-            </p>
-            
-            <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
-              {campaigns.filter(c => !c.assigned_creator_id).length > 0 ? (
-                campaigns.filter(c => !c.assigned_creator_id).map((camp) => {
-                  const statusDisplay = getStatusDisplay(camp);
-                  return (
-                    <button
-                      key={camp.id_t_campagne}
-                      disabled={isAssigning}
-                      onClick={() => handleAssignCampaign(camp.id_t_campagne)}
-                      className="w-full text-left p-5 rounded-[20px] border border-gray-100 hover:border-[#D4A017]/30 hover:bg-[#D4A017]/5 transition-all flex justify-between items-center group disabled:opacity-50"
-                    >
-                      <div className="min-w-0">
-                        <span className="block font-bold text-[#111827] text-sm truncate group-hover:text-[#D4A017]">
-                          {camp.title || 'Sans titre'}
-                        </span>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] text-gray-400 font-medium">
-                            Budget: {parseFloat(camp.budget || 0).toLocaleString()} CFA
-                          </span>
-                          <span className={`text-[8px] px-2 py-0.5 rounded-full font-bold ${statusDisplay.color}`}>
-                            {statusDisplay.text}
-                          </span>
+            {!showCampaignSelection ? (
+              /* PROFIL DÉTAILLÉ */
+              loadingCreatorDetails ? (
+                <div className="text-center py-12">
+                  <Loader2 className="inline-block w-8 h-8 text-[#D4A017] animate-spin mb-4" />
+                  <p className="text-gray-400">Chargement des détails...</p>
+                </div>
+              ) : creatorDetails ? (
+                <div className="space-y-6">
+                  {/* AVATAR ET INFO */}
+                  <div className="flex items-start gap-6 p-6 bg-gradient-to-br from-[#D4A017]/5 to-[#FFD700]/5 rounded-2xl border border-[#D4A017]/10">
+                    <div className="w-24 h-24 rounded-full bg-gray-200 border-4 border-white shadow-lg overflow-hidden shrink-0">
+                      {creatorDetails.avatar_url ? (
+                        <img src={creatorDetails.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-[#D4A017]/10 text-[#D4A017] font-bold text-3xl">
+                          {creatorDetails.full_name?.charAt(0) || '?'}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-2xl font-bold text-[#111827] mb-2">{creatorDetails.full_name || 'Créateur'}</h4>
+                      {creatorDetails.niche && creatorDetails.niche.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {creatorDetails.niche.map((n: string, i: number) => (
+                            <span key={i} className="px-3 py-1 bg-[#D4A017]/10 text-[#D4A017] rounded-full text-xs font-bold">
+                              {n}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {creatorDetails.age && (
+                        <p className="text-sm text-gray-500">{creatorDetails.age} ans</p>
+                      )}
+                      {selectedCreator.matchReasons && selectedCreator.matchReasons.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          <span className="text-xs text-gray-500">Raisons du match:</span>
+                          {selectedCreator.matchReasons.map((reason: string, i: number) => (
+                            <span key={i} className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-full border border-green-200 font-medium">
+                              ✓ {reason}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* COORDONNÉES */}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {creatorDetails.email && (
+                      <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                        <Mail size={20} className="text-[#D4A017]" />
+                        <div>
+                          <p className="text-xs text-gray-400 font-bold">Email</p>
+                          <p className="text-sm font-medium">{creatorDetails.email}</p>
                         </div>
                       </div>
-                      <div className="w-8 h-8 rounded-full bg-white border border-gray-100 flex items-center justify-center text-[#D4A017] shadow-sm group-hover:bg-[#D4A017] group-hover:text-white transition-all">
-                        <ArrowRight size={14} />
+                    )}
+                    {creatorDetails.phone && (
+                      <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                        <Phone size={20} className="text-[#D4A017]" />
+                        <div>
+                          <p className="text-xs text-gray-400 font-bold">Téléphone</p>
+                          <p className="text-sm font-medium">{creatorDetails.phone}</p>
+                        </div>
                       </div>
-                    </button>
-                  );
-                })
-              ) : (
-                <div className="text-center py-8 px-4 border-2 border-dashed border-gray-50 rounded-[24px]">
-                  <p className="text-sm text-gray-400 font-medium italic">
-                    Aucune campagne disponible pour le moment.
-                  </p>
-                </div>
-              )}
-            </div>
+                    )}
+                  </div>
 
-            <div className="mt-8">
-              <button 
-                onClick={() => setSelectedCreator(null)}
-                className="w-full py-4 text-xs font-black text-gray-400 uppercase tracking-widest hover:text-[#111827] transition-colors"
-              >
-                Annuler
-              </button>
-            </div>
+                  {/* RÉSEAUX SOCIAUX */}
+                  <div>
+                    <h5 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                      <Sparkles size={16} className="text-[#D4A017]" />
+                      Réseaux sociaux
+                    </h5>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {creatorDetails.instagram_username && (
+                        <div className="flex items-center gap-2 p-3 bg-pink-50 border border-pink-100 rounded-xl">
+                          <Instagram size={18} className="text-pink-600" />
+                          <div className="min-w-0">
+                            <p className="text-[10px] text-pink-600 font-bold">Instagram</p>
+                            <p className="text-xs font-medium truncate">@{creatorDetails.instagram_username}</p>
+                          </div>
+                        </div>
+                      )}
+                      {creatorDetails.youtube_username && (
+                        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-xl">
+                          <Youtube size={18} className="text-red-600" />
+                          <div className="min-w-0">
+                            <p className="text-[10px] text-red-600 font-bold">YouTube</p>
+                            <p className="text-xs font-medium truncate">@{creatorDetails.youtube_username}</p>
+                          </div>
+                        </div>
+                      )}
+                      {creatorDetails.tiktok_username && (
+                        <div className="flex items-center gap-2 p-3 bg-gray-50 border border-gray-100 rounded-xl">
+                          <Music2 size={18} className="text-gray-700" />
+                          <div className="min-w-0">
+                            <p className="text-[10px] text-gray-700 font-bold">TikTok</p>
+                            <p className="text-xs font-medium truncate">@{creatorDetails.tiktok_username}</p>
+                          </div>
+                        </div>
+                      )}
+                      {creatorDetails.twitter_username && (
+                        <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl">
+                          <XLogo size={18} />
+                          <div className="min-w-0">
+                            <p className="text-[10px] text-blue-700 font-bold">X</p>
+                            <p className="text-xs font-medium truncate">@{creatorDetails.twitter_username}</p>
+                          </div>
+                        </div>
+                      )}
+                      {creatorDetails.snapchat_username && (
+                        <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-100 rounded-xl">
+                          <Camera size={18} className="text-yellow-600" />
+                          <div className="min-w-0">
+                            <p className="text-[10px] text-yellow-600 font-bold">Snapchat</p>
+                            <p className="text-xs font-medium truncate">@{creatorDetails.snapchat_username}</p>
+                          </div>
+                        </div>
+                      )}
+                      {creatorDetails.facebook_username && (
+                        <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl">
+                          <Users size={18} className="text-blue-600" />
+                          <div className="min-w-0">
+                            <p className="text-[10px] text-blue-600 font-bold">Facebook</p>
+                            <p className="text-xs font-medium truncate">@{creatorDetails.facebook_username}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* BOUTONS */}
+                  <div className="flex gap-3 pt-6 border-t">
+                    <button
+                      onClick={() => {
+                        setSelectedCreator(null);
+                        setCreatorDetails(null);
+                      }}
+                      className="flex-1 py-3 border-2 border-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-50 transition-all"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      onClick={proceedToCampaignSelection}
+                      className="flex-1 py-3 bg-[#D4A017] text-white rounded-xl font-bold hover:bg-[#B88A14] transition-all flex items-center justify-center gap-2"
+                    >
+                      Attribuer une campagne
+                      <ArrowRight size={18} />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-400">Impossible de charger les détails</p>
+                </div>
+              )
+            ) : (
+              /* SÉLECTION DE CAMPAGNE */
+              <div>
+                <p className="text-sm text-gray-500 mb-6">
+                  Sélectionnez la campagne à attribuer à <strong>{creatorDetails?.full_name}</strong>
+                </p>
+                
+                <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                  {campaigns.filter(c => !c.assigned_creator_id).length > 0 ? (
+                    campaigns.filter(c => !c.assigned_creator_id).map((camp) => {
+                      const statusDisplay = getStatusDisplay(camp);
+                      return (
+                        <button
+                          key={camp.id_t_campagne}
+                          disabled={isAssigning}
+                          onClick={() => handleAssignCampaign(camp.id_t_campagne)}
+                          className="w-full text-left p-5 rounded-2xl border border-gray-200 hover:border-[#D4A017] hover:bg-[#D4A017]/5 transition-all flex justify-between items-center group disabled:opacity-50"
+                        >
+                          <div className="min-w-0">
+                            <span className="block font-bold text-[#111827] mb-1 group-hover:text-[#D4A017]">
+                              {camp.title || 'Sans titre'}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500">
+                                Budget: {parseFloat(camp.budget || 0).toLocaleString()} CFA
+                              </span>
+                              <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${statusDisplay.color}`}>
+                                {statusDisplay.text}
+                              </span>
+                            </div>
+                          </div>
+                          <ArrowRight size={20} className="text-[#D4A017]" />
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-2xl">
+                      <p className="text-gray-400">Aucune campagne disponible</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-3 mt-6 pt-6 border-t">
+                  <button
+                    onClick={() => setShowCampaignSelection(false)}
+                    className="flex-1 py-3 border-2 border-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-50 transition-all"
+                  >
+                    ← Retour
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -496,7 +755,7 @@ export default function BrandDashboard() {
               
               {loading ? (
                 <div className="text-center py-12">
-                  <div className="inline-block w-8 h-8 border-4 border-[#D4A017] border-t-transparent rounded-full animate-spin mb-4"></div>
+                  <Loader2 className="inline-block w-8 h-8 text-[#D4A017] animate-spin mb-4" />
                   <p className="text-gray-400 font-medium">Chargement...</p>
                 </div>
               ) : campaigns.length === 0 ? (
@@ -581,58 +840,85 @@ export default function BrandDashboard() {
               )}
             </div>
 
-            {/* MATCHS IA */}
+            {/* MATCHS IA INTELLIGENTS */}
             <div className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm h-fit sticky top-8">
               <div className="mb-6">
                 <h2 className="text-xl font-bold text-[#111827]">Matchs suggérés</h2>
                 <p className="text-[10px] text-[#D4A017] font-black flex items-center gap-1 uppercase tracking-widest mt-1">
                   <Sparkles size={12} /> IA Woutty
                 </p>
+                {campaigns.length > 0 && (
+                  <p className="text-[9px] text-gray-400 mt-2">
+                    Basé sur vos {campaigns.length} campagne{campaigns.length > 1 ? 's' : ''}
+                  </p>
+                )}
               </div>
 
               {creators.length > 0 ? (
                 <>
                   <div className="space-y-6 mb-8">
-                    {creators.map((creator, idx) => (
-                      <div 
-                        key={creator.id_w || idx} 
-                        onClick={() => setSelectedCreator(creator)}
-                        className="flex items-center justify-between group cursor-pointer hover:bg-[#D4A017]/5 p-3 -m-3 rounded-2xl transition-all border border-transparent hover:border-[#D4A017]/10"
-                      >
-                        <div className="flex items-center gap-3 overflow-hidden">
-                          <div className="w-10 h-10 bg-gray-200 rounded-full shrink-0 border border-gray-100 overflow-hidden">
-                            {creator.url_photo_profile ? (
-                              <img src={creator.url_photo_profile} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold">
-                                {creator.nom_complet?.charAt(0) || '?'}
-                              </div>
-                            )}
+                    {creators.map((creator, idx) => {
+                      const matchPercentage = Math.min(95, Math.round(creator.matchScore));
+                      
+                      return (
+                        <div 
+                          key={creator.id_w} 
+                          onClick={() => handleCreatorClick(creator)}
+                          className="flex items-center justify-between group cursor-pointer hover:bg-[#D4A017]/5 p-3 -m-3 rounded-2xl transition-all border border-transparent hover:border-[#D4A017]/10"
+                        >
+                          <div className="flex items-center gap-3 overflow-hidden">
+                            <div className="w-10 h-10 bg-gray-200 rounded-full shrink-0 border border-gray-100 overflow-hidden">
+                              {creator.avatar_url ? (
+                                <img src={creator.avatar_url} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold">
+                                  {creator.full_name?.charAt(0) || '?'}
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-bold text-sm text-[#111827] truncate">
+                                {creator.full_name || 'Créateur'}
+                              </p>
+                              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-tighter">
+                                {creator.primaryPlatform} • {formatNumber(creator.totalFollowers)}
+                              </p>
+                              {creator.matchReasons && creator.matchReasons.length > 0 && (
+                                <div className="flex gap-1 mt-1">
+                                  {creator.matchReasons.slice(0, 2).map((reason: string, i: number) => (
+                                    <span 
+                                      key={i}
+                                      className="text-[8px] bg-[#D4A017]/10 text-[#D4A017] px-1.5 py-0.5 rounded-md font-bold"
+                                    >
+                                      {reason}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <p className="font-bold text-sm text-[#111827] truncate">
-                              {creator.nom_complet || 'Créateur'}
-                            </p>
-                            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-tighter">
-                              {creator.la_plateforme || 'Plateforme'} • {formatNumber(creator.nbre_followers || 0)}
-                            </p>
+                          <div className="flex flex-col items-end gap-1">
+                            <div className={`text-[9px] font-black px-2 py-1 rounded-md border ${
+                              matchPercentage >= 80 
+                                ? 'bg-green-50 text-green-600 border-green-100'
+                                : matchPercentage >= 60
+                                ? 'bg-yellow-50 text-yellow-600 border-yellow-100'
+                                : 'bg-orange-50 text-orange-600 border-orange-100'
+                            }`}>
+                              {matchPercentage}%
+                            </div>
+                            <span className="text-[8px] text-[#D4A017] font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                              VOIR
+                            </span>
                           </div>
                         </div>
-                        <div className="flex flex-col items-end gap-1">
-                          <div className="bg-green-50 text-green-600 text-[9px] font-black px-2 py-1 rounded-md border border-green-100">
-                            {95 - idx}%
-                          </div>
-                          <span className="text-[8px] text-[#D4A017] font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-                            CHOISIR
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   <Link href="/creators/public">
                     <button className="w-full py-4 bg-gray-50 border border-gray-100 rounded-2xl text-gray-400 font-bold text-xs flex items-center justify-center gap-2 hover:bg-[#111827] hover:text-white transition-all group uppercase tracking-widest">
-                      Parcourir plus
+                      Voir plus
                       <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                     </button>
                   </Link>
@@ -640,7 +926,12 @@ export default function BrandDashboard() {
               ) : (
                 <div className="text-center py-8">
                   <Users size={32} className="mx-auto text-gray-200 mb-2" />
-                  <p className="text-sm text-gray-400">Aucun créateur disponible</p>
+                  <p className="text-sm text-gray-400">
+                    {campaigns.length === 0 
+                      ? "Créez une campagne pour voir les suggestions"
+                      : "Aucun créateur disponible"
+                    }
+                  </p>
                 </div>
               )}
             </div>

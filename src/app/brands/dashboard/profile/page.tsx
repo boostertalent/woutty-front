@@ -27,7 +27,6 @@ export default function BrandProfile() {
     email_marque: '',
     domaine: '',
     site_web: '',
-    description: ''
   });
 
   const fetchBrandData = async () => {
@@ -56,7 +55,6 @@ export default function BrandProfile() {
           email_marque: data.email_marque || '',
           domaine: data.domaine || '',
           site_web: data.site_web || '',
-          description: data.description || ''
         });
       }
     } catch (err: any) {

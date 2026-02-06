@@ -5,13 +5,10 @@ import { NextResponse } from 'next/server'
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  
-  // On récupère le rôle souhaité depuis l'URL (par défaut 'creator')
   const roleFromUrl = searchParams.get('role') || 'creator'
 
   if (code) {
     const cookieStore = await cookies()
-    
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -28,79 +25,39 @@ export async function GET(request: Request) {
       }
     )
 
-    // 1. Échange du code Google contre une session
     const { data: authData, error: authError } = await supabase.auth.exchangeCodeForSession(code)
     
     if (!authError && authData.user) {
       const user = authData.user;
-      let targetTable = '';
-      let redirectPath = '/auth';
-
-      // 2. RECHERCHE DES PROFILS EXISTANTS
-      // On cherche d'abord dans 'createur' avec id_w
-      const { data: isCreator } = await supabase
+      
+      // 1. VÉRIFICATION CRÉATEUR / ADMIN
+      const { data: creatorData } = await supabase
         .from('createur')
-        .select('id_w')
+        .select('id_w, role')
         .eq('id_w', user.id)
         .maybeSingle();
       
-      if (isCreator) {
-        targetTable = 'createur';
-        redirectPath = '/creators/dashboard';
-      } else {
-        // Sinon on cherche dans 'marque' (vérifier si c'est id ou id_w ici aussi)
-        const { data: isBrand } = await supabase
-          .from('marque')
-          .select('id')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        if (isBrand) {
-          targetTable = 'marque';
-          redirectPath = '/brands/dashboard';
-        }
+      if (creatorData) {
+        const path = creatorData.role === 'admin' ? '/admin/dashboard' : '/creators/dashboard';
+        return NextResponse.redirect(`${origin}${path}`);
       }
 
-      // 3. INSCRIPTION (si l'utilisateur est nouveau)
-      if (!targetTable) {
-        targetTable = roleFromUrl === 'brand' ? 'marque' : 'createur';
-        redirectPath = roleFromUrl === 'brand' ? '/brands/dashboard' : '/creators/dashboard';
+      // 2. VÉRIFICATION MARQUE
+      const { data: brandData } = await supabase
+        .from('marque')
+        .select('id_w') // Assure-toi que c'est bien id_w ici aussi
+        .eq('id_w', user.id)
+        .maybeSingle();
 
-        // Construction de l'objet de données
-        const insertData: any = {
-          email: user.email,
-          full_name: user.user_metadata.full_name || 'Utilisateur Google',
-          avatar_url: user.user_metadata.avatar_url,
-        };
-
-        // On adapte la clé d'ID selon la table cible
-        let conflictColumn = 'id';
-        if (targetTable === 'createur') {
-          insertData.id_w = user.id; 
-          conflictColumn = 'id_w';
-        } else {
-          insertData.id = user.id; 
-          conflictColumn = 'id';
-        }
-
-        const { error: upsertError } = await supabase
-          .from(targetTable)
-          .upsert(insertData, { onConflict: conflictColumn });
-
-        if (upsertError) {
-            console.error("Erreur lors de la création du profil Google:", upsertError);
-            // Si erreur RLS ici, c'est que la Policy d'INSERT manque encore
-            return NextResponse.redirect(`${origin}/auth/login?error=db_error`);
-        }
+      if (brandData) {
+        return NextResponse.redirect(`${origin}/brands/dashboard`);
       }
 
-      // 4. Redirection finale vers le bon Dashboard
-      const finalResponse = NextResponse.redirect(`${origin}${redirectPath}`)
-      finalResponse.headers.set('Cache-Control', 'no-store, max-age=0')
-      return finalResponse
+     
+
+      
     }
   }
 
-  // En cas d'échec total
   return NextResponse.redirect(`${origin}/auth/login?error=auth_failed`)
 }

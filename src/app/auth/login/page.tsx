@@ -24,59 +24,64 @@ export default function LoginPage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   ));
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setErrorMsg(null);
+ const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+  setErrorMsg(null);
 
-    try {
-      // 1. Connexion via Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: formData.identifier.trim(),
-        password: formData.password,
-      });
+  try {
+    // 1. Connexion Auth
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email: formData.identifier.trim(),
+      password: formData.password,
+    });
 
-      if (authError) throw authError;
+    if (authError) throw authError;
 
-      if (authData.user) {
-        const userId = authData.user.id;
+    if (authData.user) {
+      const userId = authData.user.id;
 
-        // 2. On cherche dans la table 'createur' (Utilisation de id_w)
-        const { data: creatorData } = await supabase
-          .from('createur')
-          .select('id_w') 
-          .eq('id_w', userId)
-          .maybeSingle(); 
+      // 2. On vérifie d'abord s'il est Créateur (et on récupère son rôle)
+      const { data: creatorData } = await supabase
+        .from('createur')
+        .select('id_w, role') 
+        .eq('id_w', userId)
+        .maybeSingle(); 
 
-        if (creatorData) {
+      if (creatorData) {
+        // Redirection spécifique si c'est un ADMIN
+        if (creatorData.role === 'admin') {
+          router.push('/admin/dashboard');
+        } else {
           router.push('/creators/dashboard');
-          router.refresh();
-          return;
         }
-
-        // 3. On cherche dans la table 'marque' (Utilisation de id_w)
-        const { data: brandData } = await supabase
-          .from('marque')
-          .select('id_w')
-          .eq('id_w', userId)
-          .maybeSingle();
-
-        if (brandData) {
-          router.push('/brands/dashboard');
-          router.refresh();
-          return;
-        }
-
-        // 4. Si l'utilisateur est authentifié mais absent des tables métiers
-        setErrorMsg("Votre profil est en cours de configuration ou introuvable.");
+        router.refresh();
+        return;
       }
-    } catch (error: any) {
-      console.error("Erreur login:", error);
-      setErrorMsg("Identifiants incorrects ou compte non validé.");
-    } finally {
-      setLoading(false);
+
+      // 3. Sinon, on cherche dans 'marque'
+      const { data: brandData } = await supabase
+        .from('marque')
+        .select('id_w')
+        .eq('id_w', userId)
+        .maybeSingle();
+
+      if (brandData) {
+        router.push('/brands/dashboard');
+        router.refresh();
+        return;
+      }
+
+      // 4. Cas particulier : Compte sans profil métier
+      setErrorMsg("Votre profil est introuvable. Veuillez contacter le support.");
     }
-  };
+  } catch (error: any) {
+    console.error("Erreur login:", error);
+    setErrorMsg("Identifiants incorrects ou compte non validé.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleGoogleLogin = async () => {
     try {
