@@ -10,6 +10,11 @@ const config = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   reporters: ['default', '<rootDir>/jest-reporter.js'],
   silent: true,
+
+  // 🔑 CORRECTION ICI
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
 }
 
 export default createJestConfig(config)

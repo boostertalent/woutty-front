@@ -1,6 +1,7 @@
 import { defineConfig } from "cypress";
 import axios from "axios";
 
+
 export default defineConfig({
   e2e: {
     baseUrl: "http://localhost:3000",

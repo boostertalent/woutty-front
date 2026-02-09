@@ -1,37 +1,71 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import CreateCampaign from './page';
 
-beforeEach(() => localStorage.clear());
+// Mock du router Next.js
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: jest.fn(),
+  }),
+}));
+
+beforeEach(() => {
+  localStorage.clear();
+});
 
 describe('CreateCampaign page', () => {
-  it('renders without crashing', () => {
+  it('renders without crashing', async () => {
     render(<CreateCampaign />);
-    expect(screen.getByTestId('create-campaign-page')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', { name: /créer une campagne/i })
+      ).toBeInTheDocument();
+    });
   });
 
-  it('disables continue when form is invalid', () => {
+  it('disables continue when form is invalid', async () => {
     render(<CreateCampaign />);
-    const button = screen.getByTestId('continue-button');
+
+    const button = await screen.findByRole('button', {
+      name: /continuer/i,
+    });
+
     expect(button).toBeDisabled();
   });
 
-  it('enables continue when form is valid', () => {
+  it('keeps continue disabled if required fields are missing', async () => {
     render(<CreateCampaign />);
-    const titleInput = screen.getByTestId('title-input');
-    const objCheckbox = screen.getByTestId('objective-Notoriété');
-    const button = screen.getByTestId('continue-button');
 
-    fireEvent.change(titleInput, { target: { value: 'Campagne été' } });
-    fireEvent.click(objCheckbox);
+    const titleInput = await screen.findByPlaceholderText(
+      /lancement collection été/i
+    );
+    const objectif = screen.getByRole('button', { name: 'Notoriété' });
+    const button = screen.getByRole('button', { name: /continuer/i });
 
-    // Comme il manque dates, il reste désactivé
+    fireEvent.change(titleInput, {
+      target: { value: 'Campagne été' },
+    });
+    fireEvent.click(objectif);
+
     expect(button).toBeDisabled();
   });
 
-  it('saves data to localStorage on input', () => {
+  it('saves title to localStorage on input', async () => {
     render(<CreateCampaign />);
-    const titleInput = screen.getByTestId('title-input');
-    fireEvent.change(titleInput, { target: { value: 'Test Campagne' } });
-    expect(JSON.parse(localStorage.getItem('campaign_step_1') || '{}').title).toBe('Test Campagne');
+
+    const titleInput = await screen.findByPlaceholderText(
+      /lancement collection été/i
+    );
+
+    fireEvent.change(titleInput, {
+      target: { value: 'Test Campagne' },
+    });
+
+    await waitFor(() => {
+      const saved = JSON.parse(
+        localStorage.getItem('campaign_step_1') || '{}'
+      );
+      expect(saved.title).toBe('Test Campagne');
+    });
   });
 });

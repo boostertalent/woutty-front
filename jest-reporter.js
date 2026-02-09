@@ -36,10 +36,10 @@ class N8nReporter {
     };
 
     try {
-      const n8nUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || process.env.N8N_WEBHOOK_URL;
+      const n8nUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL
       
       if (!n8nUrl) {
-        console.warn('⚠️ N8N_WEBHOOK_URL ou NEXT_PUBLIC_N8N_WEBHOOK_URL non défini dans .env.local - données non envoyées');
+        console.warn('⚠️ NEXT_PUBLIC_N8N_WEBHOOK_URL non défini dans .env.local - données non envoyées');
         return;
       }
       
