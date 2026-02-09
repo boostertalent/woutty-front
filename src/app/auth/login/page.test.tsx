@@ -1,8 +1,5 @@
 import { render, screen } from '@testing-library/react';
-// Utilitaires de test React
-
 import Component from './page';
-// Page testée
 
 // --- MOCKS ---
 
@@ -57,10 +54,14 @@ jest.mock('framer-motion', () => ({
   },
 }));
 
-// --- TEST ---
+// --- TESTS ---
 describe('LoginPage', () => {
   it('renders without crashing', () => {
     render(<Component />);
-    expect(screen.getByText(/Woutty/i)).toBeInTheDocument();
+
+    // On cible explicitement le H1 (meilleure pratique RTL)
+    expect(
+      screen.getByRole('heading', { name: /woutty/i })
+    ).toBeInTheDocument();
   });
 });

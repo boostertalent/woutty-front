@@ -1,8 +1,20 @@
 import { render } from '@testing-library/react';
-import Component from './page';
+import Page from './page';
 
-describe('page', () => {
+// --- MOCK NEXT/NAVIGATION ---
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: jest.fn(),
+  }),
+}));
+
+// --- MOCK NEXT/LINK ---
+jest.mock('next/link', () => {
+  return ({ children }: { children: React.ReactNode }) => children;
+});
+
+describe('Step2 page', () => {
   it('renders without crashing', () => {
-    render(<Component />);
+    render(<Page />);
   });
 });
