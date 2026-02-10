@@ -1,11 +1,10 @@
 import { render } from '@testing-library/react';
-import Component from './page';
+import BrandCollaborations from './page';
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: jest.fn(),
-    refresh: jest.fn()
   })
 }));
 
@@ -26,14 +25,15 @@ jest.mock('@supabase/ssr', () => ({
     from: jest.fn(() => ({
       select: jest.fn(() => ({
         eq: jest.fn(() => ({
-          single: jest.fn(() => Promise.resolve({
-            data: { nom_marque: 'Test Brand', domaine: 'Tech' },
-            error: null
+          not: jest.fn(() => ({
+            in: jest.fn(() => ({
+              order: jest.fn(() => Promise.resolve({
+                data: [],
+                error: null
+              }))
+            }))
           }))
         }))
-      })),
-      update: jest.fn(() => ({
-        eq: jest.fn(() => Promise.resolve({ error: null }))
       }))
     }))
   }))
@@ -46,8 +46,8 @@ jest.mock('framer-motion', () => ({
   })
 }));
 
-describe('page', () => {
+describe('BrandCollaborations', () => {
   it('renders without crashing', () => {
-    render(<Component />);
+    render(<BrandCollaborations />);
   });
 });

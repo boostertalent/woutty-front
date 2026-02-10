@@ -1,33 +1,31 @@
 import { render } from '@testing-library/react';
-import Component from './page';
+import EditCampaign from './page';
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
+  useParams: () => ({ id: 'test-id' }),
   useRouter: () => ({
     push: jest.fn(),
-    refresh: jest.fn()
+    refresh: jest.fn(),
+    back: jest.fn()
   })
-}));
-
-// Mock next/link
-jest.mock('next/link', () => ({
-  __esModule: true,
-  default: ({ children }: any) => children,
 }));
 
 // Mock Supabase
 jest.mock('@supabase/ssr', () => ({
   createBrowserClient: jest.fn(() => ({
-    auth: {
-      getSession: jest.fn(() => Promise.resolve({
-        data: { session: { user: { id: 'test-user-id' } } }
-      }))
-    },
     from: jest.fn(() => ({
       select: jest.fn(() => ({
         eq: jest.fn(() => ({
           single: jest.fn(() => Promise.resolve({
-            data: { nom_marque: 'Test Brand', domaine: 'Tech' },
+            data: {
+              title: 'Test Campaign',
+              budget: 1000,
+              currency: 'CFA',
+              description: 'Test description',
+              objectives: ['Notoriété'],
+              end_date: '2024-12-31'
+            },
             error: null
           }))
         }))
@@ -39,15 +37,8 @@ jest.mock('@supabase/ssr', () => ({
   }))
 }));
 
-// Mock framer-motion
-jest.mock('framer-motion', () => ({
-  motion: new Proxy({}, {
-    get: () => (props: any) => <div {...props} />
-  })
-}));
-
-describe('page', () => {
+describe('EditCampaign', () => {
   it('renders without crashing', () => {
-    render(<Component />);
+    render(<EditCampaign />);
   });
 });

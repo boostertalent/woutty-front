@@ -1,8 +1,15 @@
 import { render } from '@testing-library/react';
-import Component from './StatCard';
+import { StatCard } from './StatCard';
 
 describe('StatCard', () => {
   it('renders without crashing', () => {
-    render(<Component />);
+    render(
+      <StatCard 
+        title="Test Title" 
+        value="100" 
+        icon={<div data-testid="icon">Icon</div>} 
+        trend="+5%"
+      />
+    );
   });
 });

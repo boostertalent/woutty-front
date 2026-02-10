@@ -1,8 +1,13 @@
 import { render } from '@testing-library/react';
-import Component from './theme-provider';
+import { ThemeProvider } from './theme-provider';
+
+// Mock next-themes
+jest.mock('next-themes', () => ({
+  ThemeProvider: ({ children }: any) => children,
+}));
 
 describe('theme-provider', () => {
   it('renders without crashing', () => {
-    render(<Component />);
+    render(<ThemeProvider><div>Test</div></ThemeProvider>);
   });
 });

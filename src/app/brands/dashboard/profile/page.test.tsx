@@ -1,11 +1,10 @@
 import { render } from '@testing-library/react';
-import Component from './page';
+import BrandProfile from './page';
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: jest.fn(),
-    refresh: jest.fn()
   })
 }));
 
@@ -27,14 +26,20 @@ jest.mock('@supabase/ssr', () => ({
       select: jest.fn(() => ({
         eq: jest.fn(() => ({
           single: jest.fn(() => Promise.resolve({
-            data: { nom_marque: 'Test Brand', domaine: 'Tech' },
+            data: {
+              nom_marque: 'Test Brand',
+              email_marque: 'test@brand.com',
+              domaine: 'Tech',
+              site_web: 'https://testbrand.com'
+            },
             error: null
           }))
         }))
       })),
       update: jest.fn(() => ({
         eq: jest.fn(() => Promise.resolve({ error: null }))
-      }))
+      })),
+      insert: jest.fn(() => Promise.resolve({ error: null }))
     }))
   }))
 }));
@@ -46,8 +51,8 @@ jest.mock('framer-motion', () => ({
   })
 }));
 
-describe('page', () => {
+describe('BrandProfile', () => {
   it('renders without crashing', () => {
-    render(<Component />);
+    render(<BrandProfile />);
   });
 });

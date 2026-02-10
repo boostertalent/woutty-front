@@ -1,18 +1,13 @@
 import { render } from '@testing-library/react';
-import Component from './page';
+import CampaignDetailDynamic from './page';
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
+  useParams: () => ({ id: 'test-id' }),
   useRouter: () => ({
     push: jest.fn(),
     refresh: jest.fn()
   })
-}));
-
-// Mock next/link
-jest.mock('next/link', () => ({
-  __esModule: true,
-  default: ({ children }: any) => children,
 }));
 
 // Mock Supabase
@@ -27,7 +22,15 @@ jest.mock('@supabase/ssr', () => ({
       select: jest.fn(() => ({
         eq: jest.fn(() => ({
           single: jest.fn(() => Promise.resolve({
-            data: { nom_marque: 'Test Brand', domaine: 'Tech' },
+            data: {
+              title: 'Test Campaign',
+              budget: 1000,
+              start_date: '2024-01-01',
+              end_date: '2024-12-31',
+              status: 'active',
+              assigned_creator_id: 'creator-id',
+              id_w: 'test-user-id'
+            },
             error: null
           }))
         }))
@@ -46,8 +49,8 @@ jest.mock('framer-motion', () => ({
   })
 }));
 
-describe('page', () => {
+describe('CampaignDetailDynamic', () => {
   it('renders without crashing', () => {
-    render(<Component />);
+    render(<CampaignDetailDynamic />);
   });
 });
