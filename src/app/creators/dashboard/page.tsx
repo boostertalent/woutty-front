@@ -2,8 +2,11 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { createBrowserClient } from '@supabase/ssr'; 
-import { useRouter } from 'next/navigation';
+import { useRouter,useSearchParams  } from 'next/navigation';
 import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
+import { motion } from 'framer-motion'; 
+
 import { 
   BarChart3, 
   Briefcase, 
@@ -58,6 +61,8 @@ const calculateEngagementRate = (post: any): string => {
 };
 
 export default function CreatorDashboard() {
+  const searchParams = useSearchParams();
+const [isAdminViewing, setIsAdminViewing] = useState(false);
   const router = useRouter();
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -121,14 +126,24 @@ export default function CreatorDashboard() {
       }
 
       const USER_ID = session.user.id;
-      console.log("👤 Utilisateur connecté:", USER_ID);
 
-      // Récupérer le créateur
-      const { data: creatorData } = await supabase
-        .from('createur')
-        .select('*')
-        .eq('id_w', USER_ID)
-        .single();
+const adminViewingId = searchParams.get('viewing');
+let creatorIdToLoad = USER_ID;
+let adminViewMode = false;
+
+if (adminViewingId) {
+  creatorIdToLoad = adminViewingId;
+  adminViewMode = true;
+}
+
+setIsAdminViewing(adminViewMode);
+
+const { data: creatorData } = await supabase
+  .from('createur')
+  .select('*')
+  .eq('id_w', creatorIdToLoad)
+  .single();
+
 
       if (creatorData) {
         console.log("✅ Créateur:", creatorData.full_name);
@@ -139,7 +154,7 @@ export default function CreatorDashboard() {
       const { data: profileData } = await supabase
         .from('info_profile')
         .select('*')
-        .eq('id_w', USER_ID);
+        .eq('id_w', creatorIdToLoad);
 
       const profileMap = new Map();
       (profileData || []).forEach((p: any) => {
@@ -173,7 +188,7 @@ export default function CreatorDashboard() {
       const { data: postData } = await supabase
         .from('info_poste')
         .select('*')
-        .eq('id_w', USER_ID)
+        .eq('id_w', creatorIdToLoad)
         .order('date_poste', { ascending: false });
 
       const posts = (postData || []).map((post: any, index: number) => {
@@ -226,7 +241,7 @@ export default function CreatorDashboard() {
           *,
           marque:marque(nom_marque, domaine)
         `)
-        .eq('assigned_creator_id', USER_ID)
+        .eq('assigned_creator_id', creatorIdToLoad)
         .or('creator_status.is.null,creator_status.eq.pending');
 
       console.log("📋 Campagnes attribuées (Opportunités):", pendingData?.length || 0);
@@ -239,7 +254,7 @@ export default function CreatorDashboard() {
           *,
           marque:marque(nom_marque, domaine)
         `)
-        .eq('assigned_creator_id', USER_ID)
+        .eq('assigned_creator_id', creatorIdToLoad)
         .eq('creator_status', 'accepted');
 
       console.log("📊 Campagnes acceptées:", acceptedData?.length || 0);
@@ -316,7 +331,14 @@ export default function CreatorDashboard() {
       setProcessingCampaign(null);
     }
   };
-
+  // admin
+const handleBackToAdmin = () => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('admin_mode');
+    localStorage.removeItem('admin_viewing_creator');
+  }
+  router.push('/admin/dashboard');
+};
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/auth/login');
@@ -887,6 +909,25 @@ export default function CreatorDashboard() {
           ) : null}
         </div>
       </main>
+    {isAdminViewing && (
+  <motion.div 
+    initial={{ y: -50, opacity: 0 }}
+    animate={{ y: 0, opacity: 1 }}
+    className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-4 p-2 pl-4 bg-white/80 backdrop-blur-md border border-orange-100 rounded-full shadow-[0_10px_30px_-10px_rgba(234,88,12,0.2)]"
+  >
+   
+
+    {/* Petit Bouton de sortie */}
+    <button 
+      onClick={handleBackToAdmin}
+      className="flex items-center gap-2 px-4 py-1.5 bg-gray-900 hover:bg-black text-white rounded-full text-xs font-black transition-all active:scale-95"
+    >
+      
+      retour au dashboard admin
+    </button>
+  </motion.div>
+)}
+
     </div>
   );
 }

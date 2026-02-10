@@ -49,17 +49,33 @@ export default function LoginPage() {
         .maybeSingle(); 
 
       if (creatorData) {
-        // Redirection spécifique si c'est un ADMIN
+        // Redirection spécifique si c'est un ADMIN PRINCIPAL
         if (creatorData.role === 'admin') {
+          console.log("✅ Admin principal connecté");
           router.push('/admin/dashboard');
         } else {
+          console.log("✅ Créateur connecté");
           router.push('/creators/dashboard');
         }
         router.refresh();
         return;
       }
 
-      // 3. Sinon, on cherche dans 'marque'
+      // 3. Vérifier dans la table admin (ADMINS SECONDAIRES)
+      const { data: adminData } = await supabase
+        .from('admin')
+        .select('id_w, role')
+        .eq('id_w', userId)
+        .maybeSingle();
+
+      if (adminData) {
+        console.log("✅ Admin secondaire connecté");
+        router.push('/admin/dashboard');
+        router.refresh();
+        return;
+      }
+
+      // 4. Sinon, on cherche dans 'marque'
       const { data: brandData } = await supabase
         .from('marque')
         .select('id_w')
@@ -67,16 +83,18 @@ export default function LoginPage() {
         .maybeSingle();
 
       if (brandData) {
+        console.log("✅ Marque connectée");
         router.push('/brands/dashboard');
         router.refresh();
         return;
       }
 
-      // 4. Cas particulier : Compte sans profil métier
+      // 5. Cas particulier : Compte sans profil métier
+      console.log("❌ Profil introuvable");
       setErrorMsg("Votre profil est introuvable. Veuillez contacter le support.");
     }
   } catch (error: any) {
-    console.error("Erreur login:", error);
+    console.error("❌ Erreur login:", error);
     setErrorMsg("Identifiants incorrects ou compte non validé.");
   } finally {
     setLoading(false);
@@ -158,7 +176,7 @@ export default function LoginPage() {
           <div className="space-y-2">
             <div className="flex justify-between items-center ml-1">
               <label className="text-xs font-black uppercase tracking-widest text-gray-400">Mot de passe</label>
-              <Link href="/auth/forgot-password" size="sm" className="text-xs font-bold text-[#ceaf4a] hover:text-black transition-colors">
+              <Link href="/auth/forgot-password" className="text-xs font-bold text-[#ceaf4a] hover:text-black transition-colors">
                 Oublié ?
               </Link>
             </div>
