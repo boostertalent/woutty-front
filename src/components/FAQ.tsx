@@ -34,8 +34,8 @@ export default function FAQ() {
         
         {/* En-tête de section */}
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold mb-4 tracking-tight">Questions fréquentes</h2>
-          <p className="text-muted-foreground text-sm">Tout ce que vous devez savoir pour commencer.</p>
+          <h2 className="text-3xl font-bold mb-4 tracking-tight">FAQ</h2>
+          <p className="text-muted-foreground text-sm">Questions fréquentes - Tout ce que vous devez savoir pour commencer.</p>
         </div>
 
         <motion.div 

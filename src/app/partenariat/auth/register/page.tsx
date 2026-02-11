@@ -70,7 +70,7 @@ export default function RegisterPage() {
         if (profileError) console.error("Erreur Profil:", profileError);
 
         alert("Compte créé avec succès ! Connectez-vous maintenant.");
-        router.push('partenariat/auth/login');
+        router.push('/partenariat/auth/login');
       }
 
     } catch (error: any) {

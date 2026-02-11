@@ -93,7 +93,7 @@ export default function LoginPage() {
                 <label className="text-black font-bold  hover:text-black transition-colors">
                   Mot de passe
                 </label>
-                <Link href="/auth/forgot-password" className="text-xs font-bold text-gray-400 hover:text-black transition-colors">
+                <Link href="/partenariat/auth/forgot-password" className="text-xs font-bold text-gray-400 hover:text-black transition-colors">
                   Oublié ?
                 </Link>
               </div>
@@ -139,7 +139,7 @@ export default function LoginPage() {
         <div className="text-center pt-4">
           <p className="text-sm text-gray-500 font-medium">
             Nouveau sur la plateforme ?{' '}
-            <Link href="/auth/register" className="text-black font-bold hover:underline underline-offset-4 decoration-2">
+            <Link href="/partenariat/auth/register" className="text-black font-bold hover:underline underline-offset-4 decoration-2">
               Créer un profil
             </Link>
           </p>
