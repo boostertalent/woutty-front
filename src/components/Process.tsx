@@ -98,7 +98,7 @@ export default function Process() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.08 }}
                   whileHover={{ y: -4 }}
-                  className="flex gap-5 p-4 rounded-2xl hover:bg-muted/50 transition"
+                  className="process-step flex gap-5 p-4 rounded-2xl hover:bg-muted/50 transition"
                 >
                   <span className="text-xl font-bold text-booster-yellow shrink-0">
                     {step.id}.

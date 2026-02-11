@@ -10,7 +10,12 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "cypress:open": "cypress open",
-    "cypress:run": "cypress run"
+    "cypress:open:edge": "cypress open --browser edge",
+    "cypress:run": "cypress run",
+    "cypress:run:edge": "cypress run --browser edge",
+    "cypress:run:chrome": "cypress run --browser chrome",
+    "cypress:components": "cypress run --spec 'cypress/e2e/components/**/*.cy.js'",
+    "cypress:components:edge": "cypress run --browser edge --spec 'cypress/e2e/components/**/*.cy.js'"
   },
   "dependencies": {
     "@radix-ui/react-navigation-menu": "^1.2.14",

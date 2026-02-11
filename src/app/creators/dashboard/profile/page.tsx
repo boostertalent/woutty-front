@@ -342,7 +342,7 @@ export default function CreatorProfile() {
               
               {editMode && (
                 <div className="flex-1">
-                  <label className="inline-flex items-center gap-2 px-6 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-sm hover:bg-gray-100 transition-all cursor-pointer">
+                  <label className="inline-flex items-center gap-2 px-6 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-sm text-gray-700">
                     <Upload size={16} />
                     Changer la photo
                     <input 
@@ -383,7 +383,7 @@ export default function CreatorProfile() {
                     onChange={handleChange}
                     required
                     placeholder="Ex: John Doe"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all text-gray-700"
                   />
                 ) : (
                   <p className="px-4 py-3 bg-gray-50 rounded-xl text-gray-700 font-medium">
@@ -406,7 +406,7 @@ export default function CreatorProfile() {
                     onChange={handleChange}
                     required
                     placeholder="email@exemple.com"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all text-gray-700"
                   />
                 ) : (
                   <p className="px-4 py-3 bg-gray-50 rounded-xl text-gray-700 font-medium">
@@ -428,7 +428,7 @@ export default function CreatorProfile() {
                     value={creatorData.phone}
                     onChange={handleChange}
                     placeholder="+221 77 123 45 67"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all text-gray-700"
                   />
                 ) : (
                   <p className="px-4 py-3 bg-gray-50 rounded-xl text-gray-700 font-medium">
@@ -452,7 +452,7 @@ export default function CreatorProfile() {
                     min="13"
                     max="100"
                     placeholder="25"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all text-gray-700"
                   />
                 ) : (
                   <p className="px-4 py-3 bg-gray-50 rounded-xl text-gray-700 font-medium">
@@ -528,7 +528,7 @@ export default function CreatorProfile() {
                       value={creatorData.instagram_username}
                       onChange={handleChange}
                       placeholder="votre_nom"
-                      className="flex-1 px-4 py-3 border border-gray-200 rounded-r-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all text-gray-700"
                     />
                   </div>
                 ) : (
@@ -555,7 +555,7 @@ export default function CreatorProfile() {
                       value={creatorData.youtube_username}
                       onChange={handleChange}
                       placeholder="votre_chaine"
-                      className="flex-1 px-4 py-3 border border-gray-200 rounded-r-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all text-gray-700"
                     />
                   </div>
                 ) : (
@@ -582,7 +582,7 @@ export default function CreatorProfile() {
                       value={creatorData.tiktok_username}
                       onChange={handleChange}
                       placeholder="votre_nom"
-                      className="flex-1 px-4 py-3 border border-gray-200 rounded-r-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all text-gray-700"
                     />
                   </div>
                 ) : (
@@ -609,7 +609,7 @@ export default function CreatorProfile() {
                       value={creatorData.twitter_username}
                       onChange={handleChange}
                       placeholder="votre_nom"
-                      className="flex-1 px-4 py-3 border border-gray-200 rounded-r-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all text-gray-700"
                     />
                   </div>
                 ) : (
@@ -636,7 +636,7 @@ export default function CreatorProfile() {
                       value={creatorData.facebook_username}
                       onChange={handleChange}
                       placeholder="votre_nom"
-                      className="flex-1 px-4 py-3 border border-gray-200 rounded-r-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all text-gray-700"
                     />
                   </div>
                 ) : (
@@ -663,7 +663,7 @@ export default function CreatorProfile() {
                       value={creatorData.snapchat_username}
                       onChange={handleChange}
                       placeholder="votre_nom"
-                      className="flex-1 px-4 py-3 border border-gray-200 rounded-r-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all text-gray-700"
                     />
                   </div>
                 ) : (

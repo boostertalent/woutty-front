@@ -28,7 +28,7 @@ export default function BrandFinalStep() {
   // Fonction utilitaire pour convertir proprement en nombre pour la table SQL
   const parseToDouble = (value: string | null) => {
     if (!value) return null;
-    const cleaned = value.replace(/\s/g, ''); // Enlève les espaces
+    const cleaned = value.replace(/\s/g, ''); 
     const parsed = parseFloat(cleaned);
     return isNaN(parsed) ? null : parsed;
   };
