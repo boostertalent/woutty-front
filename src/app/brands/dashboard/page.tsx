@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter,useSearchParams  } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react'; 
+import { motion } from 'framer-motion';
 import { 
   Users, Zap, LogOut, ArrowRight, Sparkles,
   Pencil, Trash2, LayoutDashboard, Settings, X as CloseIcon, Check,
   RefreshCw, Clock, TrendingUp, UserCheck, Instagram, Youtube, 
-  Music2, Camera, Mail, Phone, Loader2
+  Music2, Camera, Mail, Phone, Loader2, Shield  
 } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { createBrowserClient } from '@supabase/ssr';
@@ -19,6 +21,8 @@ const XLogo = ({ size = 16 }: { size?: number }) => (
 );
 
 export default function BrandDashboard() {
+   const searchParams = useSearchParams();
+  const [isAdminViewing, setIsAdminViewing] = useState(false);
   const router = useRouter();
   const [supabase] = useState(() => createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -202,7 +206,9 @@ export default function BrandDashboard() {
     const platforms = [
       { name: 'Instagram', followers: creator.instagram_followers || 0 },
       { name: 'YouTube', followers: creator.youtube_followers || 0 },
-      { name: 'TikTok', followers: creator.tiktok_followers || 0 }
+      { name: 'TikTok', followers: creator.tiktok_followers || 0 },
+      { name: 'x', followers: creator.x_followers || 0 },
+      { name: 'snap', followers: creator.snap_followers || 0 }
     ];
     return platforms.sort((a, b) => b.followers - a.followers)[0]?.name || 'Plateforme';
   };
@@ -256,14 +262,27 @@ export default function BrandDashboard() {
         return;
       }
       
-      const USER_ID = session.user.id;
-      
-      // Récupérer la marque
-      const { data: brandData } = await supabase
-        .from('marque')
-        .select('*')
-        .eq('id_w', USER_ID)
-        .single();
+
+
+const USER_ID = session.user.id;
+
+const adminViewingId = searchParams.get('viewing');
+let brandIdToLoad = USER_ID;
+let adminViewMode = false;
+
+if (adminViewingId) {
+  brandIdToLoad = adminViewingId;
+  adminViewMode = true;
+}
+
+setIsAdminViewing(adminViewMode);
+
+const { data: brandData } = await supabase
+  .from('marque')
+  .select('*')
+  .eq('id_w', brandIdToLoad) 
+  .single();
+
       
       if (brandData) {
         setBrandInfo(brandData);
@@ -273,7 +292,7 @@ export default function BrandDashboard() {
       const { data: campaignsData, error: campaignsError } = await supabase
         .from('campaigns')
         .select('*')
-        .eq('id_w', USER_ID)
+        .eq('id_w',  brandIdToLoad)
         .order('created_at', { ascending: false });
       
       if (campaignsError) {
@@ -312,6 +331,8 @@ export default function BrandDashboard() {
             totalCampaigns: campaignsData.length
           });
         }
+         
+
 
         // ✅ SUGGESTIONS INTELLIGENTES
         const suggestedCreators = await getSuggestedCreators(campaignsData || []);
@@ -385,7 +406,13 @@ export default function BrandDashboard() {
     await supabase.auth.signOut();
     router.push('/auth/login');
   };
-
+const handleBackToAdmin = () => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('admin_mode');
+    localStorage.removeItem('admin_viewing_brand');
+  }
+  router.push('/admin/dashboard');
+};
   const formatNumber = (num: number) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
     if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
@@ -483,7 +510,7 @@ export default function BrandDashboard() {
                   {/* COORDONNÉES */}
                   <div className="grid md:grid-cols-2 gap-4">
                     {creatorDetails.email && (
-                      <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                      <div className="flex items-center gap-3 p-4all text-gray-700">
                         <Mail size={20} className="text-[#D4A017]" />
                         <div>
                           <p className="text-xs text-gray-400 font-bold">Email</p>
@@ -492,7 +519,7 @@ export default function BrandDashboard() {
                       </div>
                     )}
                     {creatorDetails.phone && (
-                      <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                      <div className="flex items-center gap-3 p-all text-gray-700">
                         <Phone size={20} className="text-[#D4A017]" />
                         <div>
                           <p className="text-xs text-gray-400 font-bold">Téléphone</p>
@@ -510,7 +537,7 @@ export default function BrandDashboard() {
                     </h5>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       {creatorDetails.instagram_username && (
-                        <div className="flex items-center gap-2 p-3 bg-pink-50 border border-pink-100 rounded-xl">
+                        <div className="flex items-center gap-2 p-3all  text-gray-700">
                           <Instagram size={18} className="text-pink-600" />
                           <div className="min-w-0">
                             <p className="text-[10px] text-pink-600 font-bold">Instagram</p>
@@ -519,7 +546,7 @@ export default function BrandDashboard() {
                         </div>
                       )}
                       {creatorDetails.youtube_username && (
-                        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-xl">
+                        <div className="flex items-center gap-2 p-3 bg-red-50 borderall text-gray-700">
                           <Youtube size={18} className="text-red-600" />
                           <div className="min-w-0">
                             <p className="text-[10px] text-red-600 font-bold">YouTube</p>
@@ -528,7 +555,7 @@ export default function BrandDashboard() {
                         </div>
                       )}
                       {creatorDetails.tiktok_username && (
-                        <div className="flex items-center gap-2 p-3 bg-gray-50 border border-gray-100 rounded-xl">
+                        <div className="flex items-center gap-2 p-3 bg-gray-50 all text-gray-700">
                           <Music2 size={18} className="text-gray-700" />
                           <div className="min-w-0">
                             <p className="text-[10px] text-gray-700 font-bold">TikTok</p>
@@ -537,7 +564,7 @@ export default function BrandDashboard() {
                         </div>
                       )}
                       {creatorDetails.twitter_username && (
-                        <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl">
+                        <div className="flex items-center gap-2 p-3 bg-blue-50 borderall text-gray-700">
                           <XLogo size={18} />
                           <div className="min-w-0">
                             <p className="text-[10px] text-blue-700 font-bold">X</p>
@@ -546,7 +573,7 @@ export default function BrandDashboard() {
                         </div>
                       )}
                       {creatorDetails.snapchat_username && (
-                        <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-100 rounded-xl">
+                        <div className="flex items-center gap-2 p-3 bg-yellow-50 border text-gray-700">
                           <Camera size={18} className="text-yellow-600" />
                           <div className="min-w-0">
                             <p className="text-[10px] text-yellow-600 font-bold">Snapchat</p>
@@ -555,7 +582,7 @@ export default function BrandDashboard() {
                         </div>
                       )}
                       {creatorDetails.facebook_username && (
-                        <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl">
+                        <div className="flex items-center gap-2 p-3 bg-blue-50 border text-gray-700">
                           <Users size={18} className="text-blue-600" />
                           <div className="min-w-0">
                             <p className="text-[10px] text-blue-600 font-bold">Facebook</p>
@@ -938,6 +965,25 @@ export default function BrandDashboard() {
           </div>
         </div>
       </main>
+{isAdminViewing && (
+  <motion.div 
+    initial={{ y: -50, opacity: 0 }}
+    animate={{ y: 0, opacity: 1 }}
+    className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-4 p-2 pl-4 bg-white/80 backdrop-blur-md border border-orange-100 rounded-full shadow-[0_10px_30px_-10px_rgba(234,88,12,0.2)]"
+  >
+   
+
+    {/* Petit Bouton de sortie */}
+    <button 
+      onClick={handleBackToAdmin}
+      className="flex items-center gap-2 px-4 py-1.5 bg-gray-900 hover:bg-black text-white rounded-full text-xs font-black transition-all active:scale-95"
+    >
+      
+      retour au dashboard admin
+    </button>
+  </motion.div>
+)}
+
     </div>
   );
 }
