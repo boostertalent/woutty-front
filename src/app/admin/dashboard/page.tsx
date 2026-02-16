@@ -6,7 +6,8 @@ import { createBrowserClient } from '@supabase/ssr';
 import { 
   Users, Building2, BarChart3, Shield, Search, TrendingUp, 
   Calendar, LogOut, Loader2, Eye, EyeOff, Trash2, Plus, X,
-  User, Edit2, Save, Activity, Clock, FileText
+  User, Edit2, Save, Activity, Clock, FileText, HeadphonesIcon,
+  CheckCircle2, XCircle, Mail, Phone, MessageCircle
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, 
@@ -44,7 +45,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({ creators: 0, brands: 0, campaigns: 0 });
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
-  const [activeView, setActiveView] = useState<'overview' | 'creators' | 'brands' | 'admins' | 'logs' | 'profile'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'creators' | 'brands' | 'admins' | 'logs' | 'profile' | 'assistance'>('overview');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showAddAdminModal, setShowAddAdminModal] = useState(false);
   const [passwordToConfirm, setPasswordToConfirm] = useState('');
@@ -53,6 +54,8 @@ export default function AdminDashboard() {
   const [brands, setBrands] = useState<any[]>([]);
   const [admins, setAdmins] = useState<any[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [assistanceRequests, setAssistanceRequests] = useState<any[]>([]);
+  const [assistanceFilter, setAssistanceFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed'>('all');
   const [chartData, setChartData] = useState<any[]>([]);
   const [creatorFilter, setCreatorFilter] = useState<'all' | 'active' | 'top'>('all');
   const [brandFilter, setBrandFilter] = useState<'all' | 'active' | 'top'>('all');
@@ -68,6 +71,9 @@ export default function AdminDashboard() {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileData, setProfileData] = useState({ full_name: '', phone: '' });
   const [isPrincipalAdmin, setIsPrincipalAdmin] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isViewingUserDashboard, setIsViewingUserDashboard] = useState(false);
+  const [chatUrl, setChatUrl] = useState('https://boostertalent.app.n8n.cloud/webhook/b4d75f16-f24e-4ca0-97a6-49502970c201/chat');
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -76,7 +82,40 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchDashboardData();
+    
+    // Vérifier si admin visualise un dashboard utilisateur
+    const checkViewingMode = () => {
+      const viewingCreator = localStorage.getItem('admin_viewing_creator');
+      const viewingBrand = localStorage.getItem('admin_viewing_brand');
+      const adminMode = localStorage.getItem('admin_mode');
+      
+      if ((viewingCreator || viewingBrand) && adminMode === 'view') {
+        setIsViewingUserDashboard(true);
+      } else {
+        setIsViewingUserDashboard(false);
+      }
+    };
+    
+    checkViewingMode();
+    
+    // Raccourci clavier Ctrl+K pour la recherche
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        document.getElementById('admin-search-input')?.focus();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Recharger les demandes d'assistance quand le filtre change
+  useEffect(() => {
+    if (activeView === 'assistance') {
+      fetchAssistanceRequests();
+    }
+  }, [assistanceFilter]);
 
   const logActivity = async (action: string, targetType: string, targetId: string, details: string) => {
     try {
@@ -116,6 +155,107 @@ export default function AdminDashboard() {
     } catch (err) {
       console.warn("⚠️ Exception logs:", err);
       setActivityLogs([]);
+    }
+  };
+
+  const fetchAssistanceRequests = async () => {
+    try {
+      let query = supabase
+        .from('campaign_assistance_requests')
+        .select('*')
+        .order('requested_at', { ascending: false });
+
+      if (assistanceFilter !== 'all') {
+        query = query.eq('status', assistanceFilter);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.warn("⚠️ Erreur demandes assistance:", error.message);
+        setAssistanceRequests([]);
+      } else {
+        setAssistanceRequests(data || []);
+      }
+    } catch (err) {
+      console.warn("⚠️ Exception demandes assistance:", err);
+      setAssistanceRequests([]);
+    }
+  };
+
+  const updateAssistanceStatus = async (requestId: string, newStatus: string) => {
+    try {
+      const updates: any = { status: newStatus };
+
+      if (newStatus === 'in_progress') {
+        const request = assistanceRequests.find(r => r.id === requestId);
+        if (request && !request.contacted_at) {
+          updates.contacted_at = new Date().toISOString();
+        }
+      }
+
+      if (newStatus === 'completed') {
+        updates.completed_at = new Date().toISOString();
+      }
+
+      const { error } = await supabase
+        .from('campaign_assistance_requests')
+        .update(updates)
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      await logActivity('UPDATE', 'assistance', requestId, `Changement statut assistance vers ${newStatus}`);
+      
+      alert('✅ Statut mis à jour !');
+      fetchAssistanceRequests();
+    } catch (error: any) {
+      alert('❌ Erreur : ' + error.message);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+      case 'in_progress':
+        return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'completed':
+        return 'bg-green-50 text-green-700 border-green-200';
+      case 'cancelled':
+        return 'bg-red-50 text-red-700 border-red-200';
+      default:
+        return 'bg-gray-50 text-gray-700 border-gray-200';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Clock size={16} />;
+      case 'in_progress':
+        return <Loader2 size={16} className="animate-spin" />;
+      case 'completed':
+        return <CheckCircle2 size={16} />;
+      case 'cancelled':
+        return <XCircle size={16} />;
+      default:
+        return <Clock size={16} />;
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'En attente';
+      case 'in_progress':
+        return 'En cours';
+      case 'completed':
+        return 'Terminée';
+      case 'cancelled':
+        return 'Annulée';
+      default:
+        return status;
     }
   };
 
@@ -563,31 +703,63 @@ export default function AdminDashboard() {
   };
 
   const getFilteredCreators = () => {
+    let filtered = creators;
+    
+    // Filtrer par recherche
+    if (searchQuery.trim()) {
+      filtered = filtered.filter(c => 
+        c.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.email?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    // Filtrer par type
     if (creatorFilter === 'active') {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      return creators.filter(c => new Date(c.updated_at || c.created_at) >= thirtyDaysAgo);
+      filtered = filtered.filter(c => new Date(c.updated_at || c.created_at) >= thirtyDaysAgo);
     }
     if (creatorFilter === 'top') {
-      return [...creators].sort((a, b) => {
+      filtered = [...filtered].sort((a, b) => {
         const aFollowers = (a.instagram_followers || 0) + (a.youtube_followers || 0) + (a.tiktok_followers || 0);
         const bFollowers = (b.instagram_followers || 0) + (b.youtube_followers || 0) + (b.tiktok_followers || 0);
         return bFollowers - aFollowers;
       }).slice(0, 10);
     }
-    return creators;
+    return filtered;
   };
 
   const getFilteredBrands = () => {
+    let filtered = brands;
+    
+    // Filtrer par recherche
+    if (searchQuery.trim()) {
+      filtered = filtered.filter(b => 
+        b.nom_marque?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        b.email_marque?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        b.domaine?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    // Filtrer par type
     if (brandFilter === 'active') {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      return brands.filter(b => new Date(b.updated_at || b.created_at) >= thirtyDaysAgo);
+      filtered = filtered.filter(b => new Date(b.updated_at || b.created_at) >= thirtyDaysAgo);
     }
     if (brandFilter === 'top') {
-      return brands.slice(0, 10);
+      filtered = filtered.slice(0, 10);
     }
-    return brands;
+    return filtered;
+  };
+
+  const getFilteredAdmins = () => {
+    if (!searchQuery.trim()) return admins;
+    
+    return admins.filter(a => 
+      a.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      a.email?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
   };
 
   const handleLogout = async () => {
@@ -616,6 +788,21 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleBackToAdminDashboard = () => {
+    console.log("🔙 Retour au dashboard admin");
+    
+    // Nettoyer localStorage
+    localStorage.removeItem('admin_viewing_creator');
+    localStorage.removeItem('admin_viewing_brand');
+    localStorage.removeItem('admin_mode');
+    localStorage.removeItem('hide_profile_section');
+    
+    // Réinitialiser l'état
+    setIsViewingUserDashboard(false);
+    
+    console.log("✅ Mode visualisation désactivé");
+  };
+
   const handleViewCreatorDashboard = async (creatorId: string) => {
     console.log("👁️ Visualisation créateur:", creatorId);
     
@@ -625,7 +812,9 @@ export default function AdminDashboard() {
     localStorage.removeItem('admin_viewing_brand');
     localStorage.setItem('admin_viewing_creator', creatorId);
     localStorage.setItem('admin_mode', 'view');
-    localStorage.setItem('hide_profile_button', 'true'); // ← MASQUER MON PROFIL
+    localStorage.setItem('hide_profile_section', 'true'); 
+    
+    setIsViewingUserDashboard(true); 
     
     router.push(`/creators/dashboard?viewing=${creatorId}`);
   };
@@ -639,7 +828,9 @@ export default function AdminDashboard() {
     localStorage.removeItem('admin_viewing_creator');
     localStorage.setItem('admin_viewing_brand', brandId);
     localStorage.setItem('admin_mode', 'view');
-    localStorage.setItem('hide_profile_button', 'true'); // ← MASQUER MON PROFIL
+    localStorage.setItem('hide_profile_section', 'true'); 
+    
+    setIsViewingUserDashboard(true); 
     
     router.push(`/brands/dashboard?viewing=${brandId}`);
   };
@@ -821,51 +1012,63 @@ export default function AdminDashboard() {
         </div>
         
         <nav className="flex-1 px-4 space-y-2">
-          <NavItem 
-            icon={<BarChart3 size={20} />} 
-            label="Vue d'ensemble" 
-            active={activeView === 'overview'}
-            onClick={() => setActiveView('overview')}
-          />
-          <NavItem 
-            icon={<Users size={20} />} 
-            label="Créateurs" 
-            active={activeView === 'creators'}
-            onClick={() => setActiveView('creators')}
-          />
-          <NavItem 
-            icon={<Building2 size={20} />} 
-            label="Marques" 
-            active={activeView === 'brands'}
-            onClick={() => setActiveView('brands')}
-          />
-          <NavItem 
-            icon={<Shield size={20} />} 
-            label="Admins" 
-            active={activeView === 'admins'}
-            onClick={() => setActiveView('admins')}
-          />
-          {isPrincipalAdmin && (
-            <>
-              <NavItem 
-                icon={<Activity size={20} />} 
-                label="Logs d'activité" 
-                active={activeView === 'logs'}
-                onClick={() => {
-                  setActiveView('logs');
-                  fetchActivityLogs();
-                }}
-              />
-              <NavItem 
-                icon={<User size={20} />} 
-                label="Mon profil" 
-                active={activeView === 'profile'}
-                onClick={() => setActiveView('profile')}
-              />
-            </>
-          )}
-        </nav>
-
+  <NavItem 
+    icon={<BarChart3 size={20} />} 
+    label="Vue d'ensemble" 
+    active={activeView === 'overview'}
+    onClick={() => setActiveView('overview')}
+  />
+  <NavItem 
+    icon={<Users size={20} />} 
+    label="Créateurs" 
+    active={activeView === 'creators'}
+    onClick={() => setActiveView('creators')}
+  />
+  <NavItem 
+    icon={<Building2 size={20} />} 
+    label="Marques" 
+    active={activeView === 'brands'}
+    onClick={() => setActiveView('brands')}
+  />
+  <NavItem 
+    icon={<Shield size={20} />} 
+    label="Admins" 
+    active={activeView === 'admins'}
+    onClick={() => setActiveView('admins')}
+  />
+  
+  {/* ✅ ASSISTANCE - Accessible à TOUS les admins */}
+  <NavItem 
+    icon={<HeadphonesIcon size={20} />} 
+    label="Assistance" 
+    active={activeView === 'assistance'}
+    onClick={() => {
+      setActiveView('assistance');
+      fetchAssistanceRequests();
+    }}
+  />
+  
+  {/* Logs et Profil - UNIQUEMENT pour admin principal */}
+  {isPrincipalAdmin && !isViewingUserDashboard && (
+    <>
+      <NavItem 
+        icon={<Activity size={20} />} 
+        label="Logs d'activité" 
+        active={activeView === 'logs'}
+        onClick={() => {
+          setActiveView('logs');
+          fetchActivityLogs();
+        }}
+      />
+      <NavItem 
+        icon={<User size={20} />} 
+        label="Mon profil" 
+        active={activeView === 'profile'}
+        onClick={() => setActiveView('profile')}
+      />
+    </>
+  )}
+</nav>
         <div className="p-4 border-t border-gray-50">
           <button 
             onClick={handleLogout}
@@ -884,10 +1087,21 @@ export default function AdminDashboard() {
           <div className="relative w-96 hidden sm:block">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input 
+              id="admin-search-input"
               type="text" 
               placeholder="Rechercher (Ctrl+K)" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-gray-50 border-none rounded-xl py-2 pl-10 focus:ring-2 focus:ring-[#ceaf4a]/20 outline-none transition-all"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-900"
+              >
+                <X size={16} />
+              </button>
+            )}
           </div>
           
           <div className="flex items-center gap-4 ml-auto">
@@ -936,6 +1150,24 @@ export default function AdminDashboard() {
           )}
           
           {/* VUE D'ENSEMBLE */}
+<button
+  onClick={() => {
+    window.open(
+      'https://boostertalent.app.n8n.cloud/webhook/b4d75f16-f24e-4ca0-97a6-49502970c201/chat',
+      'ChatSupportWoutty',
+      'width=400,height=700,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes,resizable=yes'
+    );
+  }}
+  className="fixed bottom-8 right-8 z-50 w-16 h-16 bg-gradient-to-r from-[#ceaf4a] to-[#b8962f] text-white rounded-full shadow-2xl hover:shadow-[#ceaf4a]/50 hover:scale-110 transition-all duration-300 flex items-center justify-center group"
+  title="Ouvrir le support"
+>
+  <MessageCircle size={28} className="group-hover:rotate-12 transition-transform duration-300" />
+  
+  {/* Badge notification */}
+  <span className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+    !
+  </span>
+</button>
           {activeView === 'overview' && (
             <>
               <div className="flex flex-col md:flex-row justify-between items-end gap-4">
@@ -1052,14 +1284,23 @@ export default function AdminDashboard() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-3xl font-bold">👥 Gestion des créateurs</h2>
                 <div className="flex gap-2">
+                    <button
+            onClick={() => router.push('/creators/auth/profil')}
+            className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl font-bold hover:from-green-700 hover:to-green-800 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+          >
+            <Plus size={20} />
+            Créer un créateur
+          </button>
                   <button
                     onClick={() => setCreatorFilter('all')}
                     className={`px-4 py-2 rounded-xl font-bold text-sm transition-all ${
                       creatorFilter === 'all' ? 'bg-[#ceaf4a] text-white shadow-lg' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
                     }`}
+                    
                   >
                     📋 Tous ({creators.length})
                   </button>
+                
                   <button
                     onClick={() => setCreatorFilter('active')}
                     className={`px-4 py-2 rounded-xl font-bold text-sm transition-all ${
@@ -1079,44 +1320,86 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {getFilteredCreators().map((creator) => (
-                  <div key={creator.id_w} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
-                    <div className="flex items-start gap-3 mb-4">
-                      <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden shrink-0">
-                        {creator.avatar_url ? (
-                          <img src={creator.avatar_url} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center font-bold text-gray-500 text-lg">
-                            {creator.full_name?.charAt(0) || '?'}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-gray-900 truncate">{creator.full_name || 'Sans nom'}</p>
-                        <p className="text-xs text-gray-500 truncate">{creator.email}</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleViewCreatorDashboard(creator.id_w)}
-                        className="flex-1 py-2 bg-blue-50 text-blue-600 rounded-xl font-bold text-sm hover:bg-blue-100 transition-all flex items-center justify-center gap-2"
-                      >
-                        <Eye size={16} />
-                        Voir
-                      </button>
-                      {isPrincipalAdmin && (
-                        <button
-                          onClick={() => handleDeleteCreator(creator.id_w)}
-                          className="flex-1 py-2 bg-red-50 text-red-600 rounded-xl font-bold text-sm hover:bg-red-100 transition-all flex items-center justify-center gap-2"
-                        >
-                          <Trash2 size={16} />
-                          Supprimer
-                        </button>
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-100">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Créateur</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Email</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Téléphone</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Inscription</th>
+                        <th className="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {getFilteredCreators().length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                            Aucun créateur trouvé
+                          </td>
+                        </tr>
+                      ) : (
+                        getFilteredCreators().map((creator) => (
+                          <tr key={creator.id_w} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0">
+                                  {creator.avatar_url ? (
+                                    <img src={creator.avatar_url} alt="" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center font-bold text-gray-500">
+                                      {creator.full_name?.charAt(0) || '?'}
+                                    </div>
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-gray-900">{creator.full_name || 'Sans nom'}</p>
+                                  <p className="text-xs text-gray-400">ID: {creator.id_w.slice(0, 8)}...</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="text-sm text-gray-700">{creator.email}</span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="text-sm text-gray-700">{creator.phone || '-'}</span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="text-sm text-gray-700">
+                                {new Date(creator.created_at).toLocaleDateString('fr-FR', { 
+                                  day: 'numeric', 
+                                  month: 'short', 
+                                  year: 'numeric' 
+                                })}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  onClick={() => handleViewCreatorDashboard(creator.id_w)}
+                                  className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg font-bold text-xs hover:bg-blue-100 transition-all flex items-center gap-1.5"
+                                >
+                                  <Eye size={14} />
+                                  Voir
+                                </button>
+                                {isPrincipalAdmin && (
+                                  <button
+                                    onClick={() => handleDeleteCreator(creator.id_w)}
+                                    className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg font-bold text-xs hover:bg-red-100 transition-all flex items-center gap-1.5"
+                                  >
+                                    <Trash2 size={14} />
+                                    Supprimer
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))
                       )}
-                    </div>
-                  </div>
-                ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -1127,6 +1410,13 @@ export default function AdminDashboard() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-3xl font-bold">🏢 Gestion des marques</h2>
                 <div className="flex gap-2">
+                   <button
+            onClick={() => router.push('/brands/auth/entreprise')}
+            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl font-bold hover:from-purple-700 hover:to-purple-800 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+          >
+            <Plus size={20} />
+            Créer une marque
+          </button>
                   <button
                     onClick={() => setBrandFilter('all')}
                     className={`px-4 py-2 rounded-xl font-bold text-sm transition-all ${
@@ -1154,41 +1444,86 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {getFilteredBrands().map((brand) => (
-                  <div key={brand.id_w} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
-                    <div className="flex items-start gap-3 mb-4">
-                      <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center font-bold text-purple-600 text-lg shrink-0">
-                        {brand.nom_marque?.charAt(0) || 'M'}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-gray-900 truncate">{brand.nom_marque || 'Sans nom'}</p>
-                        <p className="text-xs text-gray-500 truncate">{brand.email_marque}</p>
-                        {brand.domaine && (
-                          <p className="text-xs text-gray-400 mt-1">📦 {brand.domaine}</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleViewBrandDashboard(brand.id_w)}
-                        className="flex-1 py-2 bg-blue-50 text-blue-600 rounded-xl font-bold text-sm hover:bg-blue-100 transition-all flex items-center justify-center gap-2"
-                      >
-                        <Eye size={16} />
-                        Voir
-                      </button>
-                      {isPrincipalAdmin && (
-                        <button
-                          onClick={() => handleDeleteBrand(brand.id_w)}
-                          className="flex-1 py-2 bg-red-50 text-red-600 rounded-xl font-bold text-sm hover:bg-red-100 transition-all flex items-center justify-center gap-2"
-                        >
-                          <Trash2 size={16} />
-                          Supprimer
-                        </button>
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-100">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Marque</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Email</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Domaine</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Inscription</th>
+                        <th className="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {getFilteredBrands().length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                            Aucune marque trouvée
+                          </td>
+                        </tr>
+                      ) : (
+                        getFilteredBrands().map((brand) => (
+                          <tr key={brand.id_w} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center font-bold text-purple-600 shrink-0">
+                                  {brand.nom_marque?.charAt(0) || 'M'}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-gray-900">{brand.nom_marque || 'Sans nom'}</p>
+                                  <p className="text-xs text-gray-400">ID: {brand.id_w.slice(0, 8)}...</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="text-sm text-gray-700">{brand.email_marque}</span>
+                            </td>
+                            <td className="px-6 py-4">
+                              {brand.domaine ? (
+                                <span className="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full font-medium">
+                                  {brand.domaine}
+                                </span>
+                              ) : (
+                                <span className="text-sm text-gray-400">-</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="text-sm text-gray-700">
+                                {new Date(brand.created_at).toLocaleDateString('fr-FR', { 
+                                  day: 'numeric', 
+                                  month: 'short', 
+                                  year: 'numeric' 
+                                })}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  onClick={() => handleViewBrandDashboard(brand.id_w)}
+                                  className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg font-bold text-xs hover:bg-blue-100 transition-all flex items-center gap-1.5"
+                                >
+                                  <Eye size={14} />
+                                  Voir
+                                </button>
+                                {isPrincipalAdmin && (
+                                  <button
+                                    onClick={() => handleDeleteBrand(brand.id_w)}
+                                    className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg font-bold text-xs hover:bg-red-100 transition-all flex items-center gap-1.5"
+                                  >
+                                    <Trash2 size={14} />
+                                    Supprimer
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))
                       )}
-                    </div>
-                  </div>
-                ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -1209,43 +1544,83 @@ export default function AdminDashboard() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {admins.map((admin) => (
-                  <div key={admin.id_w} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
-                    <div className="flex items-start gap-3 mb-4">
-                      <div className="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center shrink-0">
-                        <Shield size={20} className="text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-gray-900 truncate">{admin.full_name || 'Admin'}</p>
-                        <p className="text-xs text-gray-500 truncate">{admin.email}</p>
-                        {admin.is_principal && (
-                          <p className="text-xs text-[#ceaf4a] font-bold mt-1">⭐ Admin Principal</p>
-                        )}
-                        {admin.phone && (
-                          <p className="text-xs text-gray-400 mt-1">📞 {admin.phone}</p>
-                        )}
-                      </div>
-                    </div>
-                    {isPrincipalAdmin && (
-                      <button
-                        onClick={() => handleDeleteAdmin(admin.id_w)}
-                        disabled={admin.email === adminUser?.email || admin.is_principal === true}
-                        className="w-full py-2 bg-red-50 text-red-600 rounded-xl font-bold text-sm hover:bg-red-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title={
-                          admin.is_principal 
-                            ? "Admin principal - Ne peut pas être supprimé" 
-                            : admin.email === adminUser?.email 
-                            ? "Vous ne pouvez pas vous supprimer" 
-                            : "Supprimer cet admin"
-                        }
-                      >
-                        <Trash2 size={16} />
-                        {admin.is_principal ? "Admin Principal" : admin.email === adminUser?.email ? "Compte actuel" : "Supprimer"}
-                      </button>
-                    )}
-                  </div>
-                ))}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-100">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Admin</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Email</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Téléphone</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Type</th>
+                        <th className="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {getFilteredAdmins().length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                            Aucun admin trouvé
+                          </td>
+                        </tr>
+                      ) : (
+                        getFilteredAdmins().map((admin) => (
+                          <tr key={admin.id_w} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center shrink-0">
+                                  <Shield size={18} className="text-white" />
+                                </div>
+                                <div>
+                                  <p className="font-bold text-gray-900">{admin.full_name || 'Admin'}</p>
+                                  <p className="text-xs text-gray-400">ID: {admin.id_w.slice(0, 8)}...</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="text-sm text-gray-700">{admin.email}</span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="text-sm text-gray-700">{admin.phone || '-'}</span>
+                            </td>
+                            <td className="px-6 py-4">
+                              {admin.is_principal ? (
+                                <span className="text-xs bg-[#ceaf4a] text-white px-3 py-1 rounded-full font-bold">
+                                  ⭐ Principal
+                                </span>
+                              ) : (
+                                <span className="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full font-medium">
+                                  Secondaire
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex justify-end">
+                                {isPrincipalAdmin && (
+                                  <button
+                                    onClick={() => handleDeleteAdmin(admin.id_w)}
+                                    disabled={admin.email === adminUser?.email || admin.is_principal === true}
+                                    className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg font-bold text-xs hover:bg-red-100 transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title={
+                                      admin.is_principal 
+                                        ? "Admin principal - Ne peut pas être supprimé" 
+                                        : admin.email === adminUser?.email 
+                                        ? "Vous ne pouvez pas vous supprimer" 
+                                        : "Supprimer cet admin"
+                                    }
+                                  >
+                                    <Trash2 size={14} />
+                                    {admin.is_principal ? "Principal" : admin.email === adminUser?.email ? "Vous" : "Supprimer"}
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -1305,11 +1680,234 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* MON PROFIL */}
-          {activeView === 'profile' && isPrincipalAdmin && (
+          {/* DEMANDES D'ASSISTANCE */}
+          
+          {activeView === 'assistance' && isPrincipalAdmin && (
             <div>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-3xl font-bold">👤 Mon profil</h2>
+                <div>
+                  <h2 className="text-3xl font-bold flex items-center gap-2">
+                    <HeadphonesIcon size={32} className="text-[#D4A017]" />
+                    Demandes d'assistance
+                  </h2>
+                  <p className="text-gray-500 text-sm mt-1">
+                    Marques ayant demandé de l'aide pour créer une campagne
+                  </p>
+                </div>
+                <button
+                  onClick={fetchAssistanceRequests}
+                  className="px-4 py-2 bg-white border border-gray-200 rounded-xl font-bold hover:bg-gray-50 transition-all flex items-center gap-2"
+                >
+                  <Loader2 size={16} />
+                  Actualiser
+                </button>
+              </div>
+
+              {/* FILTRES */}
+              <div className="flex gap-2 mb-6">
+                <button
+                  onClick={() => {
+                    setAssistanceFilter('all');
+                    fetchAssistanceRequests();
+                  }}
+                  className={`px-4 py-2 rounded-xl font-bold text-sm transition-all ${
+                    assistanceFilter === 'all'
+                      ? 'bg-[#ceaf4a] text-white shadow-lg'
+                      : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Toutes ({assistanceRequests.length})
+                </button>
+                <button
+                  onClick={() => {
+                    setAssistanceFilter('pending');
+                    fetchAssistanceRequests();
+                  }}
+                  className={`px-4 py-2 rounded-xl font-bold text-sm transition-all ${
+                    assistanceFilter === 'pending'
+                      ? 'bg-[#ceaf4a] text-white shadow-lg'
+                      : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  En attente
+                </button>
+                <button
+                  onClick={() => {
+                    setAssistanceFilter('in_progress');
+                    fetchAssistanceRequests();
+                  }}
+                  className={`px-4 py-2 rounded-xl font-bold text-sm transition-all ${
+                    assistanceFilter === 'in_progress'
+                      ? 'bg-[#ceaf4a] text-white shadow-lg'
+                      : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  En cours
+                </button>
+                <button
+                  onClick={() => {
+                    setAssistanceFilter('completed');
+                    fetchAssistanceRequests();
+                  }}
+                  className={`px-4 py-2 rounded-xl font-bold text-sm transition-all ${
+                    assistanceFilter === 'completed'
+                      ? 'bg-[#ceaf4a] text-white shadow-lg'
+                      : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Terminées
+                </button>
+              </div>
+
+              {/* LISTE */}
+              {assistanceRequests.length === 0 ? (
+                <div className="text-center py-12 bg-white rounded-2xl border border-gray-100">
+                  <HeadphonesIcon size={48} className="mx-auto text-gray-200 mb-4" />
+                  <p className="text-gray-500 font-bold">Aucune demande d'assistance</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-4">
+                  {assistanceRequests.map((request) => (
+                    <div
+                      key={request.id}
+                      className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all p-6"
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-start gap-4">
+                          <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center shrink-0">
+                            <User size={24} className="text-blue-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-gray-900 text-lg">
+                              {request.brand_name || 'Marque'}
+                            </h3>
+                            <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                              <div className="flex items-center gap-1">
+                                <Mail size={14} />
+                                {request.brand_email}
+                              </div>
+                              {request.brand_phone && (
+                                <div className="flex items-center gap-1">
+                                  <Phone size={14} />
+                                  {request.brand_phone}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <span
+                          className={`text-xs px-3 py-1.5 rounded-full font-bold border flex items-center gap-1.5 ${getStatusColor(
+                            request.status
+                          )}`}
+                        >
+                          {getStatusIcon(request.status)}
+                          {getStatusLabel(request.status)}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Calendar size={16} />
+                          <div>
+                            <p className="text-xs text-gray-400">Demandé le</p>
+                            <p className="font-medium">
+                              {new Date(request.requested_at).toLocaleDateString('fr-FR', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          </div>
+                        </div>
+
+                        {request.contacted_at && (
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <MessageCircle size={16} />
+                            <div>
+                              <p className="text-xs text-gray-400">Contacté le</p>
+                              <p className="font-medium">
+                                {new Date(request.contacted_at).toLocaleDateString('fr-FR', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {request.completed_at && (
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <CheckCircle2 size={16} />
+                            <div>
+                              <p className="text-xs text-gray-400">Terminé le</p>
+                              <p className="font-medium">
+                                {new Date(request.completed_at).toLocaleDateString('fr-FR', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ACTIONS */}
+                      <div className="flex gap-2 pt-4 border-t border-gray-100">
+                        {request.status === 'pending' && (
+                          <button
+                            onClick={() => updateAssistanceStatus(request.id, 'in_progress')}
+                            className="flex-1 py-2 bg-blue-50 text-blue-600 rounded-lg font-bold text-sm hover:bg-blue-100 transition-all"
+                          >
+                            Prendre en charge
+                          </button>
+                        )}
+
+                        {request.status === 'in_progress' && (
+                          <button
+                            onClick={() => updateAssistanceStatus(request.id, 'completed')}
+                            className="flex-1 py-2 bg-green-50 text-green-600 rounded-lg font-bold text-sm hover:bg-green-100 transition-all"
+                          >
+                            Marquer comme terminée
+                          </button>
+                        )}
+
+                        {(request.status === 'pending' || request.status === 'in_progress') && (
+                          <button
+                            onClick={() => updateAssistanceStatus(request.id, 'cancelled')}
+                            className="flex-1 py-2 bg-red-50 text-red-600 rounded-lg font-bold text-sm hover:bg-red-100 transition-all"
+                          >
+                            Annuler
+                          </button>
+                        )}
+
+                        {request.status === 'completed' && (
+                          <button
+                            onClick={() => updateAssistanceStatus(request.id, 'in_progress')}
+                            className="flex-1 py-2 bg-gray-50 text-gray-600 rounded-lg font-bold text-sm hover:bg-gray-100 transition-all"
+                          >
+                            Rouvrir
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* MON PROFIL */}
+          {activeView === 'profile' && isPrincipalAdmin && !isViewingUserDashboard && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-3xl font-bold">👤 Mon profil administrateur</h2>
                 {!isEditingProfile && (
                   <button
                     onClick={() => setIsEditingProfile(true)}
@@ -1322,18 +1920,30 @@ export default function AdminDashboard() {
               </div>
 
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 max-w-2xl">
+                <div className="bg-[#fef9e7] border border-[#ceaf4a] rounded-xl p-4 mb-6">
+                  <p className="text-sm text-gray-700">
+                    <span className="font-bold text-[#ceaf4a]">ℹ️ Note :</span> Ceci est votre profil <strong>administrateur</strong>. 
+                    
+                  </p>
+                </div>
+
                 <div className="flex items-center gap-6 mb-8">
                   <div className="w-24 h-24 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-3xl overflow-hidden shrink-0">
                     {adminUser?.avatar_url ? (
                       <img src={adminUser.avatar_url} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      adminUser?.initials || 'AD'
+                      <div className="flex items-center justify-center">
+                        <Shield size={40} className="text-[#ceaf4a]" />
+                      </div>
                     )}
                   </div>
                   <div>
                     <h3 className="text-2xl font-bold text-gray-900">{adminUser?.name}</h3>
                     <p className="text-gray-500 mt-1">{adminUser?.email}</p>
-                    <p className="text-xs text-[#ceaf4a] font-bold mt-2">⭐ Administrateur Principal</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-xs bg-[#ceaf4a] text-white px-3 py-1 rounded-full font-bold">⭐ Administrateur Principal</span>
+                      <span className="text-xs bg-blue-50 text-blue-700 px-3 py-1 rounded-full font-bold">🛡️ Accès complet</span>
+                    </div>
                   </div>
                 </div>
 
@@ -1371,6 +1981,32 @@ export default function AdminDashboard() {
                     ) : (
                       <p className="text-gray-900 bg-gray-50 px-4 py-3 rounded-xl">{adminUser?.phone || 'Non renseigné'}</p>
                     )}
+                  </div>
+
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <h4 className="font-bold text-gray-900 mb-3">🔐 Permissions administrateur</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="text-green-500">✅</span>
+                        <span className="text-gray-700">Gestion complète des créateurs</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-green-500">✅</span>
+                        <span className="text-gray-700">Gestion complète des marques</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-green-500">✅</span>
+                        <span className="text-gray-700">Création et suppression d'admins</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-green-500">✅</span>
+                        <span className="text-gray-700">Accès aux logs d'activité</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-green-500">✅</span>
+                        <span className="text-gray-700">Visualisation de tous les dashboards</span>
+                      </div>
+                    </div>
                   </div>
 
                   {isEditingProfile && (

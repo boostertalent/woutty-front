@@ -113,22 +113,36 @@ export default function Step4() {
         tone: finalTone,
         budget: Number(valInCFA),
         currency: "CFA",
-        status: 'active',
+        status: status, // Utiliser le statut calculé
         id_w: session.user.id 
       };
 
       console.log("Envoi à Supabase - Statut:", status);
       console.log("Données de la campagne:", finalPayload);
 
-      const { error } = await supabase.from('campaigns').insert([finalPayload]);
+      // IMPORTANT : Récupérer l'ID de la campagne créée avec .select().single()
+      const { data: newCampaign, error } = await supabase
+        .from('campaigns')
+        .insert([finalPayload])
+        .select()
+        .single();
+
       if (error) throw error;
+
+      if (!newCampaign || !newCampaign.id_t_campagne) {
+        throw new Error("Impossible de récupérer l'ID de la campagne créée");
+      }
+
+      console.log("✅ Campagne créée avec succès, ID:", newCampaign.id_t_campagne);
 
       // Nettoyage LocalStorage
       ['campaign_step_1','campaign_step_2','campaign_step_3','campaign_step_4'].forEach(key => localStorage.removeItem(key));
 
-      router.push('/brands/dashboard/success');
+      // Redirection vers la page d'analyse IA avec l'ID de la campagne
+      router.push(`/brands/matching-analysis?campaign=${newCampaign.id_t_campagne}`);
+
     } catch (err: any) {
-      console.error("Erreur technique:", err);
+      console.error("❌ Erreur technique:", err);
       setServerError(err.message || "Une erreur est survenue lors de la création.");
     } finally {
       setIsSubmitting(false);
@@ -182,13 +196,13 @@ export default function Step4() {
             </div>
 
             <p className="text-[11px] text-gray-400 font-medium ml-1">
-              Minimum requis : <span className="text-black font-bold">15 000 FCFA</span>
+              Minimum requis : <span className="text-black font-bold">15000 FCFA</span>
             </p>
 
             {showError && (
               <div className="flex items-center gap-2 text-red-500 text-xs font-bold bg-red-50 p-4 rounded-2xl border border-red-100">
                 <AlertCircle size={14} />
-                <span>Le budget minimum est de 15 000 FCFA.</span>
+                <span>Le budget minimum est de 15000 FCFA.</span>
               </div>
             )}
 

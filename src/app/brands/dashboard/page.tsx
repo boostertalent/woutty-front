@@ -2,14 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter,useSearchParams  } from 'next/navigation';
+import { X } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react'; 
 import { motion } from 'framer-motion';
 import { 
   Users, Zap, LogOut, ArrowRight, Sparkles,
   Pencil, Trash2, LayoutDashboard, Settings, X as CloseIcon, Check,
   RefreshCw, Clock, TrendingUp, UserCheck, Instagram, Youtube, 
-  Music2, Camera, Mail, Phone, Loader2, Shield  
+  Music2, Camera, Mail, Phone, Loader2, Shield, MessageCircle
 } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { createBrowserClient } from '@supabase/ssr';
@@ -21,7 +22,7 @@ const XLogo = ({ size = 16 }: { size?: number }) => (
 );
 
 export default function BrandDashboard() {
-   const searchParams = useSearchParams();
+  const searchParams = useSearchParams();
   const [isAdminViewing, setIsAdminViewing] = useState(false);
   const router = useRouter();
   const [supabase] = useState(() => createBrowserClient(
@@ -82,7 +83,6 @@ export default function BrandDashboard() {
     }
   };
 
-  // ✅ ALGORITHME DE SUGGESTION INTELLIGENT
   const getSuggestedCreators = async (userCampaigns: any[]) => {
     try {
       const { data: allCreators, error } = await supabase
@@ -95,7 +95,6 @@ export default function BrandDashboard() {
         return [];
       }
 
-      // Extraire les niches des campagnes
       const campaignNiches = userCampaigns
         .map(c => c.niche)
         .filter(Boolean)
@@ -103,12 +102,10 @@ export default function BrandDashboard() {
 
       console.log("📊 Niches des campagnes:", campaignNiches);
 
-      // Calculer le score pour chaque créateur
       const scoredCreators = allCreators.map(creator => {
         let score = 0;
         const reasons: string[] = [];
 
-        // CRITÈRE 1: Correspondance de niche (40 points)
         if (campaignNiches.length > 0 && creator.niche) {
           const creatorNiches = Array.isArray(creator.niche) ? creator.niche : [];
           const nicheMatch = creatorNiches.some(cn => 
@@ -124,7 +121,6 @@ export default function BrandDashboard() {
           }
         }
 
-        // CRITÈRE 2: Followers (30 points)
         const totalFollowers = 
           (creator.instagram_followers || 0) + 
           (creator.youtube_followers || 0) + 
@@ -141,7 +137,6 @@ export default function BrandDashboard() {
           score += 10;
         }
 
-        // CRITÈRE 3: Budget adapté (20 points)
         const avgBudget = userCampaigns.length > 0 
           ? userCampaigns.reduce((sum, c) => sum + (parseFloat(c.budget) || 0), 0) / userCampaigns.length
           : 0;
@@ -156,7 +151,6 @@ export default function BrandDashboard() {
           }
         }
 
-        // CRITÈRE 4: Profil complet (10 points)
         let profileScore = 0;
         if (creator.avatar_url) profileScore += 3;
         if (creator.full_name) profileScore += 2;
@@ -166,7 +160,6 @@ export default function BrandDashboard() {
         score += profileScore;
         if (profileScore >= 8) reasons.push("Profil complet");
 
-        // CRITÈRE 5: Déjà collaboré (Bonus 15 points)
         const hasWorkedWith = userCampaigns.some(c => c.assigned_creator_id === creator.id_w);
         if (hasWorkedWith) {
           score += 15;
@@ -182,7 +175,6 @@ export default function BrandDashboard() {
         };
       });
 
-      // Trier et retourner top 5
       const topCreators = scoredCreators
         .filter(c => c.matchScore > 0)
         .sort((a, b) => b.matchScore - a.matchScore)
@@ -213,7 +205,6 @@ export default function BrandDashboard() {
     return platforms.sort((a, b) => b.followers - a.followers)[0]?.name || 'Plateforme';
   };
 
-  // ✅ CHARGER LES DÉTAILS COMPLETS DU CRÉATEUR
   const loadCreatorDetails = async (creatorId: string) => {
     setLoadingCreatorDetails(true);
     try {
@@ -239,14 +230,12 @@ export default function BrandDashboard() {
     }
   };
 
-  // ✅ OUVRIR LE MODAL AVEC DÉTAILS
   const handleCreatorClick = async (creator: any) => {
     setSelectedCreator(creator);
     setShowCampaignSelection(false);
     await loadCreatorDetails(creator.id_w);
   };
 
-  // ✅ PASSER À LA SÉLECTION DE CAMPAGNE
   const proceedToCampaignSelection = () => {
     setShowCampaignSelection(true);
   };
@@ -261,38 +250,34 @@ export default function BrandDashboard() {
         router.push('/auth/login');
         return;
       }
-      
 
+      const USER_ID = session.user.id;
 
-const USER_ID = session.user.id;
+      const adminViewingId = searchParams.get('viewing');
+      let brandIdToLoad = USER_ID;
+      let adminViewMode = false;
 
-const adminViewingId = searchParams.get('viewing');
-let brandIdToLoad = USER_ID;
-let adminViewMode = false;
+      if (adminViewingId) {
+        brandIdToLoad = adminViewingId;
+        adminViewMode = true;
+      }
 
-if (adminViewingId) {
-  brandIdToLoad = adminViewingId;
-  adminViewMode = true;
-}
+      setIsAdminViewing(adminViewMode);
 
-setIsAdminViewing(adminViewMode);
-
-const { data: brandData } = await supabase
-  .from('marque')
-  .select('*')
-  .eq('id_w', brandIdToLoad) 
-  .single();
-
+      const { data: brandData } = await supabase
+        .from('marque')
+        .select('*')
+        .eq('id_w', brandIdToLoad) 
+        .single();
       
       if (brandData) {
         setBrandInfo(brandData);
       }
       
-      // Récupérer les campagnes 
       const { data: campaignsData, error: campaignsError } = await supabase
         .from('campaigns')
         .select('*')
-        .eq('id_w',  brandIdToLoad)
+        .eq('id_w', brandIdToLoad)
         .order('created_at', { ascending: false });
       
       if (campaignsError) {
@@ -301,7 +286,6 @@ const { data: brandData } = await supabase
       } else {
         setCampaigns(campaignsData || []);
         
-        // Calculer les stats
         if (campaignsData && campaignsData.length > 0) {
           const today = new Date();
           let totalBudget = 0;
@@ -331,10 +315,7 @@ const { data: brandData } = await supabase
             totalCampaigns: campaignsData.length
           });
         }
-         
 
-
-        // ✅ SUGGESTIONS INTELLIGENTES
         const suggestedCreators = await getSuggestedCreators(campaignsData || []);
         setCreators(suggestedCreators);
       }
@@ -354,31 +335,50 @@ const { data: brandData } = await supabase
     const creatorId = selectedCreator?.id_w;
 
     if (!creatorId) {
-      alert("Erreur : Impossible d'identifier le créateur.");
+      alert("❌ Erreur : Impossible d'identifier le créateur.");
       return;
     }
 
     setIsAssigning(true);
     
     try {
+      console.log("🔄 Attribution de la campagne...", {
+        campaignId,
+        creatorId,
+        creatorName: selectedCreator?.full_name
+      });
+
       const { error } = await supabase
         .from('campaigns')
         .update({ 
           assigned_creator_id: creatorId,
-          status: 'assigned'
+          creator_status: 'pending',  
+          status: 'assigned',
+          
         })
         .eq('id_t_campagne', campaignId);
 
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Erreur Supabase:", error);
+        throw error;
+      }
       
-      alert("✅ Campagne attribuée !");
+      console.log("✅ Campagne attribuée avec succès !");
+      console.log("📊 creator_status défini à: 'pending'");
+      console.log("👤 Créateur:", selectedCreator?.full_name);
+      
+      alert(`✅ Campagne attribuée avec succès à ${selectedCreator?.full_name} !\n\n✉️ Le créateur verra maintenant cette campagne dans son onglet "Opportunités".`);
+      
       setSelectedCreator(null);
       setCreatorDetails(null);
       setShowCampaignSelection(false);
-      fetchData();
+      
+      // Recharger les données
+      await fetchData();
       
     } catch (error: any) {
-      alert("Erreur : " + error.message);
+      console.error("❌ Erreur lors de l'attribution:", error);
+      alert("❌ Erreur : " + error.message);
     } finally {
       setIsAssigning(false);
     }
@@ -406,13 +406,15 @@ const { data: brandData } = await supabase
     await supabase.auth.signOut();
     router.push('/auth/login');
   };
-const handleBackToAdmin = () => {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('admin_mode');
-    localStorage.removeItem('admin_viewing_brand');
-  }
-  router.push('/admin/dashboard');
-};
+
+  const handleBackToAdmin = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('admin_mode');
+      localStorage.removeItem('admin_viewing_brand');
+    }
+    router.push('/admin/dashboard');
+  };
+
   const formatNumber = (num: number) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
     if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
@@ -431,7 +433,6 @@ const handleBackToAdmin = () => {
 
   const menuItems = [
     { name: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/brands/dashboard', active: true },
-    { name: 'Campagnes', icon: <Zap size={20} />, href: '/brands/auth/campagne' },
     { name: 'Collaborations', icon: <UserCheck size={20} />, href: '/brands/dashboard/collaborations' },
     { name: 'Mon profil', icon: <Settings size={20} />, href: '/brands/dashboard/profile' },
   ];
@@ -440,240 +441,291 @@ const handleBackToAdmin = () => {
     <div className="flex min-h-screen bg-[#F9FAFB]">
       
       {/* MODAL DÉTAILLÉ DU CRÉATEUR */}
-      {selectedCreator && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#111827]/60 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white rounded-[32px] w-full max-w-3xl p-8 shadow-2xl border border-gray-100 my-8">
+     {selectedCreator && (
+  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.2 }}
+      className="bg-white rounded-3xl w-full max-w-2xl p-8 shadow-2xl border border-gray-100 my-8"
+    >
+      
+      {/* En-tête */}
+      <div className="flex justify-between items-center mb-8">
+        <h3 className="text-2xl font-bold text-[#111827]">
+          {showCampaignSelection ? 'Sélectionner une campagne' : 'Profil du créateur'}
+        </h3>
+        <button 
+          onClick={() => {
+            setSelectedCreator(null);
+            setCreatorDetails(null);
+            setShowCampaignSelection(false);
+          }} 
+          className="p-2 text-gray-400 hover:text-[#111827] transition-colors hover:bg-gray-100 rounded-xl"
+        >
+          <CloseIcon size={24} />
+        </button>
+      </div>
+
+      {!showCampaignSelection ? (
+        loadingCreatorDetails ? (
+          <div className="text-center py-16">
+            <Loader2 className="inline-block w-10 h-10 text-[#D4A017] animate-spin mb-4" />
+            <p className="text-gray-500 font-medium">Chargement du profil...</p>
+          </div>
+        ) : creatorDetails ? (
+          <div className="space-y-6">
             
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-2xl font-bold text-[#111827]">
-                {showCampaignSelection ? 'Sélectionner une campagne' : 'Profil du créateur'}
-              </h3>
-              <button 
+            {/* Carte principale centrée */}
+            <div className="flex flex-col items-center p-8 bg-gradient-to-br from-[#D4A017]/5 to-[#FFD700]/5 rounded-2xl border border-[#D4A017]/10 relative overflow-hidden">
+              
+              {/* Avatar */}
+              <div className="w-32 h-32 rounded-full bg-gray-200 border-4 border-white shadow-xl overflow-hidden mb-6 relative">
+                {creatorDetails.avatar_url ? (
+                  <img src={creatorDetails.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#D4A017] to-[#FFD700] text-white font-bold text-5xl">
+                    {creatorDetails.full_name?.charAt(0) || '?'}
+                  </div>
+                )}
+              </div>
+
+              {/* Nom */}
+              <h4 className="text-3xl font-bold text-[#111827] mb-4 text-center">
+                {creatorDetails.full_name || 'Créateur'}
+              </h4>
+              
+              {/* Niches */}
+              {creatorDetails.niche && creatorDetails.niche.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-6 justify-center">
+                  {creatorDetails.niche.map((n: string, i: number) => (
+                    <span 
+                      key={`niche-${i}`} 
+                      className="px-4 py-2 bg-[#D4A017]/10 text-[#D4A017] rounded-full text-sm font-bold border border-[#D4A017]/20"
+                    >
+                      {n}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+                  {/* STATISTIQUES DE FOLLOWERS/FOLLOWING */}
+                  <div>
+                    <h5 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                      <TrendingUp size={16} className="text-[#D4A017]" />
+                      Statistiques d'audience
+                    </h5>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      {creatorDetails.instagram_followers > 0 && (
+                        <div className="flex items-center gap-3 p-4 bg-pink-50 rounded-xl border border-pink-100">
+                          <Instagram size={20} className="text-pink-600 shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-xs text-pink-600 font-bold">Instagram</p>
+                            <p className="text-sm font-bold text-gray-900">{formatNumber(creatorDetails.instagram_followers || 0)} followers</p>
+                            {creatorDetails.instagram_following > 0 && (
+                              <p className="text-xs text-gray-500">{formatNumber(creatorDetails.instagram_following || 0)} following</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {creatorDetails.youtube_followers > 0 && (
+                        <div className="flex items-center gap-3 p-4 bg-red-50 rounded-xl border border-red-100">
+                          <Youtube size={20} className="text-red-600 shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-xs text-red-600 font-bold">YouTube</p>
+                            <p className="text-sm font-bold text-gray-900">{formatNumber(creatorDetails.youtube_followers || 0)} abonnés</p>
+                            {creatorDetails.youtube_following > 0 && (
+                              <p className="text-xs text-gray-500">{formatNumber(creatorDetails.youtube_following || 0)} abonnements</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {creatorDetails.tiktok_followers > 0 && (
+                        <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                          <Music2 size={20} className="text-gray-700 shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-xs text-gray-700 font-bold">TikTok</p>
+                            <p className="text-sm font-bold text-gray-900">{formatNumber(creatorDetails.tiktok_followers || 0)} followers</p>
+                            {creatorDetails.tiktok_following > 0 && (
+                              <p className="text-xs text-gray-500">{formatNumber(creatorDetails.tiktok_following || 0)} following</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+              {/* Raisons du match */}
+              {selectedCreator.matchReasons && selectedCreator.matchReasons.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-6 justify-center">
+                  {selectedCreator.matchReasons.map((reason: string, i: number) => (
+                    <span 
+                      key={`reason-${i}`} 
+                      className="text-sm bg-green-50 text-green-700 px-4 py-2 rounded-full border border-green-200 font-medium flex items-center gap-2"
+                    >
+                      <Check size={14} />
+                      {reason}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Réseaux sociaux */}
+            <div>
+              <h5 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-[#D4A017] to-[#FFD700] rounded-lg flex items-center justify-center">
+                  <Sparkles size={16} className="text-white" />
+                </div>
+                Réseaux sociaux
+              </h5>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {creatorDetails.instagram_username && (
+                  <div key="instagram" className="flex items-center gap-3 p-4 bg-gradient-to-br from-pink-50 to-pink-100/50 rounded-xl border border-pink-200 group hover:shadow-md transition-all">
+                    <Instagram size={22} className="text-pink-600 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-[11px] text-pink-600 font-black uppercase tracking-wide">Instagram</p>
+                      <p className="text-sm font-bold text-gray-900 truncate">@{creatorDetails.instagram_username}</p>
+                    </div>
+                  </div>
+                )}
+                {creatorDetails.youtube_username && (
+                  <div key="youtube" className="flex items-center gap-3 p-4 bg-gradient-to-br from-red-50 to-red-100/50 rounded-xl border border-red-200 group hover:shadow-md transition-all">
+                    <Youtube size={22} className="text-red-600 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-[11px] text-red-600 font-black uppercase tracking-wide">YouTube</p>
+                      <p className="text-sm font-bold text-gray-900 truncate">@{creatorDetails.youtube_username}</p>
+                    </div>
+                  </div>
+                )}
+                {creatorDetails.tiktok_username && (
+                  <div key="tiktok" className="flex items-center gap-3 p-4 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200 group hover:shadow-md transition-all">
+                    <Music2 size={22} className="text-gray-700 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-[11px] text-gray-700 font-black uppercase tracking-wide">TikTok</p>
+                      <p className="text-sm font-bold text-gray-900 truncate">@{creatorDetails.tiktok_username}</p>
+                    </div>
+                  </div>
+                )}
+                {creatorDetails.twitter_username && (
+                  <div key="twitter" className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl border border-blue-200 group hover:shadow-md transition-all">
+                    <XLogo size={22} />
+                    <div className="min-w-0">
+                      <p className="text-[11px] text-blue-700 font-black uppercase tracking-wide">X</p>
+                      <p className="text-sm font-bold text-gray-900 truncate">@{creatorDetails.twitter_username}</p>
+                    </div>
+                  </div>
+                )}
+                {creatorDetails.snapchat_username && (
+                  <div key="snapchat" className="flex items-center gap-3 p-4 bg-gradient-to-br from-yellow-50 to-yellow-100/50 rounded-xl border border-yellow-200 group hover:shadow-md transition-all">
+                    <Camera size={22} className="text-yellow-600 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-[11px] text-yellow-600 font-black uppercase tracking-wide">Snapchat</p>
+                      <p className="text-sm font-bold text-gray-900 truncate">@{creatorDetails.snapchat_username}</p>
+                    </div>
+                  </div>
+                )}
+                {creatorDetails.facebook_username && (
+                  <div key="facebook" className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl border border-blue-200 group hover:shadow-md transition-all">
+                    <Users size={22} className="text-blue-600 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-[11px] text-blue-600 font-black uppercase tracking-wide">Facebook</p>
+                      <p className="text-sm font-bold text-gray-900 truncate">@{creatorDetails.facebook_username}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Boutons d'action */}
+            <div className="flex gap-3 pt-6 border-t border-gray-100">
+              <button
                 onClick={() => {
                   setSelectedCreator(null);
                   setCreatorDetails(null);
-                  setShowCampaignSelection(false);
-                }} 
-                className="p-2 text-gray-400 hover:text-[#111827] transition-colors"
+                }}
+                className="flex-1 py-3 px-4 border-2 border-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-50 hover:border-gray-300 transition-all"
               >
-                <CloseIcon size={24} />
+                Annuler
+              </button>
+              <button
+                onClick={proceedToCampaignSelection}
+                className="flex-1 py-3 px-4 bg-gradient-to-r from-[#D4A017] to-[#FFD700] text-white rounded-xl font-bold hover:shadow-xl transition-all flex items-center justify-center gap-2 group"
+              >
+                <span>Attribuer une campagne</span>
+                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
-
-            {!showCampaignSelection ? (
-              /* PROFIL DÉTAILLÉ */
-              loadingCreatorDetails ? (
-                <div className="text-center py-12">
-                  <Loader2 className="inline-block w-8 h-8 text-[#D4A017] animate-spin mb-4" />
-                  <p className="text-gray-400">Chargement des détails...</p>
-                </div>
-              ) : creatorDetails ? (
-                <div className="space-y-6">
-                  {/* AVATAR ET INFO */}
-                  <div className="flex items-start gap-6 p-6 bg-gradient-to-br from-[#D4A017]/5 to-[#FFD700]/5 rounded-2xl border border-[#D4A017]/10">
-                    <div className="w-24 h-24 rounded-full bg-gray-200 border-4 border-white shadow-lg overflow-hidden shrink-0">
-                      {creatorDetails.avatar_url ? (
-                        <img src={creatorDetails.avatar_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-[#D4A017]/10 text-[#D4A017] font-bold text-3xl">
-                          {creatorDetails.full_name?.charAt(0) || '?'}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-2xl font-bold text-[#111827] mb-2">{creatorDetails.full_name || 'Créateur'}</h4>
-                      {creatorDetails.niche && creatorDetails.niche.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {creatorDetails.niche.map((n: string, i: number) => (
-                            <span key={i} className="px-3 py-1 bg-[#D4A017]/10 text-[#D4A017] rounded-full text-xs font-bold">
-                              {n}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      {creatorDetails.age && (
-                        <p className="text-sm text-gray-500">{creatorDetails.age} ans</p>
-                      )}
-                      {selectedCreator.matchReasons && selectedCreator.matchReasons.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-3">
-                          <span className="text-xs text-gray-500">Raisons du match:</span>
-                          {selectedCreator.matchReasons.map((reason: string, i: number) => (
-                            <span key={i} className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-full border border-green-200 font-medium">
-                              ✓ {reason}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* COORDONNÉES */}
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {creatorDetails.email && (
-                      <div className="flex items-center gap-3 p-4all text-gray-700">
-                        <Mail size={20} className="text-[#D4A017]" />
-                        <div>
-                          <p className="text-xs text-gray-400 font-bold">Email</p>
-                          <p className="text-sm font-medium">{creatorDetails.email}</p>
-                        </div>
-                      </div>
-                    )}
-                    {creatorDetails.phone && (
-                      <div className="flex items-center gap-3 p-all text-gray-700">
-                        <Phone size={20} className="text-[#D4A017]" />
-                        <div>
-                          <p className="text-xs text-gray-400 font-bold">Téléphone</p>
-                          <p className="text-sm font-medium">{creatorDetails.phone}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* RÉSEAUX SOCIAUX */}
-                  <div>
-                    <h5 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
-                      <Sparkles size={16} className="text-[#D4A017]" />
-                      Réseaux sociaux
-                    </h5>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {creatorDetails.instagram_username && (
-                        <div className="flex items-center gap-2 p-3all  text-gray-700">
-                          <Instagram size={18} className="text-pink-600" />
-                          <div className="min-w-0">
-                            <p className="text-[10px] text-pink-600 font-bold">Instagram</p>
-                            <p className="text-xs font-medium truncate">@{creatorDetails.instagram_username}</p>
-                          </div>
-                        </div>
-                      )}
-                      {creatorDetails.youtube_username && (
-                        <div className="flex items-center gap-2 p-3 bg-red-50 borderall text-gray-700">
-                          <Youtube size={18} className="text-red-600" />
-                          <div className="min-w-0">
-                            <p className="text-[10px] text-red-600 font-bold">YouTube</p>
-                            <p className="text-xs font-medium truncate">@{creatorDetails.youtube_username}</p>
-                          </div>
-                        </div>
-                      )}
-                      {creatorDetails.tiktok_username && (
-                        <div className="flex items-center gap-2 p-3 bg-gray-50 all text-gray-700">
-                          <Music2 size={18} className="text-gray-700" />
-                          <div className="min-w-0">
-                            <p className="text-[10px] text-gray-700 font-bold">TikTok</p>
-                            <p className="text-xs font-medium truncate">@{creatorDetails.tiktok_username}</p>
-                          </div>
-                        </div>
-                      )}
-                      {creatorDetails.twitter_username && (
-                        <div className="flex items-center gap-2 p-3 bg-blue-50 borderall text-gray-700">
-                          <XLogo size={18} />
-                          <div className="min-w-0">
-                            <p className="text-[10px] text-blue-700 font-bold">X</p>
-                            <p className="text-xs font-medium truncate">@{creatorDetails.twitter_username}</p>
-                          </div>
-                        </div>
-                      )}
-                      {creatorDetails.snapchat_username && (
-                        <div className="flex items-center gap-2 p-3 bg-yellow-50 border text-gray-700">
-                          <Camera size={18} className="text-yellow-600" />
-                          <div className="min-w-0">
-                            <p className="text-[10px] text-yellow-600 font-bold">Snapchat</p>
-                            <p className="text-xs font-medium truncate">@{creatorDetails.snapchat_username}</p>
-                          </div>
-                        </div>
-                      )}
-                      {creatorDetails.facebook_username && (
-                        <div className="flex items-center gap-2 p-3 bg-blue-50 border text-gray-700">
-                          <Users size={18} className="text-blue-600" />
-                          <div className="min-w-0">
-                            <p className="text-[10px] text-blue-600 font-bold">Facebook</p>
-                            <p className="text-xs font-medium truncate">@{creatorDetails.facebook_username}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* BOUTONS */}
-                  <div className="flex gap-3 pt-6 border-t">
-                    <button
-                      onClick={() => {
-                        setSelectedCreator(null);
-                        setCreatorDetails(null);
-                      }}
-                      className="flex-1 py-3 border-2 border-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-50 transition-all"
-                    >
-                      Annuler
-                    </button>
-                    <button
-                      onClick={proceedToCampaignSelection}
-                      className="flex-1 py-3 bg-[#D4A017] text-white rounded-xl font-bold hover:bg-[#B88A14] transition-all flex items-center justify-center gap-2"
-                    >
-                      Attribuer une campagne
-                      <ArrowRight size={18} />
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-gray-400">Impossible de charger les détails</p>
-                </div>
-              )
-            ) : (
-              /* SÉLECTION DE CAMPAGNE */
-              <div>
-                <p className="text-sm text-gray-500 mb-6">
-                  Sélectionnez la campagne à attribuer à <strong>{creatorDetails?.full_name}</strong>
-                </p>
-                
-                <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-                  {campaigns.filter(c => !c.assigned_creator_id).length > 0 ? (
-                    campaigns.filter(c => !c.assigned_creator_id).map((camp) => {
-                      const statusDisplay = getStatusDisplay(camp);
-                      return (
-                        <button
-                          key={camp.id_t_campagne}
-                          disabled={isAssigning}
-                          onClick={() => handleAssignCampaign(camp.id_t_campagne)}
-                          className="w-full text-left p-5 rounded-2xl border border-gray-200 hover:border-[#D4A017] hover:bg-[#D4A017]/5 transition-all flex justify-between items-center group disabled:opacity-50"
-                        >
-                          <div className="min-w-0">
-                            <span className="block font-bold text-[#111827] mb-1 group-hover:text-[#D4A017]">
-                              {camp.title || 'Sans titre'}
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-gray-500">
-                                Budget: {parseFloat(camp.budget || 0).toLocaleString()} CFA
-                              </span>
-                              <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${statusDisplay.color}`}>
-                                {statusDisplay.text}
-                              </span>
-                            </div>
-                          </div>
-                          <ArrowRight size={20} className="text-[#D4A017]" />
-                        </button>
-                      );
-                    })
-                  ) : (
-                    <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-2xl">
-                      <p className="text-gray-400">Aucune campagne disponible</p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex gap-3 mt-6 pt-6 border-t">
-                  <button
-                    onClick={() => setShowCampaignSelection(false)}
-                    className="flex-1 py-3 border-2 border-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-50 transition-all"
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Users size={32} className="text-gray-300" />
+            </div>
+            <p className="text-gray-500 font-medium">Impossible de charger les détails</p>
+          </div>
+        )
+      ) : (
+        // SÉLECTION DE CAMPAGNE
+        <div>
+          <p className="text-sm text-gray-600 mb-6">
+            Sélectionnez la campagne à attribuer à <strong className="text-[#D4A017]">{creatorDetails?.full_name}</strong>
+          </p>
+          
+          <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+            {campaigns.filter(c => !c.assigned_creator_id).length > 0 ? (
+              campaigns.filter(c => !c.assigned_creator_id).map((camp) => {
+                const statusDisplay = getStatusDisplay(camp);
+                return (
+                  <motion.button
+                    key={camp.id_t_campagne}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    disabled={isAssigning}
+                    onClick={() => handleAssignCampaign(camp.id_t_campagne)}
+                    className="w-full text-left p-5 rounded-2xl border-2 border-gray-200 hover:border-[#D4A017] hover:bg-gradient-to-br hover:from-[#D4A017]/5 hover:to-[#FFD700]/5 transition-all flex justify-between items-center group disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    ← Retour
-                  </button>
-                </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="block font-bold text-[#111827] mb-2 group-hover:text-[#D4A017] transition-colors">
+                        {camp.title || 'Sans titre'}
+                      </span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs text-gray-600 font-medium">
+                          Budget: <span className="font-bold text-[#D4A017]">{parseFloat(camp.budget || 0).toLocaleString()} CFA</span>
+                        </span>
+                        <span className={`text-[10px] px-2 py-1 rounded-full font-bold border ${statusDisplay.color}`}>
+                          {statusDisplay.text}
+                        </span>
+                      </div>
+                    </div>
+                    <ArrowRight size={22} className="text-[#D4A017] group-hover:translate-x-1 transition-transform shrink-0 ml-4" />
+                  </motion.button>
+                );
+              })
+            ) : (
+              <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50">
+                <Zap size={48} className="mx-auto text-gray-300 mb-4" />
+                <p className="text-gray-500 font-medium">Aucune campagne disponible</p>
+                <p className="text-sm text-gray-400 mt-1">Toutes vos campagnes sont déjà attribuées</p>
               </div>
             )}
           </div>
+
+          <div className="flex gap-3 mt-6 pt-6 border-t border-gray-100">
+            <button
+              onClick={() => setShowCampaignSelection(false)}
+              className="flex-1 py-3 px-4 border-2 border-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+            >
+              <ArrowLeft size={18} />
+              Retour
+            </button>
+          </div>
         </div>
       )}
-
+    </motion.div>
+  </div>
+)}
       {/* SIDEBAR */}
       <aside className="w-64 bg-white border-r border-gray-100 hidden md:flex flex-col sticky top-0 h-screen">
         <div className="p-8">
@@ -705,7 +757,7 @@ const handleBackToAdmin = () => {
             onClick={handleLogout} 
             className="flex items-center gap-3 px-4 py-3 w-full text-gray-400 hover:text-red-500 font-bold text-sm transition-all"
           >
-            <LogOut size={20} /> Déconnexion
+            Déconnexion
           </button>
         </div>
       </aside>
@@ -714,7 +766,6 @@ const handleBackToAdmin = () => {
       <main className="flex-1 p-4 md:p-8 overflow-y-auto">
         <div className="max-w-6xl mx-auto">
           
-          {/* HEADER */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
             <div>
               <h1 className="text-3xl font-serif font-bold text-[#111827]">
@@ -733,7 +784,7 @@ const handleBackToAdmin = () => {
                 <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> 
                 Actualiser
               </button>
-              <Link href="/brands/auth/campagne">
+              <Link href="/brands/campaign-choice">
                 <button className="bg-[#D4A017] text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-[#B88A14] transition-all shadow-lg">
                   <Zap size={18} fill="currentColor" /> Créer une campagne
                 </button>
@@ -741,7 +792,6 @@ const handleBackToAdmin = () => {
             </div>
           </div>
 
-          {/* STATISTIQUES */}
           <div className="text-sm text-gray-600 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
             <StatCard 
               title="Budget Total" 
@@ -768,7 +818,6 @@ const handleBackToAdmin = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            {/* LISTE DES CAMPAGNES */}
             <div className="lg:col-span-2 space-y-4">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-[#111827] font-bold text-lg">
@@ -805,7 +854,7 @@ const handleBackToAdmin = () => {
                   
                   return (
                     <div 
-                      key={camp.id} 
+                      key={camp.id_t_campagne}
                       className="bg-white p-6 rounded-[24px] border border-gray-100 flex flex-col md:flex-row md:items-center justify-between shadow-sm hover:shadow-md transition-shadow gap-4"
                     >
                       <div className="flex items-center gap-4">
@@ -867,7 +916,26 @@ const handleBackToAdmin = () => {
               )}
             </div>
 
-            {/* MATCHS IA INTELLIGENTS */}
+            {/* BOUTON CHAT FLOTTANT QUI OUVRE UNE POPUP */}
+<button
+  onClick={() => {
+    window.open(
+      'https://boostertalent.app.n8n.cloud/webhook/b4d75f16-f24e-4ca0-97a6-49502970c201/chat',
+      'ChatWoutty',
+      'width=400,height=700,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes,resizable=yes'
+    );
+  }}
+  className="fixed bottom-8 right-8 z-50 w-16 h-16 bg-gradient-to-r from-[#ceaf4a] to-[#b8962f] text-white rounded-full shadow-2xl hover:shadow-[#ceaf4a]/50 hover:scale-110 transition-all duration-300 flex items-center justify-center group"
+  title="Ouvrir le support"
+>
+  <MessageCircle size={28} className="group-hover:rotate-12 transition-transform duration-300" />
+  
+  {/* Badge notification  */}
+  <span className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+    !
+  </span>
+</button>
+
             <div className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm h-fit sticky top-8">
               <div className="mb-6">
                 <h2 className="text-xl font-bold text-[#111827]">Matchs suggérés</h2>
@@ -889,7 +957,7 @@ const handleBackToAdmin = () => {
                       
                       return (
                         <div 
-                          key={creator.id_w} 
+                          key={creator.id_w}
                           onClick={() => handleCreatorClick(creator)}
                           className="flex items-center justify-between group cursor-pointer hover:bg-[#D4A017]/5 p-3 -m-3 rounded-2xl transition-all border border-transparent hover:border-[#D4A017]/10"
                         >
@@ -914,7 +982,7 @@ const handleBackToAdmin = () => {
                                 <div className="flex gap-1 mt-1">
                                   {creator.matchReasons.slice(0, 2).map((reason: string, i: number) => (
                                     <span 
-                                      key={i}
+                                      key={`creator-${creator.id_w}-reason-${i}`}
                                       className="text-[8px] bg-[#D4A017]/10 text-[#D4A017] px-1.5 py-0.5 rounded-md font-bold"
                                     >
                                       {reason}
@@ -965,25 +1033,21 @@ const handleBackToAdmin = () => {
           </div>
         </div>
       </main>
-{isAdminViewing && (
-  <motion.div 
-    initial={{ y: -50, opacity: 0 }}
-    animate={{ y: 0, opacity: 1 }}
-    className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-4 p-2 pl-4 bg-white/80 backdrop-blur-md border border-orange-100 rounded-full shadow-[0_10px_30px_-10px_rgba(234,88,12,0.2)]"
-  >
-   
 
-    {/* Petit Bouton de sortie */}
-    <button 
-      onClick={handleBackToAdmin}
-      className="flex items-center gap-2 px-4 py-1.5 bg-gray-900 hover:bg-black text-white rounded-full text-xs font-black transition-all active:scale-95"
-    >
-      
-      retour au dashboard admin
-    </button>
-  </motion.div>
-)}
-
+      {isAdminViewing && (
+        <motion.div 
+          initial={{ y: -50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-4 p-2 pl-4 bg-white/80 backdrop-blur-md border border-orange-100 rounded-full shadow-[0_10px_30px_-10px_rgba(234,88,12,0.2)]"
+        >
+          <button 
+            onClick={handleBackToAdmin}
+            className="flex items-center gap-2 px-4 py-1.5 bg-gray-900 hover:bg-black text-white rounded-full text-xs font-black transition-all active:scale-95"
+          >
+            retour au dashboard admin
+          </button>
+        </motion.div>
+      )}
     </div>
   );
 }
