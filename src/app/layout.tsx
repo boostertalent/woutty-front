@@ -40,7 +40,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark" // Conseil : Forcez le dark mode par défaut pour le look Booster Talent
+          defaultTheme="dark" 
           enableSystem={false}
           disableTransitionOnChange
         >
