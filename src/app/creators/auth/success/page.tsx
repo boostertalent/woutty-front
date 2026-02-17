@@ -6,12 +6,12 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { CheckCircle2, Mail, Sparkles, PartyPopper } from 'lucide-react';
 
-export default function RegistrationSuccess() {
+export default function CreatorRegistrationSuccess() {
   const router = useRouter();
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    const email = localStorage.getItem('signup_email');
+    const email = localStorage.getItem('onboarding_email');
     if (email) {
       setUserEmail(email);
     }
@@ -21,14 +21,12 @@ export default function RegistrationSuccess() {
   const handleFinalize = (destination: 'login' | 'home') => {
     // Nettoyer localStorage
     const keys = [
-      'signup_email',
-      'signup_name',
+      'onboarding_email',
+      'user_full_name',
       'signup_phone',
+      'signup_age',
       'signup_niche',
-      'signup_avatar',
       'signup_avatar_file',
-      'signup_password',
-      'signup_role',
       'selectedNiches'
     ];
     
@@ -73,7 +71,7 @@ export default function RegistrationSuccess() {
 
         {/* Titre */}
         <h1 className="text-4xl md:text-5xl font-black mb-4">
-          Inscription <span className="text-[#ceaf4a]">réussie !</span>
+          Inscription <span className="text-[#ceaf4a]">créateur</span> réussie !
         </h1>
 
         <p className="text-xl text-gray-600 mb-8 font-medium">
@@ -131,7 +129,7 @@ export default function RegistrationSuccess() {
         {/* Footer */}
         <div className="mt-12 pt-8 border-t border-gray-100 flex items-center justify-center gap-2 text-[#ceaf4a] font-black text-sm uppercase tracking-widest">
           <PartyPopper size={18} />
-          C'est le début de l'aventure
+          Prêt à créer ?
         </div>
       </motion.div>
 

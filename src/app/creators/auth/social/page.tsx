@@ -171,7 +171,7 @@ export default function SocialMediaSelection() {
 
       // 4. NETTOYER ET REDIRIGER
       localStorage.clear();
-      router.push('/brands/auth/success');
+      router.push('/creators/auth/success');
 
     } catch (err: any) {
       console.error("❌ Erreur Inscription détaillée:", err);

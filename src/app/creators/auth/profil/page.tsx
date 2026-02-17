@@ -26,12 +26,13 @@ export default function CreateCreatorProfile() {
     const savedAvatar = localStorage.getItem('signup_avatar_file');
 
     if (savedEmail || savedName) {
-      setFormData({
+      const newFormData = {
         email: savedEmail || '',
         fullName: savedName || '',
         phone: savedPhone || '',
         age: savedAge || ''
-      });
+      };
+      setFormData(newFormData);
       if (savedAvatar) setImagePreview(savedAvatar);
     }
   }, []);

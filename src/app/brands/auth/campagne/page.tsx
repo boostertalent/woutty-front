@@ -21,19 +21,22 @@ export default function CreateCampaign() {
   const objectivesList = ['Notoriété', 'Engagement', 'Conversion', 'Ventes', 'Autre'];
 
   useEffect(() => {
-    setIsMounted(true);
     const saved = localStorage.getItem('campaign_step_1');
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
+        const data = JSON.parse(saved);
         setFormData({
-          ...parsed,
-          objectives: Array.isArray(parsed.objectives) ? parsed.objectives : []
+          title: data.title || '',
+          objectives: data.objectives || [],
+          customObjective: data.customObjective || '',
+          startDate: data.startDate || '',
+          endDate: data.endDate || ''
         });
-      } catch (e) {
-        console.error("Erreur localStorage", e);
+      } catch (error) {
+        console.error('Error parsing saved data:', error);
       }
     }
+    setIsMounted(true);
   }, []);
 
   useEffect(() => {
