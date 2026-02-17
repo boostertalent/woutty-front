@@ -2,14 +2,22 @@
 
 import React, { useEffect, useState } from 'react';
 import { Sparkles, CheckCircle2, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function MatchingAnalysis() {
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("Analyse des profils...");
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const id_t_campagne = searchParams.get('campaign');
 
   useEffect(() => {
+    // Vérifier qu'on a bien un campaignId
+    if (!id_t_campagne) {
+      router.push('/brands/dashboard');
+      return;
+    }
+
     const timer = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
@@ -21,16 +29,18 @@ export default function MatchingAnalysis() {
     }, 40);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [id_t_campagne, router]);
 
   useEffect(() => {
     if (progress === 30) setStatus("Scan de l'audience cible...");
     if (progress === 60) setStatus("Calcul du ROI prédictif...");
     if (progress === 90) setStatus("Finalisation de la sélection...");
     if (progress === 100) {
-      setTimeout(() => router.push('/brands/dashboard'), 1000);
+      setTimeout(() => {
+        router.push(`/brands/dashboard/campaign-results?campaign=${id_t_campagne}`);
+      }, 1000);
     }
-  }, [progress, router]);
+  }, [progress, router,id_t_campagne]);
 
   return (
     <main
