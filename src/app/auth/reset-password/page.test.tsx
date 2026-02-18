@@ -1,24 +1,22 @@
-import { render, screen } from "@testing-library/react";
-// Utilitaires de test React
+import { render, screen, waitFor } from '@testing-library/react';
+import Component from './page';
 
-import Component from "./page";
-// Page à tester
+// --- MOCKS ---
 
-// --- MOCK NEXT ROUTER ---
-jest.mock("next/navigation", () => ({
+// Mock router Next.js
+jest.mock('next/navigation', () => ({
   useRouter: () => ({
-    replace: jest.fn(),
     push: jest.fn(),
     refresh: jest.fn(),
   }),
 }));
 
-// --- MOCK SUPABASE ---
-jest.mock("@supabase/ssr", () => ({
+// Mock Supabase
+jest.mock('@supabase/ssr', () => ({
   createBrowserClient: () => ({
     auth: {
       getSession: jest.fn().mockResolvedValue({
-        data: { session: { user: { id: "test" } } },
+        data: { session: { user: { id: 'test' } } },
       }),
       onAuthStateChange: jest.fn(() => ({
         data: {
@@ -26,35 +24,39 @@ jest.mock("@supabase/ssr", () => ({
         },
       })),
       updateUser: jest.fn().mockResolvedValue({ error: null }),
-      signOut: jest.fn(),
     },
   }),
 }));
 
-// --- MOCK FRAMER MOTION ---
-jest.mock("framer-motion", () => ({
+// Mock icônes
+jest.mock('lucide-react', () => ({
+  Lock: () => <div />,
+  Loader2: () => <div />,
+  Eye: () => <div />,
+  EyeOff: () => <div />,
+  ShieldCheck: () => <div />,
+  CheckCircle2: () => <div />,
+  AlertCircle: () => <div />,
+}));
+
+// Mock framer-motion
+jest.mock('framer-motion', () => ({
   motion: {
     div: ({ children }: any) => <div>{children}</div>,
   },
   AnimatePresence: ({ children }: any) => <>{children}</>,
 }));
 
-// --- MOCK LUCIDE ICONS ---
-jest.mock("lucide-react", () => ({
-  Lock: () => <div />,
-  Loader2: () => <div />,
-  CheckCircle2: () => <div />,
-  AlertCircle: () => <div />,
-  ShieldCheck: () => <div />,
-}));
-
-describe("ResetPasswordPage", () => {
-  it("renders without crashing", async () => {
-    render(<Component />); // Rendu du composant
-
-    // Vérifie qu’un texte clé est présent
-    expect(
-      await screen.findByText(/Confirmer/i)
-    ).toBeInTheDocument();
+// --- TESTS ---
+describe('ResetPasswordPage', () => {
+  it('renders without crashing', async () => {
+    render(<Component />);
+    
+    // On attend que le composant soit prêt et on cible le H1
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', { name: /nouveau mot de passe/i })
+      ).toBeInTheDocument();
+    });
   });
 });
