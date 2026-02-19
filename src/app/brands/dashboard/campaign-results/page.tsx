@@ -227,11 +227,11 @@ export default function CampaignMatchResults() {
       .from('campaigns')
       .update({ 
         assigned_creator_id: creatorId,
-        creator_status: 'pending',  // ✅ LIGNE CRITIQUE AJOUTÉE !
+        creator_status: 'pending',  
         status: 'assigned'
       })
       .eq('id_t_campagne', id_t_campagne)
-      .select();  // ✅ Pour voir le résultat
+      .select();  
 
     if (error) {
       console.error("❌ Erreur Supabase:", error);
@@ -244,19 +244,19 @@ export default function CampaignMatchResults() {
       console.log("✅ SUCCÈS !");
       console.log("   - creator_status:", data[0].creator_status);
       console.log("   - assigned_creator_id:", data[0].assigned_creator_id);
-      console.log("   - Le créateur verra cette campagne dans 'Opportunités'");
+      console.log("   - Le créateur verra cette campagne ");
     }
     
     alert(
       `✅ Campagne attribuée avec succès à ${selectedCreator?.full_name} !\n\n` +
-      `📧 Le créateur verra cette campagne dans son onglet "Opportunités".\n\n` +
+      `📧 Le créateur verra cette campagne .\n\n` +
       `Le créateur pourra l'accepter ou la refuser.`
     );
     
     setSelectedCreator(null);
     setCreatorDetails(null);
     setShowCampaignSelection(false);
-    setShowCreatorModal(false);  // ✅ Fermer le modal aussi
+    setShowCreatorModal(false);  
     
     router.push('/brands/dashboard');
     
