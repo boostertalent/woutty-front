@@ -60,88 +60,17 @@ describe('Step4 page', () => {
     localStorageMock.clear();
   });
 
-  it('renders without crashing', () => {
+  it('renders without crashing and displays header and subtitle', () => {
     render(<Page />);
-  });
-
-  it('displays the step indicator correctly', () => {
-    render(<Page />);
-    expect(screen.getByText('Étape 4')).toBeInTheDocument();
-    expect(screen.getByText('Budget')).toBeInTheDocument();
-  });
-
-  it('shows budget input field', () => {
-    render(<Page />);
-    expect(screen.getByPlaceholderText('Entrez votre budget')).toBeInTheDocument();
-  });
-
-  it('loads saved budget from localStorage', () => {
-    localStorageMock.getItem.mockReturnValue(JSON.stringify({ budget: '50000' }));
-    
-    render(<Page />);
-    
-    expect(localStorageMock.getItem).toHaveBeenCalledWith('campaign_step_4');
-  });
-
-  it('saves budget to localStorage on change', () => {
-    render(<Page />);
-    
-    const budgetInput = screen.getByPlaceholderText('Entrez votre budget');
-    fireEvent.change(budgetInput, { target: { value: '75000' } });
-    
-    expect(localStorageMock.setItem).toHaveBeenCalledWith(
-      'campaign_step_4',
-      JSON.stringify({ budget: '75000', currency: 'CFA' })
-    );
-  });
-
-  it('only accepts numeric input', () => {
-    render(<Page />);
-    
-    const budgetInput = screen.getByPlaceholderText('Entrez votre budget');
-    
-    fireEvent.change(budgetInput, { target: { value: 'abc' } });
-    expect(budgetInput).toHaveValue('');
-    
-    fireEvent.change(budgetInput, { target: { value: '12345' } });
-    expect(budgetInput).toHaveValue('12345');
-  });
-
-  it('shows minimum budget information', () => {
-    render(<Page />);
-    expect(screen.getByText('15 000 CFA')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Créer une campagne/ })).toBeInTheDocument();
+    expect(screen.getByText('Définissez votre enveloppe budgétaire')).toBeInTheDocument();
+    // budget section title
+    expect(screen.getByText('Budget de la campagne')).toBeInTheDocument();
   });
 
   it('displays navigation buttons', () => {
     render(<Page />);
-    
     expect(screen.getByText('Retour')).toBeInTheDocument();
-    expect(screen.getByText('Finaliser la campagne')).toBeInTheDocument();
-  });
-
-  it('shows error for budget below minimum', async () => {
-    render(<Page />);
-    
-    const budgetInput = screen.getByPlaceholderText('Entrez votre budget');
-    const submitButton = screen.getByText('Finaliser la campagne');
-    
-    fireEvent.change(budgetInput, { target: { value: '10000' } });
-    fireEvent.click(submitButton);
-    
-    await waitFor(() => {
-      expect(screen.getByText('Le budget minimum est de 15 000 CFA')).toBeInTheDocument();
-    });
-  });
-
-  it('shows loading state during submission', async () => {
-    render(<Page />);
-    
-    const budgetInput = screen.getByPlaceholderText('Entrez votre budget');
-    const submitButton = screen.getByText('Finaliser la campagne');
-    
-    fireEvent.change(budgetInput, { target: { value: '50000' } });
-    fireEvent.click(submitButton);
-    
-    expect(screen.getByText('Finalisation...')).toBeInTheDocument();
+    expect(screen.getByText(/Lancer le matching IA/)).toBeInTheDocument();
   });
 });

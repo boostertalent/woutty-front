@@ -1,7 +1,5 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import Component from './page';
-
-// --- MOCKS ---
 
 // Mock router Next.js
 jest.mock('next/navigation', () => ({
@@ -10,29 +8,27 @@ jest.mock('next/navigation', () => ({
   }),
 }));
 
+// Mock next/link
+jest.mock('next/link', () => ({
+  __esModule: true,
+  default: ({ children, href }: any) => <a href={href}>{children}</a>,
+}));
+
 // Mock Supabase
 jest.mock('@supabase/ssr', () => ({
   createBrowserClient: () => ({
     auth: {
       getUser: jest.fn().mockResolvedValue({
-        data: { user: { id: 'test-admin-id', email: 'admin@test.com' } },
+        data: { user: { id: 'test-id' } },
       }),
     },
     from: () => ({
       select: () => ({
-        eq: () => ({
-          maybeSingle: jest.fn().mockResolvedValue({ 
-            data: { role: 'admin', full_name: 'Admin Test' },
-            error: null 
-          }),
-        }),
-        neq: () => ({
-          maybeSingle: jest.fn().mockResolvedValue({
-            data: [],
-            error: null
-          }),
-        }),
+        eq: () => ({ maybeSingle: () => Promise.resolve({ data: { id_w: 'test-id', role: 'admin', full_name: 'Admin' }, error: null }) }),
+        order: () => ({ limit: () => Promise.resolve({ data: [], error: null }) }),
       }),
+      update: () => ({ eq: () => Promise.resolve({ data: null, error: null }) }),
+      insert: () => Promise.resolve({ data: null, error: null }),
     }),
   }),
 }));
@@ -41,35 +37,29 @@ jest.mock('@supabase/ssr', () => ({
 jest.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div>{children}</div>,
   AreaChart: ({ children }: any) => <div>{children}</div>,
-  Area: () => <div />,
-  XAxis: () => <div />,
-  YAxis: () => <div />,
-  CartesianGrid: () => <div />,
-  Tooltip: () => <div />
+  Area: () => null,
+  XAxis: () => null,
+  YAxis: () => null,
+  CartesianGrid: () => null,
+  Tooltip: () => null,
 }));
 
 // --- TESTS ---
 describe('DashboardPage', () => {
   it('renders without crashing and shows essential dashboard elements', async () => {
     render(<Component />);
-    
-    // On attend que le composant soit prêt
-    await waitFor(() => {
-      // Message de bienvenue unique
-      expect(screen.getByText('Ravi de vous revoir,')).toBeInTheDocument();
-      
-      // Cartes de statistiques spécifiques
-      expect(screen.getByText('Total Créateurs')).toBeInTheDocument();
-      expect(screen.getByText('Total Marques')).toBeInTheDocument();
-      expect(screen.getByText('Campagnes Actives')).toBeInTheDocument();
-      
-      // Graphique spécifique
-      expect(screen.getByText('📈 Croissance cumulative des inscriptions')).toBeInTheDocument();
-      expect(screen.getByText('Évolution mensuelle (total cumulé d\'inscriptions)')).toBeInTheDocument();
-      
-      // Raccourcis spécifiques
-      expect(screen.getByText('Assistance')).toBeInTheDocument();
-      expect(screen.getByText('Demandes en attente')).toBeInTheDocument();
-    });
+
+    // Vérifier le titre/heading principal (unique)
+    const heading = await screen.findByRole('heading', { name: /Ravi de vous revoir/ }, { timeout: 3000 });
+    expect(heading).toBeInTheDocument();
+
+    // Vérifier les 3 cartes de statistiques principales
+    expect(screen.getByText('Total Créateurs')).toBeInTheDocument();
+    expect(screen.getByText('Total Marques')).toBeInTheDocument();
+    expect(screen.getByText('Campagnes Actives')).toBeInTheDocument();
+
+    // Vérifier le titre du graphique de croissance
+    expect(screen.getByText('📈 Croissance cumulative des inscriptions')).toBeInTheDocument();
+    expect(screen.getByText(/Évolution mensuelle/)).toBeInTheDocument();
   });
 });

@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import Component from './page';
 
 // Mock next/navigation
@@ -6,7 +6,10 @@ jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: jest.fn(),
     refresh: jest.fn()
-  })
+  }),
+  useSearchParams: jest.fn(() => ({
+    get: jest.fn((key: string) => null)
+  })),
 }));
 
 // Mock next/link
@@ -44,8 +47,10 @@ jest.mock('framer-motion', () => ({
   })
 }));
 
-describe('page', () => {
-  it('renders without crashing', () => {
+describe('Creators Dashboard page', () => {
+  it('renders loading state immediately', () => {
     render(<Component />);
+    // the dashboard initially shows a spinner with this text
+    expect(screen.getByText(/Chargement de votre dashboard/i)).toBeInTheDocument();
   });
 });

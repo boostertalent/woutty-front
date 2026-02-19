@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import Component from './page';
 
 // Mock next/navigation
@@ -6,7 +6,10 @@ jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: jest.fn(),
     refresh: jest.fn()
-  })
+  }),
+  useSearchParams: jest.fn(() => ({
+    get: jest.fn((key: string) => null)
+  })),
 }));
 
 // Mock next/link
@@ -46,8 +49,10 @@ jest.mock('framer-motion', () => ({
   })
 }));
 
-describe('page', () => {
-  it('renders without crashing', () => {
+describe('Brands Dashboard page', () => {
+  it('renders without crashing and shows key header', () => {
     render(<Component />);
+    // loading flag may be true but header exists
+    expect(screen.getByText(/Créer une campagne/i)).toBeInTheDocument();
   });
 });
