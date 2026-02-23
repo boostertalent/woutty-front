@@ -565,6 +565,15 @@ if (acceptedError) {
       )}
 
       {/* SIDEBAR */}
+           <button
+                onClick={() => window.open('https://boostertalent.app.n8n.cloud/webhook/b4d75f16-f24e-4ca0-97a6-49502970c201/chat', 'ChatWoutty', 'width=400,height=700,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes,resizable=yes')}
+                className="fixed bottom-8 right-8 z-50 w-16 h-16 bg-gradient-to-r from-[#ceaf4a] to-[#b8962f] text-white rounded-full shadow-2xl hover:shadow-[#ceaf4a]/50 hover:scale-110 transition-all duration-300 flex items-center justify-center group"
+                title="Ouvrir le support"
+              >
+                <MessageCircle size={28} className="group-hover:rotate-12 transition-transform duration-300" />
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">!</span>
+              </button>
+      
       <aside className="hidden md:flex w-64 bg-white border-r flex-col p-6 h-full">
         <div className="flex items-center gap-3 mb-10">
           <div className="w-10 h-10 rounded-full border-2 border-[#D4A017] flex items-center justify-center overflow-hidden">

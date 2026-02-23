@@ -6,7 +6,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import Link from 'next/link';
 import { LayoutDashboard, UserCheck, Settings, LogOut, Loader2 } from 'lucide-react';
 
-export default function BrandDashboardLayout({ children }: { children: React.ReactNode }) {
+export default function BrandsLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [brandInfo, setBrandInfo] = useState<any>(null);
@@ -17,9 +17,17 @@ export default function BrandDashboardLayout({ children }: { children: React.Rea
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
+  // ✅ Vérifier si c'est une page d'inscription
+  const isAuthPage = pathname.startsWith('/brands/auth');
+
   useEffect(() => {
-    fetchBrandInfo();
-  }, []);
+    // ✅ NE PAS vérifier la session sur les pages d'inscription
+    if (!isAuthPage) {
+      fetchBrandInfo();
+    } else {
+      setLoading(false); // Pas de chargement sur les pages auth
+    }
+  }, [isAuthPage]);
 
   const fetchBrandInfo = async () => {
     try {
@@ -69,6 +77,12 @@ export default function BrandDashboardLayout({ children }: { children: React.Rea
     },
   ];
 
+  // ✅ Si page d'inscription (/brands/auth/*), afficher sans sidebar
+  if (isAuthPage) {
+    return <>{children}</>;
+  }
+
+  // ✅ Si dashboard mais en chargement, afficher loader
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
@@ -77,6 +91,7 @@ export default function BrandDashboardLayout({ children }: { children: React.Rea
     );
   }
 
+  // ✅ Pour /brands/dashboard, afficher avec sidebar
   return (
     <div className="flex min-h-screen bg-[#F9FAFB]">
 
@@ -99,9 +114,6 @@ export default function BrandDashboardLayout({ children }: { children: React.Rea
         {/* NAVIGATION */}
         <nav className="flex-1 px-4 space-y-1">
           {menuItems.map((item) => {
-            // Dashboard actif uniquement sur /brands/dashboard exactement
-            // Collaborations actif sur /brands/dashboard/collaborations
-            // Profil actif sur /brands/dashboard/profile
             const isActive = item.href === '/brands/dashboard'
               ? pathname === '/brands/dashboard'
               : pathname.startsWith(item.href);
