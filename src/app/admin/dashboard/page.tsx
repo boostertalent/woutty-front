@@ -7,7 +7,7 @@ import {
   Users, Building2, BarChart3, Shield, Search, TrendingUp, 
   Calendar, LogOut, Loader2, X,
   User, Edit2, Save, Activity, Clock, FileText, HeadphonesIcon,
-  CheckCircle2, XCircle, Mail, Phone, MessageCircle
+  CheckCircle2, XCircle, Mail, Phone, MessageCircle, Package
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, 
@@ -417,8 +417,8 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* ✅ RACCOURCIS RAPIDES vers Assistance / Logs / Profil */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* ✅ RACCOURCIS RAPIDES vers Assistance / Packs / Logs / Profil */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <button onClick={() => changeView('assistance')}
               className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all flex items-center gap-4 text-left">
               <div className="p-3 bg-yellow-50 rounded-xl"><HeadphonesIcon size={24} className="text-yellow-600" /></div>
@@ -427,6 +427,18 @@ export default function AdminDashboard() {
                 <p className="text-xs text-gray-400">Demandes en attente</p>
               </div>
             </button>
+            <Link
+              href="/admin/packs"
+              className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all flex items-center gap-4 text-left"
+            >
+              <div className="p-3 bg-blue-50 rounded-xl">
+                <Package size={24} className="text-blue-600" />
+              </div>
+              <div>
+                <p className="font-bold text-gray-900">Packs</p>
+                <p className="text-xs text-gray-400">Vue globale des packs</p>
+              </div>
+            </Link>
             {isPrincipalAdmin && (
               <>
                 <button onClick={() => changeView('logs')}

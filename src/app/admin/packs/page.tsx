@@ -59,7 +59,7 @@ export default function AdminPacksView() {
           marque:brand_id (
             nom_marque,
             email_marque,
-            phone
+            telephone_contact
           )
         `)
         .order('created_at', { ascending: false });
@@ -70,7 +70,7 @@ export default function AdminPacksView() {
         brand_id: draft.brand_id,
         brand_name: draft.marque?.nom_marque || 'Marque inconnue',
         brand_email: draft.marque?.email_marque || 'N/A',
-        brand_phone: draft.marque?.phone || null,
+        brand_phone: draft.marque?.telephone_contact || null,
         pack_id: draft.pack_id,
         pack_name: draft.pack_name,
         budget: draft.budget,
@@ -149,11 +149,11 @@ export default function AdminPacksView() {
       </div>
 
       {/* REVENU TOTAL */}
-      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-6 rounded-2xl mb-8 text-white">
+      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-6 rounded-2xl mb-8 ">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-bold mb-1 text-blue-100">REVENU POTENTIEL TOTAL</p>
-            <p className="text-4xl font-black">{stats.totalRevenue.toLocaleString('fr-FR')} FCFA</p>
+            <p className="text-4xl font-black  text-gray-600">{stats.totalRevenue.toLocaleString('fr-FR')} FCFA</p>
           </div>
           <TrendingUp size={48} className="opacity-50" />
         </div>

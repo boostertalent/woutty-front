@@ -617,10 +617,7 @@ const { error } = await supabase
 
             {/* Prix */}
             <div className="mb-6">
-              <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-3xl font-black text-purple-600">100 000</span>
-                <span className="text-lg font-bold text-gray-600">FCFA</span>
-              </div>
+             
               <div className="flex items-center gap-2">
                 <span className="text-sm line-throughtext-lg text-m font-black text-gray-900 mb-2">150 000 ~ 100 000 FCFA</span>
                 <span className="text-xs font-bold bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
