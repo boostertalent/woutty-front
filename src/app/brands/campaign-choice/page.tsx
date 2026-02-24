@@ -281,28 +281,33 @@ export default function CampaignChoice() {
       const packData = PACKS_DATA[packId as keyof typeof PACKS_DATA];
 
       // 💾 SAUVEGARDER LE PACK DANS SUPABASE
-      const { error } = await supabase
-        .from('campaign_drafts')
-        .upsert({
-          brand_id: session.user.id,
-          pack_id: packData.id,
-          pack_name: packData.name,
-          budget: packData.price,
-          original_price: packData.originalPrice,
-          duration_days: packData.duration,
-          expected_posts: packData.posts,
-          expected_creators: packData.creators,
-          format: packData.format,
-          has_videos: packData.videos,
-          has_reporting: packData.reporting,
-          bonus: packData.bonus || null,
-          has_image_rights: packData.imageRights || false,
-          status: 'draft',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'brand_id'
-        });
+      // 1. On nettoie l'ancien brouillon (Option "Panier unique")
+await supabase
+  .from('campaign_drafts')
+  .delete()
+  .eq('brand_id', session.user.id)
+  .eq('status', 'draft');
+
+// 2. On insère le nouveau choix (Pas besoin d'upsert ici puisque c'est propre)
+const { error } = await supabase
+  .from('campaign_drafts')
+  .insert({
+    brand_id: session.user.id,
+    pack_id: packData.id,
+    pack_name: packData.name,
+    budget: packData.price,
+    original_price: packData.originalPrice,
+    duration_days: packData.duration,
+    expected_posts: packData.posts,
+    expected_creators: packData.creators,
+    format: packData.format,
+    has_videos: packData.videos,
+    has_reporting: packData.reporting,
+    bonus: packData.bonus || null,
+    has_image_rights: packData.imageRights || false,
+    status: 'draft'
+    // Pas besoin de created_at/updated_at, SQL s'en occupe tout seul !
+  });
 
       if (error) {
         console.error('❌ Erreur sauvegarde pack:', error);
@@ -429,20 +434,21 @@ export default function CampaignChoice() {
 
             {/* Prix */}
             <div className="mb-6">
-              <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-3xl font-black text-green-600">15 000</span>
-                <span className="text-lg font-bold text-gray-600">FCFA</span>
-              </div>
+              
               <div className="flex items-center gap-2">
-                <span className="text-sm line-through text-gray-400">30 000 FCFA</span>
+                <span className="text-sm line-throughtext-lg text-m font-black text-gray-900 mb-2">30 000~ 15 000 FCFA</span>
                 <span className="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                  -50%
+                 Économisez 35% 
                 </span>
+                
               </div>
             </div>
 
             {/* Caractéristiques */}
             <div className="flex-1 space-y-3 mb-6">
+              <p className="text-x font-black text-gray-900 mb-2">
+            Ce que vous obtenez :
+            </p>
               <div className="flex items-start gap-2">
                 <Check size={16} className="text-green-600 shrink-0 mt-0.5" />
                 <span className="text-sm text-gray-700">Durée : <strong>3 jours flash</strong></span>
@@ -453,19 +459,21 @@ export default function CampaignChoice() {
               </div>
               <div className="flex items-start gap-2">
                 <Check size={16} className="text-green-600 shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-700">Format : <strong>100% photos</strong></span>
+                <span className="text-sm text-gray-700">Format : <strong>100% photos</strong>-  (Mise en valeur visuelle)
+</span>
               </div>
               <div className="flex items-start gap-2">
                 <Check size={16} className="text-green-600 shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-700">Créateurs : <strong>2 créateurs</strong></span>
+                <span className="text-sm text-gray-700">Créateurs : <strong>2 créateurs</strong> (Fort taux d'engagement local)</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <X size={16} className=" text-gray-300 shrink-0 mt-0.5" />
+                <span className="text-sm text-gray-700">Vidéo : <strong>Non incluse</strong></span>
               </div>
               <div className="flex items-start gap-2">
                 <X size={16} className="text-gray-300 shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-400">Vidéos non incluses</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <X size={16} className="text-gray-300 shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-400">Rapport détaillé</span>
+               <span className="text-sm text-gray-700"> Rapport détaillé  : <strong>Non inclus</strong>(Preuve de publication simple)
+</span>
               </div>
             </div>
 
@@ -521,20 +529,20 @@ export default function CampaignChoice() {
 
             {/* Prix */}
             <div className="mb-6">
-              <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-3xl font-black text-[#D4A017]">60 000</span>
-                <span className="text-lg font-bold text-gray-600">FCFA</span>
-              </div>
+
               <div className="flex items-center gap-2">
-                <span className="text-sm line-through text-gray-400">80 000 FCFA</span>
+                <span className="text-sm line-throughtext-lg text-m font-black text-gray-900 mb-2">80 000 ~ 60 000 FCFA</span>
                 <span className="text-xs font-bold bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">
-                  -25%
+                  Le choix le plus populaire
                 </span>
               </div>
             </div>
 
             {/* Caractéristiques */}
             <div className="flex-1 space-y-3 mb-6">
+              <p className="text-x font-black text-gray-900 mb-2">
+           Tout ce qu'il y a dans Starter, plus :
+            </p>
               <div className="flex items-start gap-2">
                 <Check size={16} className="text-[#D4A017] shrink-0 mt-0.5" />
                 <span className="text-sm text-gray-700">Durée : <strong>7 jours impact</strong></span>
@@ -553,7 +561,11 @@ export default function CampaignChoice() {
               </div>
               <div className="flex items-start gap-2">
                 <Check size={16} className="text-[#D4A017] shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-700">Vidéos Reels/TikTok dynamiques</span>
+                <span className="text-sm text-gray-700">Spécificité Vidéo :<strong>Format "Reels/TikTok"  dynamique</strong>(15-30 seconde) </span>
+              </div>
+                            <div className="flex items-start gap-2">
+                <Check size={16} className="text-[#D4A017] shrink-0 mt-0.5" />
+                <span className="text-sm text-gray-700">Reporting :<strong>Statistiques d'audience </strong> (Vues, Likes, Portée)</span>
               </div>
               <div className="flex items-start gap-2">
                 <Sparkles size={16} className="text-yellow-500 shrink-0 mt-0.5" />
@@ -610,15 +622,18 @@ export default function CampaignChoice() {
                 <span className="text-lg font-bold text-gray-600">FCFA</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm line-through text-gray-400">150 000 FCFA</span>
+                <span className="text-sm line-throughtext-lg text-m font-black text-gray-900 mb-2">150 000 ~ 100 000 FCFA</span>
                 <span className="text-xs font-bold bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
-                  -33%
+                  Performance maximale & Contenu riche
                 </span>
               </div>
             </div>
 
             {/* Caractéristiques */}
             <div className="flex-1 space-y-3 mb-6">
+                            <p className="text-x font-black text-gray-900 mb-2">
+        Tout ce qu'il y a dans Business, plus :
+            </p>
               <div className="flex items-start gap-2">
                 <Check size={16} className="text-purple-600 shrink-0 mt-0.5" />
                 <span className="text-sm text-gray-700">Durée : <strong>15 jours dominance</strong></span>
@@ -633,22 +648,26 @@ export default function CampaignChoice() {
               </div>
               <div className="flex items-start gap-2">
                 <Check size={16} className="text-purple-600 shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-700">Créateurs : <strong>Sélection VIP</strong></span>
+                <span className="text-sm text-gray-700">Créateurs : <strong>Sélection VIP</strong>(Influenceurs à forte notoriété + créateurs de contenu)</span>
               </div>
               <div className="flex items-start gap-2">
                 <Check size={16} className="text-purple-600 shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-700">Storytelling + Unboxing</span>
+                <span className="text-sm text-gray-700">Spécificité Vidéo : <strong>Storytelling long (jusqu'à 60-90 sec) + Unboxing</strong></span>
               </div>
-              <div className="flex items-start gap-2">
+               <div className="flex items-start gap-2">
                 <Check size={16} className="text-purple-600 shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-700">Droits d'image 3 mois</span>
+                <span className="text-sm text-gray-700">Reporting :<strong>Analyse démographique complète + ROI estimé</strong></span>
+              </div>
+               <div className="flex items-start gap-2">
+                <Check size={16} className="text-purple-600 shrink-0 mt-0.5" />
+                <span className="text-sm text-gray-700">Droits d'image :<strong> Utilisation publicitaire (Ads) incluse pour 3 mois</strong></span>
               </div>
             </div>
 
             {/* Bouton */}
             <button className={`w-full py-3 rounded-xl font-bold transition-all ${
               selectedPack === 'national-scale'
-                ? 'bg-purple-500 text-white shadow-lg'
+                ? 'bg-purple-500 text-black shadow-lg'
                 : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
             }`}>
               {selectedPack === 'national-scale' ? 'Sélectionné' : 'Choisir ce pack'}
