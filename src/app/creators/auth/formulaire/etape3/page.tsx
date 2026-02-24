@@ -54,15 +54,15 @@ export default function SocialMediaSelection() {
       const ageRaw = localStorage.getItem('signup_age');
       const nichesRaw = localStorage.getItem('signup_niche');
       const avatarBase64 = localStorage.getItem('signup_avatar_file');
+
       
-      // Sécurité : Vérification de l'email
       if (!email) throw new Error("Détails d'inscription manquants (email).");
 
-      // Sécurité : Parsing de l'âge
+  
       const parsedAge = ageRaw ? parseInt(ageRaw, 10) : null;
       const finalAge = isNaN(parsedAge as number) ? null : parsedAge;
 
-      // Sécurité : Parsing des niches
+      
       let niches = [];
       try { 
         niches = nichesRaw ? JSON.parse(nichesRaw) : []; 
@@ -102,11 +102,11 @@ export default function SocialMediaSelection() {
         try {
           console.log("📤 Upload de l'avatar...");
 
-          // Convertir base64 en Blob
+          
           const base64Response = await fetch(avatarBase64);
           const blob = await base64Response.blob();
 
-          // Générer un nom de fichier unique
+        
           const fileExt = blob.type.split('/')[1] || 'jpg';
           const fileName = `${userId}-${Date.now()}.${fileExt}`;
           const filePath = `avatars/${fileName}`;
@@ -141,7 +141,7 @@ export default function SocialMediaSelection() {
       const { error: profileError } = await supabase
         .from('createur')
         .upsert({
-          id_w: userId, // La clé primaire qui cause le conflit
+          id_w: userId, 
           full_name: fullName || "",
           email: email,
           phone: phone || "",
@@ -158,11 +158,11 @@ export default function SocialMediaSelection() {
           facebook_username: socials.find(s => s.platform === 'facebook')?.handle || null,
           user_socials: socials.map(s => ({ platform: s.platform, handle: s.handle }))
         }, { 
-          onConflict: 'id_w' // Dit à Supabase d'ignorer l'erreur si l'id_w existe déjà et de faire un update
+          onConflict: 'id_w'
         });
 
       if (profileError) {
-        // Si l'erreur persiste ici, c'est probablement un problème de nom de colonne ou de type de donnée
+      
         console.error("❌ Erreur SQL détaillée:", profileError);
         throw new Error(`Erreur base de données: ${profileError.message}`);
       }
@@ -269,7 +269,7 @@ export default function SocialMediaSelection() {
         {error && <div className="bg-red-50 text-red-600 p-4 rounded-2xl mb-6 flex items-start gap-3 border border-red-100 font-bold text-sm"><AlertCircle size={20} /> {error}</div>}
 
         <div className="flex justify-between items-center pt-6 border-t border-gray-100">
-          <Link href="/creators/auth/niche" className="text-gray-400 font-bold hover:text-black flex items-center gap-2 text-sm"><ChevronLeft size={18} /> Retour</Link>
+          <Link href="/creators/auth/formulaire/etape2" className="text-gray-400 font-bold hover:text-black flex items-center gap-2 text-sm"><ChevronLeft size={18} /> Retour</Link>
           <button 
             onClick={handleFinish} 
             disabled={!isFormValid || loading} 

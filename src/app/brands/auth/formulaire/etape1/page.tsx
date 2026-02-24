@@ -77,7 +77,7 @@ export default function EntrepriseDetails() {
       localStorage.setItem('brand_domain', finalDomain);
       localStorage.setItem('brand_website', formData.website);
 
-      router.push('/brands/auth/contact'); // Passage à l'étape suivante
+      router.push('/brands/auth/formulaire/etape2'); 
     } catch (err) {
       setError("Erreur lors de la préparation des données.");
     } finally {

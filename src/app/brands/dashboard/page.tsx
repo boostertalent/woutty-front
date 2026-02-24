@@ -520,7 +520,7 @@ export default function BrandDashboard() {
                 <Zap size={48} className="mx-auto text-gray-200 mb-4" />
                 <p className="text-gray-600 font-bold text-lg mb-2">Aucune campagne créée</p>
                 <p className="text-sm text-gray-400 mb-6">Créez votre première campagne pour commencer !</p>
-                <Link href="/brands/auth/campagne">
+                <Link href="/brands/campaign-choice">
                   <button className="bg-[#D4A017] text-white px-6 py-3 rounded-xl font-bold inline-flex items-center gap-2 hover:bg-[#B88A14] transition-all">
                     <Zap size={18} fill="currentColor" /> Créer une campagne
                   </button>

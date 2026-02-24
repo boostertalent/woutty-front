@@ -57,7 +57,6 @@ export default function CreateCreatorProfile() {
         return;
       }
 
-      // ✅ CORRECTION : Convertir IMMÉDIATEMENT en base64 et sauvegarder
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result as string;
@@ -89,14 +88,14 @@ export default function CreateCreatorProfile() {
     localStorage.setItem('signup_phone', formData.phone.trim());
     localStorage.setItem('signup_age', formData.age);
     
-    // L'image est déjà sauvegardée dans handleImageChange
+    
     console.log("📦 Données sauvegardées:", {
       email: formData.email,
       name: formData.fullName,
       hasAvatar: !!localStorage.getItem('signup_avatar_file')
     });
     
-    router.push("/creators/auth/niche");
+    router.push("/creators/auth/formulaire/etape2");
   };
 
   return (

@@ -64,10 +64,10 @@ export default function CreatorDashboard() {
   const searchParams = useSearchParams();
   const [isAdminViewing, setIsAdminViewing] = useState(false);
   const router = useRouter();
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const supabase = useMemo(() => createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+), []);
 
   const [activeTab, setActiveTab] = useState('Ma performance');
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
@@ -93,15 +93,16 @@ export default function CreatorDashboard() {
     { name: 'Terminées', icon: <Archive size={20} /> },
   ];
 
-  const platformConfig: Record<string, { name: string; icon: JSX.Element }> = {
-    'instagram': { name: 'Instagram', icon: <Instagram size={14} /> },
+  const platformConfig: Record<string, { name: string; icon: JSX.Element }> = useMemo(() => ({
+   'instagram': { name: 'Instagram', icon: <Instagram size={14} /> },
     'youtube': { name: 'YouTube', icon: <Youtube size={14} /> },
     'tiktok': { name: 'TikTok', icon: <span className="text-[12px]">🎵</span> },
     'snapchat': { name: 'Snapchat', icon: <Ghost size={14} /> },
     'twitter': { name: 'X', icon: <XLogo size={14} /> },
     'x': { name: 'X', icon: <XLogo size={14} /> },
     'facebook': { name: 'Facebook', icon: <Facebook size={14} /> }
-  };
+}), []);
+
 
   const getPlatformInfoByName = useCallback((platformName: string) => {
     if (!platformName) return { name: 'Social', icon: <Camera size={14} /> };
@@ -114,212 +115,220 @@ export default function CreatorDashboard() {
     if (lowerName.includes('x') || lowerName.includes('twitter')) return platformConfig.x;
     if (lowerName.includes('face')) return platformConfig.facebook;
     return { name: platformName, icon: <Camera size={14} /> };
-  }, []);
+  }, [platformConfig]);
 
   const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    
-    console.log("🔄 Chargement des données dynamiques...");
-
-    try {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
-        console.error("❌ Pas de session:", sessionError);
-        router.push('/auth/login');
-        return;
-      }
-
-      const USER_ID = session.user.id;
-
-      const adminViewingId = searchParams.get('viewing');
-      let creatorIdToLoad = USER_ID;
-      let adminViewMode = false;
-
-      if (adminViewingId) {
-        creatorIdToLoad = adminViewingId;
-        adminViewMode = true;
-      }
-
-      setIsAdminViewing(adminViewMode);
-
-      const { data: creatorData } = await supabase
-        .from('createur')
-        .select('*')
-        .eq('id_w', creatorIdToLoad)
-        .single();
-
-      if (creatorData) {
-        console.log("✅ Créateur:", creatorData.full_name);
-        setCreatorInfo(creatorData);
-      }
-
-      const { data: profileData } = await supabase
-        .from('info_profile')
-        .select('*')
-        .eq('id_w', creatorIdToLoad);
-
-      const profileMap = new Map();
-      (profileData || []).forEach((p: any) => {
-        if (p.id_plateforme) {
-          profileMap.set(p.id_plateforme, p);
-        }
-      });
-
-      const platforms = (profileData || []).map((p: any, idx: number) => {
-        const platformName = p.la_plateforme || p.nom_plateforme || 'Plateforme';
-        const platformInfo = getPlatformInfoByName(platformName);
-        
-        return {
-          id: `platform_${idx}_${p.id_plateforme}`,
-          id_w: p.id_w,
-          id_plateforme: p.id_plateforme,
-          originalName: platformName,
-          name: platformInfo.name,
-          icon: platformInfo.icon,
-          followers: formatNumber(p.nbre_followers),
-          follows: formatNumber(p.nbre_follows),
-          posts: formatNumber(p.nbre_poste),
-          engagement: p.nbre_followers > 0 ? 
-            `${((p.nbre_poste || 0) / (p.nbre_followers || 1) * 100).toFixed(1)}%` : '0%'
-        };
-      });
-      
-      setSelectedPlatforms(platforms);
-
-      const { data: postData } = await supabase
-        .from('info_poste')
-        .select('*')
-        .eq('id_w', creatorIdToLoad)
-        .order('date_poste', { ascending: false });
-
-      const posts = (postData || []).map((post: any, index: number) => {
-        const platformProfile = profileMap.get(post.id_plateforme);
-        const platformOriginalName = platformProfile?.la_plateforme || platformProfile?.nom_plateforme || 'Social';
-        const platformInfo = getPlatformInfoByName(platformOriginalName);
-        
-        const isVideo = post.type_poste?.toLowerCase().includes('vid') || 
-                       post.url_poste?.toLowerCase().match(/\.(mp4|mov|avi|webm|mkv)(\?|$)/i);
-
-        let formattedDate = 'Date inconnue';
-        if (post.date_poste) {
-          try {
-            formattedDate = new Date(post.date_poste).toLocaleDateString('fr-FR', { 
-              day: 'numeric', 
-              month: 'short', 
-              year: 'numeric' 
-            });
-          } catch (e) {
-            console.warn("Erreur format date");
-          }
-        }
-
-        return {
-          id: `post_${index}_${Date.now()}`,
-          id_w: post.id_w,
-          id_plateforme: post.id_plateforme,
-          title: post.titre_poste || 'Sans titre',
-          date: formattedDate,
-          platform: platformInfo.name,
-          originalPlatform: platformOriginalName,
-          type: isVideo ? 'video' : 'image',
-          icon: platformInfo.icon,
-          mediaUrl: post.url_poste || null,
-          hasMedia: !!(post.url_poste && post.url_poste.trim() !== ''),
-          likes: formatNumber(post.nbre_like),
-          views: formatNumber(post.nbre_vue),
-          comments: formatNumber(post.nbre_commentaire),
-          shares: formatNumber(post.nbre_partage),
-          eng: calculateEngagementRate(post),
-          location_country: post.pays || post.country || null,
-          location_city: post.ville || post.city || null,
-        };
-      });
-
-      setAllPosts(posts);
-
-      // OPPORTUNITÉS - Nouvelles campagnes attribuées
-     
-const { data: pendingData, error: pendingError } = await supabase
-  .from('campaigns')
-  .select('*')  
-  .eq('assigned_creator_id', creatorIdToLoad)
-  .or('creator_status.is.null,creator_status.eq.pending');
-
-if (pendingError) {
-  console.error("Erreur Opportunités détaillée:", pendingError);
-} else {
-  console.log("📋 Opportunités trouvées:", pendingData);
-  setPendingCampaigns(pendingData || []);
-  setNotifications(pendingData?.length || 0);
-}
-      console.log("📋 Opportunités:", pendingData?.length || 0);
-      setPendingCampaigns(pendingData || []);
-      setNotifications(pendingData?.length || 0);
-
-      // MES CAMPAGNES - Acceptées et en cours
-const { data: acceptedData, error: acceptedError } = await supabase
-  .from('campaigns')
-  .select('*')  
-  .eq('assigned_creator_id', creatorIdToLoad)
-  .eq('creator_status', 'accepted');
-
-if (acceptedError) {
-  console.error("Erreur Campagnes Acceptées:", acceptedError);
-} else {
-  console.log("📊 Campagnes en cours trouvées:", acceptedData);
-  setAcceptedCampaigns(acceptedData || []);
-}
-      // Filtrer les campagnes en cours
-      const ongoingCampaigns = acceptedData?.filter(c => {
-        if (!c.end_date) return true;
-        return new Date(c.end_date) >= new Date();
-      }) || [];
-
-      console.log("📊 Campagnes en cours:", ongoingCampaigns.length);
-      setAcceptedCampaigns(ongoingCampaigns);
-
-      // CAMPAGNES TERMINÉES
-      const finishedCampaigns = acceptedData?.filter(c => {
-        if (!c.end_date) return false;
-        return new Date(c.end_date) < new Date();
-      }) || [];
-
-      console.log("✅ Campagnes terminées:", finishedCampaigns.length);
-      setCompletedCampaigns(finishedCampaigns);
-
-      // CALCUL REVENUS
-      const revenue = finishedCampaigns.reduce((sum, c) => {
-        return sum + (parseFloat(c.budget) || 0);
-      }, 0);
-
-      setTotalRevenue(revenue);
-      setCompletedCampaignsCount(finishedCampaigns.length);
-      console.log(`💰 Revenus: ${revenue} CFA (${finishedCampaigns.length} campagnes)`);
-
-    } catch (error: any) {
-      console.error("❌ Erreur:", error);
-      setError(error.message);
-    } finally {
-      setLoading(false);
+  setLoading(true);
+  setError(null);
+  
+  try {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session) {
+      router.push('/auth/login');
+      return;
     }
-  }, [supabase, getPlatformInfoByName, router, searchParams]);
+
+    const USER_ID = session.user.id;
+    const adminViewingId = searchParams.get('viewing');
+    let creatorIdToLoad = adminViewingId || USER_ID;
+    setIsAdminViewing(!!adminViewingId);
+
+    // 1. Charger les infos de base
+    const { data: creatorData } = await supabase.from('createur').select('*').eq('id_w', creatorIdToLoad).single();
+    if (creatorData) setCreatorInfo(creatorData);
+
+    // 2. CHARGER LES POSTS EN PREMIER (Crucial pour le calcul des plateformes après)
+    const { data: postData } = await supabase
+      .from('info_poste')
+      .select('*')
+      .eq('id_w', creatorIdToLoad)
+      .order('date_poste', { ascending: false });
+
+    // 3. Charger les profils de plateformes
+    const { data: profileData } = await supabase
+      .from('info_profile')
+      .select('*')
+      .eq('id_w', creatorIdToLoad);
+
+    const profileMap = new Map();
+    (profileData || []).forEach((p: any) => {
+      if (p.id_plateforme) profileMap.set(p.id_plateforme, p);
+    });
+
+  // 4. CALCUL DES PLATEFORMES 
+const platforms = (profileData || []).map((p: any, idx: number) => {
+  const platformName = p.la_plateforme || p.nom_plateforme || 'Plateforme';
+  const platformInfo = getPlatformInfoByName(platformName);
+  const rawId = p.id_plateforme?.toString() || '';
+  const currentProfileId = rawId.split('.')[0].trim(); 
+  const specificPosts = (postData || []).filter(post => {
+    const postId = post.id_plateforme?.toString().split('.')[0].trim();
+    if (postId && postId === currentProfileId) {
+      return true;
+    }
+    if (!postId || postId === '' || postId === 'null') {
+      const postUrl = (post.url_poste || '').toLowerCase();
+      const platformNameLower = platformName.toLowerCase();
+      
+      if (platformNameLower.includes('insta') && postUrl.includes('instagram')) return true;
+      if (platformNameLower.includes('tik') && postUrl.includes('tiktok')) return true;
+      if (platformNameLower.includes('you') && postUrl.includes('youtube')) return true;
+      if (platformNameLower.includes('face') && postUrl.includes('facebook')) return true;
+      if ((platformNameLower.includes('x') || platformNameLower.includes('twitter')) && 
+          (postUrl.includes('twitter') || postUrl.includes('x.com'))) return true;
+    }
+    
+    return false;
+  });
+
+  console.log(`📱 ${platformInfo.name} (ID: ${currentProfileId}): ${specificPosts.length} posts`);
+
+  const totalLikes = specificPosts.reduce((acc, curr) => acc + (Number(curr.nbre_like) || 0), 0);
+  const totalComments = specificPosts.reduce((acc, curr) => acc + (Number(curr.nbre_commentaire) || 0), 0);
+
+  return {
+    id: `p_${idx}_${currentProfileId}`,
+    id_plateforme: currentProfileId,
+    name: platformInfo.name, 
+    icon: platformInfo.icon,
+    followers: formatNumber(p.nbre_followers),
+    follows: formatNumber(p.nbre_follows),
+    posts: specificPosts.length,
+    engagement: p.nbre_followers > 0 ? 
+      `${(((totalLikes + totalComments) / p.nbre_followers) * 100).toFixed(1)}%` : '0%'
+  };
+});
+
+setSelectedPlatforms(platforms);
+
+// 5. FORMATER LES POSTS (On attache le NOM de la plateforme pour le filtre)
+const formattedPosts = (postData || []).map((post: any, index: number) => {
+  const postIdStr = post.id_plateforme?.toString().split('.')[0].trim();
+
+  let platformProfile = null;
+
+  if (postIdStr && postIdStr !== '' && postIdStr !== 'null') {
+    platformProfile = (profileData || []).find(p => 
+      p.id_plateforme?.toString().split('.')[0].trim() === postIdStr
+    );
+  }
+  
+  if (!platformProfile) {
+    const postUrl = (post.url_poste || '').toLowerCase();
+    
+    if (postUrl.includes('instagram')) {
+      platformProfile = (profileData || []).find(p => 
+        (p.la_plateforme || p.nom_plateforme || '').toLowerCase().includes('insta')
+      );
+    } else if (postUrl.includes('tiktok')) {
+      platformProfile = (profileData || []).find(p => 
+        (p.la_plateforme || p.nom_plateforme || '').toLowerCase().includes('tik')
+      );
+    } else if (postUrl.includes('youtube')) {
+      platformProfile = (profileData || []).find(p => 
+        (p.la_plateforme || p.nom_plateforme || '').toLowerCase().includes('you')
+      );
+    } else if (postUrl.includes('facebook')) {
+      platformProfile = (profileData || []).find(p => 
+        (p.la_plateforme || p.nom_plateforme || '').toLowerCase().includes('face')
+      );
+    } else if (postUrl.includes('twitter') || postUrl.includes('x.com')) {
+      platformProfile = (profileData || []).find(p => {
+        const name = (p.la_plateforme || p.nom_plateforme || '').toLowerCase();
+        return name.includes('x') || name.includes('twitter');
+      });
+    }
+    
+    if (platformProfile) {
+      console.log(`🔍 Post "${post.titre_poste}" : ID manquant, détecté via URL → ${platformProfile.la_plateforme || platformProfile.nom_plateforme}`);
+    }
+  }
+  
+  const platformOriginalName = platformProfile?.la_plateforme || platformProfile?.nom_plateforme || 'Social';
+  const platformInfo = getPlatformInfoByName(platformOriginalName);
+  
+  const isVideo = post.type_poste?.toLowerCase().includes('vid') || 
+                  post.url_poste?.toLowerCase().match(/\.(mp4|mov|avi|webm|mkv)(\?|$)/i);
+
+  return {
+    ...post, 
+    id: `post_${index}_${post.id_t_poste || index}`,
+    title: post.titre_poste || 'Sans titre',
+    id_plateforme_clean: postIdStr,
+    platform: platformInfo.name, 
+    icon: platformInfo.icon,
+    type: isVideo ? 'video' : 'image',
+    mediaUrl: post.url_poste,
+    local_media_url: post.local_media_url,
+    thumbnail_url: post.thumbnail_url,
+    media_status: post.media_status || 'pending',
+    likes: formatNumber(post.nbre_like),
+    views: formatNumber(post.nbre_vue),
+    comments: formatNumber(post.nbre_commentaire),
+    shares: formatNumber(post.nbre_partage),
+    eng: calculateEngagementRate(post),
+    date: formatDate(post.date_poste),
+    location_country: post.pays || post.country || null,
+    location_city: post.ville || post.city || null
+  };
+});
+
+console.log(`📊 Total posts formatés: ${formattedPosts.length}`);
+console.log(`📊 Répartition:`, formattedPosts.reduce((acc, post) => {
+  acc[post.platform] = (acc[post.platform] || 0) + 1;
+  return acc;
+}, {} as Record<string, number>));
+
+setAllPosts(formattedPosts);
+
+
+
+    // 6. Charger les campagnes 
+    const { data: pendingData } = await supabase.from('campaigns').select('*').eq('assigned_creator_id', creatorIdToLoad).or('creator_status.is.null,creator_status.eq.pending');
+    setPendingCampaigns(pendingData || []);
+    setNotifications(pendingData?.length || 0);
+
+    const { data: acceptedData } = await supabase.from('campaigns').select('*').eq('assigned_creator_id', creatorIdToLoad).eq('creator_status', 'accepted');
+    const ongoing = acceptedData?.filter(c => !c.end_date || new Date(c.end_date) >= new Date()) || [];
+    const finished = acceptedData?.filter(c => c.end_date && new Date(c.end_date) < new Date()) || [];
+    
+    setAcceptedCampaigns(ongoing);
+    setCompletedCampaigns(finished);
+    setTotalRevenue(finished.reduce((sum, c) => sum + (parseFloat(c.budget) || 0), 0));
+    setCompletedCampaignsCount(finished.length);
+
+  } catch (error: any) {
+    console.error("❌ Erreur:", error);
+    setError(error.message);
+  } finally {
+    setLoading(false);
+  }
+}, [getPlatformInfoByName, router, searchParams, supabase]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  const filteredPosts = useMemo(() => {
-    if (!activeFilter) return allPosts;
-    const normalizedFilter = activeFilter.toLowerCase().trim();
-    return allPosts.filter(post => {
-      const platformName = (post.platform || '').toLowerCase();
-      const originalPlatform = (post.originalPlatform || '').toLowerCase();
-      return platformName.includes(normalizedFilter) || originalPlatform.includes(normalizedFilter);
-    });
-  }, [activeFilter, allPosts]);
+const filteredPosts = useMemo(() => {
+  if (!activeFilter) {
+    console.log("🔍 Aucun filtre - Affichage de tous les posts:", allPosts.length);
+    return allPosts;
+  }
 
+  console.log("🔍 Filtre actif:", activeFilter);
+  const filtered = allPosts.filter(post => {
+    const match = post.platform === activeFilter;
+    
+    if (match) {
+      console.log(`✅ Match trouvé: ${post.title} (${post.platform})`);
+    }
+    
+    return match;
+  });
+
+  console.log(`🔍 ${filtered.length} post(s) trouvé(s) pour "${activeFilter}"`);
+  return filtered;
+}, [activeFilter, allPosts]);
   const handleAcceptCampaign = async (campaignId: string) => { 
     setProcessingCampaign(campaignId);
     try {
@@ -420,149 +429,209 @@ if (acceptedError) {
       
       {/* MODAL POSTS - Identique */}
       {selectedPost && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
-          <button 
-            onClick={() => setSelectedPost(null)} 
-            className="absolute top-4 right-4 z-[110] text-white hover:rotate-90 transition-transform bg-black/50 p-2 rounded-full"
-          >
-            <CloseIcon size={28} />
-          </button>
-          
-          <div className="bg-white rounded-[32px] overflow-hidden max-w-5xl w-full flex flex-col md:flex-row max-h-[90vh] shadow-2xl">
-            <div className="w-full md:w-[60%] bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center p-8 min-h-[400px]">
-              {selectedPost.hasMedia ? (
-                <div className="text-center space-y-6 max-w-md">
-                  <div className="relative w-32 h-32 mx-auto">
-                    <div className="absolute inset-0 bg-[#D4A017]/20 rounded-full animate-ping" />
-                    <div className="relative w-32 h-32 bg-[#D4A017]/20 rounded-full flex items-center justify-center">
-                      {selectedPost.type === 'video' ? (
-                        <Play size={64} className="text-[#D4A017] ml-2" fill="currentColor" />
-                      ) : (
-                        <ImageIcon size={64} className="text-[#D4A017]" />
-                      )}
-                    </div>
+  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
+    <button 
+      onClick={() => setSelectedPost(null)} 
+      className="absolute top-4 right-4 z-[110] text-white hover:rotate-90 transition-transform bg-black/50 p-2 rounded-full"
+    >
+      <CloseIcon size={28} />
+    </button>
+    
+    <div className="bg-white rounded-[32px] overflow-hidden max-w-5xl w-full flex flex-col md:flex-row max-h-[90vh] shadow-2xl">
+      {/* 🆕 PARTIE MÉDIA - AVEC SUPPORT LOCAL */}
+      <div className="w-full md:w-[60%] bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center p-4 min-h-[400px] relative overflow-hidden">
+        {selectedPost.local_media_url ? (
+          <div className="w-full h-full flex items-center justify-center">
+            {selectedPost.type === 'video' ? (
+              <video 
+                controls 
+                className="max-w-full max-h-[600px] rounded-2xl shadow-2xl"
+                poster={selectedPost.thumbnail_url || ''}
+                preload="metadata"
+              >
+                <source src={selectedPost.local_media_url} type="video/mp4" />
+                Votre navigateur ne supporte pas la vidéo.
+              </video>
+            ) : (
+              <img 
+                src={selectedPost.local_media_url} 
+                alt={selectedPost.title}
+                className="max-w-full max-h-[600px] object-contain rounded-2xl shadow-2xl"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  const fallback = e.currentTarget.parentElement?.parentElement?.querySelector('.fallback-content');
+                  if (fallback) fallback.classList.remove('hidden');
+                }}
+              />
+            )}
+            
+            {/* Badge "Hébergé localement" */}
+            <div className="absolute top-4 left-4 bg-green-500/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-white text-xs font-bold flex items-center gap-2 shadow-lg">
+              <CheckCircle size={14} />
+              Hébergé localement
+            </div>
+            
+            {/* Lien externe */}
+            {selectedPost.mediaUrl && (
+              <div className="absolute bottom-4 left-4 right-4">
+                <a
+                  href={selectedPost.mediaUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm text-white rounded-full text-xs hover:bg-white/20 transition-all"
+                >
+                  <ExternalLink size={12} />
+                  Voir sur {selectedPost.platform}
+                </a>
+              </div>
+            )}
+          </div>
+        ) : selectedPost.mediaUrl ? (
+          <div className="fallback-content text-center space-y-6 max-w-md">
+            <div className="relative w-32 h-32 mx-auto">
+              <div className="absolute inset-0 bg-[#D4A017]/20 rounded-full animate-ping" />
+              <div className="relative w-32 h-32 bg-[#D4A017]/20 rounded-full flex items-center justify-center">
+                {selectedPost.type === 'video' ? (
+                  <Play size={64} className="text-[#D4A017] ml-2" fill="currentColor" />
+                ) : (
+                  <ImageIcon size={64} className="text-[#D4A017]" />
+                )}
+              </div>
+            </div>
+            
+            <div className="text-white space-y-4">
+              <h3 className="text-2xl font-bold">
+                {selectedPost.type === 'video' ? '🎬 Vidéo disponible' : '📸 Image disponible'}
+              </h3>
+              <p className="text-gray-300 text-sm">
+                Ce contenu est hébergé sur <span className="font-bold text-[#D4A017]">{selectedPost.platform}</span>
+              </p>
+              
+              {/* Indicateur de téléchargement en cours */}
+              {selectedPost.media_status === 'processing' && (
+                <div className="bg-blue-500/20 border border-blue-500/30 rounded-xl p-3">
+                  <div className="flex items-center gap-2 justify-center">
+                    <Loader2 size={16} className="animate-spin text-blue-400" />
+                    <p className="text-xs text-blue-300">Téléchargement en cours...</p>
                   </div>
-                  
-                  <div className="text-white space-y-4">
-                    <h3 className="text-2xl font-bold">
-                      {selectedPost.type === 'video' ? '🎬 Vidéo disponible' : '📸 Image disponible'}
-                    </h3>
-                    <p className="text-gray-300 text-sm">
-                      Ce contenu est hébergé sur <span className="font-bold text-[#D4A017]">{selectedPost.platform}</span>
-                    </p>
-                  </div>
-
-                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-4 text-left">
-                    <div className="flex items-start gap-3">
-                      <Shield className="text-yellow-400 mt-0.5" size={20} />
-                      <div className="text-xs text-yellow-100">
-                        <p className="font-bold mb-1">🔒 Restrictions de sécurité</p>
-                        <p className="text-yellow-200/80">
-                          Pour protéger votre vie privée, les contenus ne peuvent pas être affichés ici.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <a
-                    href={selectedPost.mediaUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group inline-flex items-center gap-3 px-10 py-5 bg-[#D4A017] text-white rounded-full font-bold text-lg hover:bg-[#B88A14] transition-all shadow-2xl hover:scale-105"
-                  >
-                    <ExternalLink size={24} className="group-hover:rotate-12 transition-transform" />
-                    Voir sur {selectedPost.platform}
-                  </a>
-                  
-                  <div className="flex items-center justify-center gap-2 px-4 py-2 bg-white/10 rounded-full backdrop-blur-sm">
-                    {selectedPost.icon}
-                    <span className="text-xs font-bold text-white">{selectedPost.platform}</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center text-white">
-                  <Camera size={64} className="mx-auto mb-4 opacity-50" />
-                  <p>Aucun média disponible</p>
                 </div>
               )}
             </div>
-            
-            <div className="w-full md:w-[40%] p-8 flex flex-col bg-white overflow-y-auto">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-4 pb-4 border-b">
-                  <span className="text-[#D4A017] bg-[#D4A017]/10 p-2 rounded-lg">{selectedPost.icon}</span>
-                  <span className="text-xs font-black uppercase">{selectedPost.platform}</span>
-                </div>
-                
-                <h2 className="text-2xl font-serif font-bold mb-2">{selectedPost.title}</h2>
-                <p className="text-gray-400 text-sm flex items-center gap-2 mb-6">
-                  <Calendar size={14} className="text-[#D4A017]" /> {selectedPost.date}
-                </p>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-4 bg-gradient-to-br from-red-50 to-pink-50 rounded-2xl border border-red-100">
-                    <p className="text-[10px] uppercase font-bold text-red-400 mb-2">Likes</p>
-                    <p className="text-2xl font-black text-red-600">{selectedPost.likes}</p>
-                  </div>
-                  <div className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-100">
-                    <p className="text-[10px] uppercase font-bold text-blue-400 mb-2">Vues</p>
-                    <p className="text-2xl font-black text-blue-600">{selectedPost.views}</p>
-                  </div>
-                  <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-100">
-                    <p className="text-[10px] uppercase font-bold text-green-400 mb-2">Comm.</p>
-                    <p className="text-2xl font-black text-green-600">{selectedPost.comments}</p>
-                  </div>
-                  <div className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl border border-purple-100">
-                    <p className="text-[10px] uppercase font-bold text-purple-400 mb-2">Partages</p>
-                    <p className="text-2xl font-black text-purple-600">{selectedPost.shares}</p>
-                  </div>
-                  <div className="col-span-2 p-4 bg-gradient-to-br from-amber-50 to-yellow-50 rounded-2xl border border-amber-100">
-                    <p className="text-[10px] uppercase font-bold text-amber-400 mb-2">Engagement</p>
-                    <p className="text-3xl font-black text-amber-600">{selectedPost.eng}</p>
-                  </div>
-                  
-                  {(selectedPost.location_country || selectedPost.location_city) && (
-                    <div className="col-span-2 p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-100">
-                      <div className="flex items-center gap-3 mb-2">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-600">
-                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                          <circle cx="12" cy="10" r="3"/>
-                        </svg>
-                        <p className="text-xs uppercase font-bold text-blue-600">Zone touchée</p>
-                      </div>
-                      <p className="text-xl font-black text-blue-700">
-                        {selectedPost.location_city && selectedPost.location_country 
-                          ? `${selectedPost.location_city}, ${selectedPost.location_country}`
-                          : selectedPost.location_city || selectedPost.location_country || 'Non spécifié'}
-                      </p>
-                    </div>
-                  )}
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-4 text-left">
+              <div className="flex items-start gap-3">
+                <Shield className="text-yellow-400 mt-0.5" size={20} />
+                <div className="text-xs text-yellow-100">
+                  <p className="font-bold mb-1">🔒 Média non encore hébergé</p>
+                  <p className="text-yellow-200/80">
+                    Le média sera bientôt disponible en local. En attendant, vous pouvez le voir sur la plateforme d'origine.
+                  </p>
                 </div>
               </div>
+            </div>
 
-              <button 
-                onClick={() => setSelectedPost(null)}
-                className="w-full py-4 mt-6 border-2 border-gray-200 text-gray-700 rounded-full font-bold hover:bg-gray-50"
-              >
-                ✕ Fermer
-              </button>
+            <a
+              href={selectedPost.mediaUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group inline-flex items-center gap-3 px-10 py-5 bg-[#D4A017] text-white rounded-full font-bold text-lg hover:bg-[#B88A14] transition-all shadow-2xl hover:scale-105"
+            >
+              <ExternalLink size={24} className="group-hover:rotate-12 transition-transform" />
+              Voir sur {selectedPost.platform}
+            </a>
+            
+            <div className="flex items-center justify-center gap-2 px-4 py-2 bg-white/10 rounded-full backdrop-blur-sm">
+              {selectedPost.icon}
+              <span className="text-xs font-bold text-white">{selectedPost.platform}</span>
             </div>
           </div>
-        </div>
-      )}
+        ) : (
+          // ❌ Aucun média disponible
+          <div className="text-center text-white">
+            <Camera size={64} className="mx-auto mb-4 opacity-50" />
+            <p>Aucun média disponible</p>
+          </div>
+        )}
+      </div>
+      
+      {/* PARTIE STATISTIQUES - INCHANGÉE */}
+      <div className="w-full md:w-[40%] p-8 flex flex-col bg-white overflow-y-auto">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-4 pb-4 border-b">
+            <span className="text-[#D4A017] bg-[#D4A017]/10 p-2 rounded-lg">{selectedPost.icon}</span>
+            <span className="text-xs font-black uppercase">{selectedPost.platform}</span>
+          </div>
+          
+          <h2 className="text-2xl font-serif font-bold mb-2">{selectedPost.title}</h2>
+          <p className="text-gray-400 text-sm flex items-center gap-2 mb-6">
+            <Calendar size={14} className="text-[#D4A017]" /> {selectedPost.date}
+          </p>
 
-      {error && (
-        <div className="fixed top-4 right-4 z-50 bg-red-50 border border-red-200 rounded-2xl p-4 shadow-lg max-w-md">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="text-red-500" size={20} />
-            <div>
-              <p className="font-bold text-red-700">Erreur</p>
-              <p className="text-sm text-red-600">{error}</p>
-              <button onClick={() => setError(null)} className="text-xs mt-2 px-3 py-1 bg-red-100 rounded-full">Fermer</button>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-4 bg-gradient-to-br from-red-50 to-pink-50 rounded-2xl border border-red-100">
+              <p className="text-[10px] uppercase font-bold text-red-400 mb-2">Likes</p>
+              <p className="text-2xl font-black text-red-600">{selectedPost.likes}</p>
             </div>
+            <div className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-100">
+              <p className="text-[10px] uppercase font-bold text-blue-400 mb-2">Vues</p>
+              <p className="text-2xl font-black text-blue-600">{selectedPost.views}</p>
+            </div>
+            <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-100">
+              <p className="text-[10px] uppercase font-bold text-green-400 mb-2">Comm.</p>
+              <p className="text-2xl font-black text-green-600">{selectedPost.comments}</p>
+            </div>
+            <div className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl border border-purple-100">
+              <p className="text-[10px] uppercase font-bold text-purple-400 mb-2">Partages</p>
+              <p className="text-2xl font-black text-purple-600">{selectedPost.shares}</p>
+            </div>
+            <div className="col-span-2 p-4 bg-gradient-to-br from-amber-50 to-yellow-50 rounded-2xl border border-amber-100">
+              <p className="text-[10px] uppercase font-bold text-amber-400 mb-2">Engagement</p>
+              <p className="text-3xl font-black text-amber-600">{selectedPost.eng}</p>
+            </div>
+            
+            {(selectedPost.location_country || selectedPost.location_city) && (
+              <div className="col-span-2 p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-100">
+                <div className="flex items-center gap-3 mb-2">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-600">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  <p className="text-xs uppercase font-bold text-blue-600">Zone touchée</p>
+                </div>
+                <p className="text-xl font-black text-blue-700">
+                  {selectedPost.location_city && selectedPost.location_country 
+                    ? `${selectedPost.location_city}, ${selectedPost.location_country}`
+                    : selectedPost.location_city || selectedPost.location_country || 'Non spécifié'}
+                </p>
+              </div>
+            )}
           </div>
         </div>
-      )}
+
+        <button 
+          onClick={() => setSelectedPost(null)}
+          className="w-full py-4 mt-6 border-2 border-gray-200 text-gray-700 rounded-full font-bold hover:bg-gray-50"
+        >
+          ✕ Fermer
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{error && (
+  <div className="fixed top-4 right-4 z-50 bg-red-50 border border-red-200 rounded-2xl p-4 shadow-lg max-w-md">
+    <div className="flex items-start gap-3">
+      <AlertCircle className="text-red-500" size={20} />
+      <div>
+        <p className="font-bold text-red-700">Erreur</p>
+        <p className="text-sm text-red-600">{error}</p>
+        <button onClick={() => setError(null)} className="text-xs mt-2 px-3 py-1 bg-red-100 rounded-full">Fermer</button>
+      </div>
+    </div>
+  </div>
+)}
+
 
       {/* SIDEBAR */}
            <button
@@ -920,7 +989,86 @@ if (acceptedError) {
                         </div>
                       </div>
                     </td>
+{/* SECTION DES POSTS */}
+              <div className="mt-10">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-bold">
+                    {activeFilter ? `Posts ${activeFilter}` : 'Toutes les publications'}
+                  </h2>
+                  {activeFilter && (
+                    <button 
+                      onClick={() => setActiveFilter(null)}
+                      className="text-xs font-bold text-[#D4A017] hover:underline"
+                    >
+                      Réinitialiser le filtre
+                    </button>
+                  )}
+                </div>
 
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {filteredPosts.length > 0 ? (
+                    filteredPosts.map((post) => (
+                      <motion.div
+                        layout
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        key={post.id}
+                        onClick={() => setSelectedPost(post)}
+                        className="group relative aspect-[3/4] rounded-[24px] overflow-hidden bg-gray-200 cursor-pointer shadow-sm hover:shadow-xl transition-all"
+                      >
+                        {/* MÉDIA (Priorité au local) */}
+                        {post.local_media_url ? (
+                          post.type === 'video' ? (
+                            <div className="w-full h-full relative">
+                               <video className="w-full h-full object-cover">
+                                 <source src={post.local_media_url} />
+                               </video>
+                               <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                 <Play className="text-white fill-white" size={32} />
+                               </div>
+                            </div>
+                          ) : (
+                            <img 
+                              src={post.local_media_url} 
+                              alt="" 
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                            />
+                          )
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 text-gray-400 p-4">
+                            <ImageIcon size={32} className="mb-2 opacity-20" />
+                            <span className="text-[10px] text-center font-bold uppercase tracking-tighter">Hébergement en cours...</span>
+                          </div>
+                        )}
+
+                        {/* OVERLAY INFOS */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end">
+                           <div className="flex items-center gap-3 text-white">
+                              <div className="flex items-center gap-1">
+                                <Heart size={14} className="fill-red-500 text-red-500" />
+                                <span className="text-xs font-bold">{post.likes}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <MessageCircle size={14} className="fill-white text-white" />
+                                <span className="text-xs font-bold">{post.comments}</span>
+                              </div>
+                           </div>
+                        </div>
+
+                        {/* BADGE PLATEFORME */}
+                        <div className="absolute top-3 right-3 p-1.5 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm">
+                          {post.icon}
+                        </div>
+                      </motion.div>
+                    ))
+                  ) : (
+                    <div className="col-span-full py-20 text-center bg-white rounded-[32px] border-2 border-dashed border-gray-100">
+                      <Ghost size={48} className="mx-auto text-gray-200 mb-4" />
+                      <p className="text-gray-400 font-medium">Aucun post trouvé pour cette plateforme</p>
+                    </div>
+                  )}
+                </div>
+              </div>
                     {/* MARQUE */}
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2">

@@ -56,9 +56,7 @@ export default function BrandFinalStep() {
       if (authError) throw authError;
 
       if (authData.user) {
-        // --- LE FIX FRONTEND ---
-        // On supprime immédiatement l'entrée créée par le trigger SQL dans 'createur'
-        // car le trigger actuel ne sait pas faire la différence entre une marque et un créateur.
+    
         await supabase
           .from('createur')
           .delete()
@@ -162,7 +160,7 @@ export default function BrandFinalStep() {
 
           {/* Footer */}
           <div className="flex justify-between items-center mt-12 pt-6 border-t border-gray-50">
-            <Link href="/brands/auth/contact" className="text-gray-400 font-bold flex items-center gap-2 hover:text-black transition-colors">
+            <Link href="/brands/auth/formulaire/etape2" className="text-gray-400 font-bold flex items-center gap-2 hover:text-black transition-colors">
               <ChevronLeft size={20} /> Retour
             </Link>
             
