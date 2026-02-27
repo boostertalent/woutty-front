@@ -50,7 +50,7 @@ export default function ContactPrincipal() {
       localStorage.setItem('brand_contact_professional_email', formData.email);
       localStorage.setItem('brand_contact_phone', formData.phone);
 
-      router.push('/brands/auth/password');
+      router.push('/brands/auth/formulaire/etape3');
     } catch (err) {
       setError("Une erreur est survenue lors de la sauvegarde locale.");
     } finally {
@@ -134,7 +134,7 @@ export default function ContactPrincipal() {
 
           <div className="flex justify-between items-center mt-12 pt-6">
             <Link 
-              href="/brands/auth/entreprise" 
+              href="/brands/auth/formulaire/etape1" 
               className="text-gray-400 font-bold px-4 py-2 hover:text-gray-900 transition-colors flex items-center gap-2"
             >
               <ChevronLeft size={20} /> Retour

@@ -473,11 +473,21 @@ export default function BrandDashboard() {
               {brandInfo?.email_marque ? `${brandInfo.email_marque} • ` : ''}Contrôlez vos collaborations.
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <button onClick={fetchData} disabled={loading}
-              className="flex items-center gap-2 text-gray-400 hover:text-[#D4A017] text-sm font-bold px-4 py-2 border border-gray-100 rounded-xl hover:border-[#D4A017]/30 transition-all disabled:opacity-50">
+          <div className="flex items-center gap-3 flex-wrap">
+            <button
+              onClick={fetchData}
+              disabled={loading}
+              className="flex items-center gap-2 text-gray-400 hover:text-[#D4A017] text-sm font-bold px-4 py-2 border border-gray-100 rounded-xl hover:border-[#D4A017]/30 transition-all disabled:opacity-50"
+            >
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Actualiser
             </button>
+            <Link href="/brands/my-pack">
+              <button
+                className="flex items-center gap-2 text-sm font-bold px-4 py-2 border border-gray-100 rounded-xl text-gray-700 hover:border-[#D4A017]/40 hover:bg-[#D4A017]/5 transition-all"
+              >
+                <Zap size={16} className="text-[#D4A017]" /> Mes packs
+              </button>
+            </Link>
             <Link href="/brands/campaign-choice">
               <button className="bg-[#D4A017] text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-[#B88A14] transition-all shadow-lg">
                 <Zap size={18} fill="currentColor" /> Créer une campagne
@@ -520,7 +530,7 @@ export default function BrandDashboard() {
                 <Zap size={48} className="mx-auto text-gray-200 mb-4" />
                 <p className="text-gray-600 font-bold text-lg mb-2">Aucune campagne créée</p>
                 <p className="text-sm text-gray-400 mb-6">Créez votre première campagne pour commencer !</p>
-                <Link href="/brands/auth/campagne">
+                <Link href="/brands/campaign-choice">
                   <button className="bg-[#D4A017] text-white px-6 py-3 rounded-xl font-bold inline-flex items-center gap-2 hover:bg-[#B88A14] transition-all">
                     <Zap size={18} fill="currentColor" /> Créer une campagne
                   </button>

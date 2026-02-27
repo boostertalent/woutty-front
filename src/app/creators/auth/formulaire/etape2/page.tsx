@@ -48,8 +48,7 @@ export default function NicheSelection() {
     if (selectedNiches.length > 0) {
       // Sauvegarde propre en JSON
       localStorage.setItem('signup_niche', JSON.stringify(selectedNiches));
-      // Navigation forcée après sauvegarde
-      router.push("/creators/auth/social");
+      router.push("/creators/auth/formulaire/etape3");
     }
   };
 
@@ -140,7 +139,7 @@ export default function NicheSelection() {
         {/* Barre d'action */}
         <div className="flex justify-between items-center pt-8 border-t border-gray-100">
           <Link 
-            href="/creators/auth/profil" 
+            href="/creators/auth/formulaire/etape1" 
             className="text-gray-500 font-bold hover:text-black transition-colors"
           >
             Retour

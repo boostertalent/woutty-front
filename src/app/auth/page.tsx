@@ -27,7 +27,7 @@ export default function AuthChoicePage() {
             "Présentation de profil",
             "Gestion des candidatures"
           ]}
-          href="/creators/auth/profil"
+          href="/creators/auth/formulaire/etape1"
           buttonText="Je suis créateur"
         />
 
@@ -41,7 +41,7 @@ export default function AuthChoicePage() {
             "Lancez vos campagnes",
             "Suivi en temps réel"
           ]}
-          href="/brands/auth/entreprise"
+          href="/brands/auth/formulaire/etape1"
           buttonText="Je suis une marque/Entreprise"
         />
 
