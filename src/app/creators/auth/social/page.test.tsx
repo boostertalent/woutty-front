@@ -1,4 +1,5 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import Component from './page';
 
 // Mock next/navigation
@@ -44,8 +45,39 @@ jest.mock('framer-motion', () => ({
   })
 }));
 
-describe('page', () => {
-  it('renders without crashing', () => {
+describe('CreatorSocialPage', () => {
+  it('renders without crashing and shows essential social media elements', () => {
     render(<Component />);
+
+    // Vérifie le titre principal
+    expect(
+      screen.getByText(/vos réseaux/i)
+    ).toBeInTheDocument();
+
+    // Vérifie la description
+    expect(
+      screen.getByText(/ajoute tes réseaux sociaux pour booster ta visibilité/i)
+    ).toBeInTheDocument();
+
+    // Vérifie les champs principaux des réseaux sociaux
+    expect(
+      screen.getByPlaceholderText(/https:\/\/instagram\.com\/votreprofil/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText(/https:\/\/tiktok\.com\/@votreprofil/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText(/https:\/\/youtube\.com\/votrechaîne/i)
+    ).toBeInTheDocument();
+
+    // Vérifie le lien de retour
+    expect(
+      screen.getByRole('link', { name: /retour/i })
+    ).toBeInTheDocument();
+
+    // Vérifie le bouton de continuation
+    expect(
+      screen.getByRole('button', { name: /continuer/i })
+    ).toBeInTheDocument();
   });
 });
