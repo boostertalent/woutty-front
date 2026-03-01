@@ -21,11 +21,10 @@ export default function BrandsLayout({ children }: { children: React.ReactNode }
   const isAuthPage = pathname.startsWith('/brands/auth');
 
   useEffect(() => {
-    // ✅ NE PAS vérifier la session sur les pages d'inscription
     if (!isAuthPage) {
       fetchBrandInfo();
     } else {
-      setLoading(false); // Pas de chargement sur les pages auth
+      setLoading(false); 
     }
   }, [isAuthPage]);
 
@@ -77,12 +76,12 @@ export default function BrandsLayout({ children }: { children: React.ReactNode }
     },
   ];
 
-  // ✅ Si page d'inscription (/brands/auth/*), afficher sans sidebar
+  
   if (isAuthPage) {
     return <>{children}</>;
   }
 
-  // ✅ Si dashboard mais en chargement, afficher loader
+  
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
@@ -91,7 +90,7 @@ export default function BrandsLayout({ children }: { children: React.ReactNode }
     );
   }
 
-  // ✅ Pour /brands/dashboard, afficher avec sidebar
+  // ✅ Pour /brands/dashboard
   return (
     <div className="flex min-h-screen bg-[#F9FAFB]">
 

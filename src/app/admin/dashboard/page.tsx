@@ -439,6 +439,18 @@ export default function AdminDashboard() {
                 <p className="text-xs text-gray-400">Vue globale des packs</p>
               </div>
             </Link>
+             <Link
+    href="/admin/validate-posts"
+    className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all flex items-center gap-4 text-left"
+  >
+    <div className="p-3 bg-green-50 rounded-xl">
+      <Shield size={24} className="text-green-600" />
+    </div>
+    <div>
+      <p className="font-bold text-gray-900">Validation Posts</p>
+      <p className="text-xs text-gray-400">Approuver les posts</p>
+    </div>
+  </Link>
             {isPrincipalAdmin && (
               <>
                 <button onClick={() => changeView('logs')}

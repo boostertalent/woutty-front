@@ -25,7 +25,6 @@ export default function BrandFinalStep() {
   const isLongEnough = password.length >= 6;
   const isFormValid = isMatch && isLongEnough;
 
-  // Fonction utilitaire pour convertir proprement en nombre pour la table SQL
   const parseToDouble = (value: string | null) => {
     if (!value) return null;
     const cleaned = value.replace(/\s/g, ''); 

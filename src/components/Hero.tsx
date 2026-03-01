@@ -21,8 +21,6 @@ export default function Hero() {
         Transformez votre <span className="text-booster-yellow italic">créativité</span> <br /> 
         en <span className="text-booster-yellow italic">revenu</span>. 
       </h1>
-
-      {/* Paragraphe en couleur "muted" (gris en dark, gris foncé en light) */}
       <p className="text-muted-foreground text-lg max-w-2xl mb-10 leading-relaxed">
         La première plateforme africaine où TOUT LE MONDE peut devenir créateur de contenu UGC et collaborer avec des marques. 
       </p>

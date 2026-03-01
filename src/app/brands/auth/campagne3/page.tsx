@@ -12,7 +12,7 @@ export default function Step3() {
   const [nbPublications, setNbPublications] = useState<number | "">(1);
   const [formats, setFormats] = useState<string[]>([""]);
   const [ton, setTon] = useState<string>("");
-  const [customTon, setCustomTon] = useState<string>(""); // État pour le ton personnalisé
+  const [customTon, setCustomTon] = useState<string>(""); 
   const [showError, setShowError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 

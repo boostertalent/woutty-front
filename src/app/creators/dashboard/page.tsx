@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion'; 
 
+
 import { 
   BarChart3, 
   Briefcase, 
@@ -82,7 +83,10 @@ export default function CreatorDashboard() {
   const [creatorInfo, setCreatorInfo] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<number>(0);
-  
+   const normalizeId = useCallback((id: any): string => {
+    if (!id) return '';
+    return String(id).split('.')[0].trim().toLowerCase().replace(/\s+/g, '');
+  }, []);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [completedCampaignsCount, setCompletedCampaignsCount] = useState(0);
 
@@ -117,7 +121,7 @@ export default function CreatorDashboard() {
     return { name: platformName, icon: <Camera size={14} /> };
   }, [platformConfig]);
 
-  const fetchData = useCallback(async () => {
+ const fetchData = useCallback(async () => {
   setLoading(true);
   setError(null);
   
@@ -133,177 +137,199 @@ export default function CreatorDashboard() {
     let creatorIdToLoad = adminViewingId || USER_ID;
     setIsAdminViewing(!!adminViewingId);
 
-    // 1. Charger les infos de base
-    const { data: creatorData } = await supabase.from('createur').select('*').eq('id_w', creatorIdToLoad).single();
-    if (creatorData) setCreatorInfo(creatorData);
+    console.log("🔍 Chargement des données pour:", creatorIdToLoad);
 
-    // 2. CHARGER LES POSTS EN PREMIER (Crucial pour le calcul des plateformes après)
-    const { data: postData } = await supabase
+    // ✅ 1. CHARGER LE CRÉATEUR
+    const { data: creatorData, error: creatorError } = await supabase
+      .from('createur')
+      .select('*')
+      .eq('id_w', creatorIdToLoad)
+      .single();
+
+    if (creatorError) {
+      console.error("❌ Erreur créateur:", creatorError);
+      throw new Error("Créateur non trouvé");
+    }
+
+    console.log("✅ Créateur chargé:", creatorData.full_name);
+    setCreatorInfo(creatorData);
+
+    // ✅ 2. CHARGER LES PROFILS
+    const { data: profileData, error: profileError } = await supabase
+      .from('info_profile')
+      .select('*')
+      .eq('id_w', creatorIdToLoad);
+
+    if (profileError) {
+      console.error("❌ Erreur profils:", profileError);
+    }
+
+    console.log(`✅ ${profileData?.length || 0} profils chargés`);
+    console.table(profileData?.map(p => ({
+      plateforme: p.la_plateforme || p.nom_plateforme,
+      id_plateforme: p.id_plateforme,
+      followers: p.nbre_followers,
+      id_w: p.id_w
+    })));
+
+    // ✅ 3. CHARGER LES POSTS 
+    const { data: postData, error: postError } = await supabase
       .from('info_poste')
       .select('*')
       .eq('id_w', creatorIdToLoad)
       .order('date_poste', { ascending: false });
 
-    // 3. Charger les profils de plateformes
-    const { data: profileData } = await supabase
-      .from('info_profile')
-      .select('*')
-      .eq('id_w', creatorIdToLoad);
+    if (postError) {
+      console.error("❌ Erreur posts:", postError);
+    }
 
-    const profileMap = new Map();
-    (profileData || []).forEach((p: any) => {
-      if (p.id_plateforme) profileMap.set(p.id_plateforme, p);
-    });
+    console.log(`✅ ${postData?.length || 0} posts chargés`);
+    console.table(postData?.slice(0, 5).map(p => ({
+      titre: p.titre_poste,
+      id_plateforme: p.id_plateforme,
+      likes: p.nbre_like,
+      vues: p.nbre_vue,
+      id_w: p.id_w
+    })));
 
-  // 4. CALCUL DES PLATEFORMES 
-const platforms = (profileData || []).map((p: any, idx: number) => {
-  const platformName = p.la_plateforme || p.nom_plateforme || 'Plateforme';
+    // ✅ 4. CRÉER UN MAP DES PROFILS PAR ID_PLATEFORME
+   const profileMap = new Map();
+
+(profileData || []).forEach((profile) => {
+  const cleanId = normalizeId(profile.id_plateforme);
+  if (cleanId && cleanId !== 'null' && cleanId !== '') {
+    profileMap.set(cleanId, profile);
+    console.log(`📌 Profil mappé: ${cleanId} → ${profile.la_plateforme || profile.nom_plateforme}`);
+  }
+});
+
+   const platforms = (profileData || []).map((profile, idx) => {
+  const platformName = profile.la_plateforme || profile.nom_plateforme || 'Plateforme';
   const platformInfo = getPlatformInfoByName(platformName);
-  const rawId = p.id_plateforme?.toString() || '';
-  const currentProfileId = rawId.split('.')[0].trim(); 
-  const specificPosts = (postData || []).filter(post => {
-    const postId = post.id_plateforme?.toString().split('.')[0].trim();
-    if (postId && postId === currentProfileId) {
-      return true;
-    }
-    if (!postId || postId === '' || postId === 'null') {
-      const postUrl = (post.url_poste || '').toLowerCase();
-      const platformNameLower = platformName.toLowerCase();
-      
-      if (platformNameLower.includes('insta') && postUrl.includes('instagram')) return true;
-      if (platformNameLower.includes('tik') && postUrl.includes('tiktok')) return true;
-      if (platformNameLower.includes('you') && postUrl.includes('youtube')) return true;
-      if (platformNameLower.includes('face') && postUrl.includes('facebook')) return true;
-      if ((platformNameLower.includes('x') || platformNameLower.includes('twitter')) && 
-          (postUrl.includes('twitter') || postUrl.includes('x.com'))) return true;
-    }
-    
-    return false;
+  const cleanId = normalizeId(profile.id_plateforme); 
+
+  const platformPosts = (postData || []).filter(post => {
+    const postCleanId = normalizeId(post.id_plateforme); 
+    return postCleanId === cleanId;
   });
 
-  console.log(`📱 ${platformInfo.name} (ID: ${currentProfileId}): ${specificPosts.length} posts`);
+      console.log(`📱 ${platformInfo.name} (${cleanId}): ${platformPosts.length} posts`);
 
-  const totalLikes = specificPosts.reduce((acc, curr) => acc + (Number(curr.nbre_like) || 0), 0);
-  const totalComments = specificPosts.reduce((acc, curr) => acc + (Number(curr.nbre_commentaire) || 0), 0);
+      // Calculer les stats
+      const totalLikes = platformPosts.reduce((sum, post) => sum + (Number(post.nbre_like) || 0), 0);
+      const totalComments = platformPosts.reduce((sum, post) => sum + (Number(post.nbre_commentaire) || 0), 0);
+      const totalEngagement = totalLikes + totalComments;
+const totalViews = platformPosts.reduce((sum, p) => sum + (Number(p.nbre_vue) || 0), 0);
+const engagementRate = totalViews > 0 
+  ? ((totalEngagement / totalViews) * 100).toFixed(1)
+  : '0';
 
-  return {
-    id: `p_${idx}_${currentProfileId}`,
-    id_plateforme: currentProfileId,
-    name: platformInfo.name, 
-    icon: platformInfo.icon,
-    followers: formatNumber(p.nbre_followers),
-    follows: formatNumber(p.nbre_follows),
-    posts: specificPosts.length,
-    engagement: p.nbre_followers > 0 ? 
-      `${(((totalLikes + totalComments) / p.nbre_followers) * 100).toFixed(1)}%` : '0%'
-  };
-});
+      return {
+        id: `platform_${idx}_${cleanId}`,
+        id_plateforme: cleanId,
+        name: platformInfo.name,
+        icon: platformInfo.icon,
+        followers: formatNumber(profile.nbre_followers),
+       following: formatNumber(profile.nbre_follows),
+        posts: platformPosts.length,
+        engagement: `${engagementRate}%`
+      };
+    });
 
-setSelectedPlatforms(platforms);
+    console.log("✅ Plateformes calculées:", platforms.length);
+    setSelectedPlatforms(platforms);
 
-// 5. FORMATER LES POSTS (On attache le NOM de la plateforme pour le filtre)
-const formattedPosts = (postData || []).map((post: any, index: number) => {
-  const postIdStr = post.id_plateforme?.toString().split('.')[0].trim();
-
-  let platformProfile = null;
-
-  if (postIdStr && postIdStr !== '' && postIdStr !== 'null') {
-    platformProfile = (profileData || []).find(p => 
-      p.id_plateforme?.toString().split('.')[0].trim() === postIdStr
-    );
-  }
+    // ✅ 6. FORMATER LES POSTS AVEC LEUR PLATEFORME
+const formattedPosts = (postData || []).map((post, index) => {
+  const postPlatformId = normalizeId(post.id_plateforme); 
+  
+  const platformProfile = profileMap.get(postPlatformId); 
   
   if (!platformProfile) {
-    const postUrl = (post.url_poste || '').toLowerCase();
-    
-    if (postUrl.includes('instagram')) {
-      platformProfile = (profileData || []).find(p => 
-        (p.la_plateforme || p.nom_plateforme || '').toLowerCase().includes('insta')
-      );
-    } else if (postUrl.includes('tiktok')) {
-      platformProfile = (profileData || []).find(p => 
-        (p.la_plateforme || p.nom_plateforme || '').toLowerCase().includes('tik')
-      );
-    } else if (postUrl.includes('youtube')) {
-      platformProfile = (profileData || []).find(p => 
-        (p.la_plateforme || p.nom_plateforme || '').toLowerCase().includes('you')
-      );
-    } else if (postUrl.includes('facebook')) {
-      platformProfile = (profileData || []).find(p => 
-        (p.la_plateforme || p.nom_plateforme || '').toLowerCase().includes('face')
-      );
-    } else if (postUrl.includes('twitter') || postUrl.includes('x.com')) {
-      platformProfile = (profileData || []).find(p => {
-        const name = (p.la_plateforme || p.nom_plateforme || '').toLowerCase();
-        return name.includes('x') || name.includes('twitter');
-      });
-    }
-    
-    if (platformProfile) {
-      console.log(`🔍 Post "${post.titre_poste}" : ID manquant, détecté via URL → ${platformProfile.la_plateforme || platformProfile.nom_plateforme}`);
-    }
+    console.warn(`⚠️ Post "${post.titre_poste}" (ID: ${postPlatformId}) - Profil non trouvé`);
   }
-  
-  const platformOriginalName = platformProfile?.la_plateforme || platformProfile?.nom_plateforme || 'Social';
-  const platformInfo = getPlatformInfoByName(platformOriginalName);
-  
-  const isVideo = post.type_poste?.toLowerCase().includes('vid') || 
-                  post.url_poste?.toLowerCase().match(/\.(mp4|mov|avi|webm|mkv)(\?|$)/i);
 
-  return {
-    ...post, 
-    id: `post_${index}_${post.id_t_poste || index}`,
-    title: post.titre_poste || 'Sans titre',
-    id_plateforme_clean: postIdStr,
-    platform: platformInfo.name, 
-    icon: platformInfo.icon,
-    type: isVideo ? 'video' : 'image',
-    mediaUrl: post.url_poste,
-    local_media_url: post.local_media_url,
-    thumbnail_url: post.thumbnail_url,
-    media_status: post.media_status || 'pending',
-    likes: formatNumber(post.nbre_like),
-    views: formatNumber(post.nbre_vue),
-    comments: formatNumber(post.nbre_commentaire),
-    shares: formatNumber(post.nbre_partage),
-    eng: calculateEngagementRate(post),
-    date: formatDate(post.date_poste),
-    location_country: post.pays || post.country || null,
-    location_city: post.ville || post.city || null
-  };
-});
+      const platformName = platformProfile?.la_plateforme || platformProfile?.nom_plateforme || 'Social';
+      const platformInfo = getPlatformInfoByName(platformName);
 
-console.log(`📊 Total posts formatés: ${formattedPosts.length}`);
-console.log(`📊 Répartition:`, formattedPosts.reduce((acc, post) => {
-  acc[post.platform] = (acc[post.platform] || 0) + 1;
-  return acc;
-}, {} as Record<string, number>));
+      // Détecter le type de média
+      const isVideo = post.type_poste?.toLowerCase().includes('vid') || 
+                      post.url_poste?.toLowerCase().match(/\.(mp4|mov|avi|webm|mkv)(\?|$)/i);
 
-setAllPosts(formattedPosts);
+      return {
+        ...post,
+        id: `post_${index}_${post.id_t_poste}`,
+        title: post.titre_poste || 'Sans titre',
+        platform: platformInfo.name,
+        icon: platformInfo.icon,
+        type: isVideo ? 'video' : 'image',
+        mediaUrl: post.url_poste,
+        local_media_url: post.local_media_url,
+        thumbnail_url: post.thumbnail_url,
+        media_status: post.media_status || 'pending',
+        likes: formatNumber(post.nbre_like),
+        views: formatNumber(post.nbre_vue),
+        comments: formatNumber(post.nbre_commentaire),
+        shares: formatNumber(post.nbre_partage),
+        eng: calculateEngagementRate(post),
+        date: formatDate(post.date_poste),
+        location_country: post.pays || post.country || null,
+        location_city: post.ville || post.city || null,
+        raw_likes: post.nbre_like,
+        raw_views: post.nbre_vue,
+        raw_comments: post.nbre_commentaire,
+        raw_shares: post.nbre_partage,
+        is_validated: post.is_validated || false,
+        validated_at: post.validated_at || null
+      };
+    });
 
+    console.log(`✅ ${formattedPosts.length} posts formatés`);
+    
+    // ✅ Afficher la répartition par plateforme
+    const repartition = formattedPosts.reduce((acc, post) => {
+      acc[post.platform] = (acc[post.platform] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    console.log("📊 Répartition par plateforme:", repartition);
+    
+    setAllPosts(formattedPosts);
 
+    // ✅ 7. CHARGER LES CAMPAGNES
+    const { data: pendingData } = await supabase
+      .from('campaigns')
+      .select('*')
+      .eq('assigned_creator_id', creatorIdToLoad)
+      .or('creator_status.is.null,creator_status.eq.pending');
 
-    // 6. Charger les campagnes 
-    const { data: pendingData } = await supabase.from('campaigns').select('*').eq('assigned_creator_id', creatorIdToLoad).or('creator_status.is.null,creator_status.eq.pending');
     setPendingCampaigns(pendingData || []);
     setNotifications(pendingData?.length || 0);
 
-    const { data: acceptedData } = await supabase.from('campaigns').select('*').eq('assigned_creator_id', creatorIdToLoad).eq('creator_status', 'accepted');
+    const { data: acceptedData } = await supabase
+      .from('campaigns')
+      .select('*')
+      .eq('assigned_creator_id', creatorIdToLoad)
+      .eq('creator_status', 'accepted');
+
     const ongoing = acceptedData?.filter(c => !c.end_date || new Date(c.end_date) >= new Date()) || [];
     const finished = acceptedData?.filter(c => c.end_date && new Date(c.end_date) < new Date()) || [];
-    
+
     setAcceptedCampaigns(ongoing);
     setCompletedCampaigns(finished);
     setTotalRevenue(finished.reduce((sum, c) => sum + (parseFloat(c.budget) || 0), 0));
     setCompletedCampaignsCount(finished.length);
 
+    console.log("✅ Chargement terminé avec succès");
+
   } catch (error: any) {
-    console.error("❌ Erreur:", error);
+    console.error("❌ Erreur globale:", error);
     setError(error.message);
   } finally {
     setLoading(false);
   }
 }, [getPlatformInfoByName, router, searchParams, supabase]);
+
 
   useEffect(() => {
     fetchData();
@@ -350,6 +376,37 @@ const filteredPosts = useMemo(() => {
     } finally {
       setProcessingCampaign(null);
     }
+};
+const linkPostToCampaign = async (postId, campaignId) => {
+  try {
+    const { error } = await supabase
+      .from('info_poste')
+      .update({ 
+        id_t_campagne: campaignId,
+        is_validated: false,
+        validated_at: null
+      })
+      .eq('id_t_poste', postId);
+
+    if (error) throw error;
+    
+    setAllPosts(prev => prev.map(p => 
+      p.id_t_poste === postId 
+        ? { ...p, id_t_campagne: campaignId, is_validated: false } 
+        : p
+    ));
+
+    setSelectedPost(prev => ({ 
+      ...prev, 
+      id_t_campagne: campaignId,
+      is_validated: false 
+    }));
+
+    console.log("✅ Post lié avec succès (en attente de validation)");
+  } catch (err) {
+    console.error("❌ Erreur:", err);
+    setError("Impossible de lier le post à la campagne.");
+  }
 };
  const handleRejectCampaign = async (campaignId: string) => { 
     if (!confirm('Êtes-vous sûr de vouloir refuser cette campagne ?')) return;
@@ -553,8 +610,102 @@ const filteredPosts = useMemo(() => {
           </div>
         )}
       </div>
+      {/* SECTION LIAISON CAMPAGNE - */}
+<div className="mt-8 pt-6 border-t border-dashed border-gray-200">
+  <p className="text-[10px] uppercase font-bold text-gray-400 mb-3 flex items-center gap-2">
+    <Briefcase size={12} /> Campagne associée
+  </p>
+  
+  {acceptedCampaigns.length > 0 ? (
+    <div className="space-y-3">
+      {selectedPost.id_t_campagne ? (
+        <div className="group relative">
+          <div className="flex items-center justify-between p-4 bg-green-50 rounded-2xl border border-green-100">
+            <div className="flex items-center gap-3">
+              <div className="bg-green-500 rounded-full p-1 text-white">
+                <Check size={12} />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-green-800">Post validé pour :</p>
+                <p className="text-sm text-green-700 truncate max-w-[150px]">
+                  {acceptedCampaigns.find(c => c.id_t_campagne === selectedPost.id_t_campagne)?.title || 'Campagne liée'}
+                </p>
+              </div>
+            </div>
+            <button 
+              onClick={() => linkPostToCampaign(selectedPost.id_t_poste, null)}
+              className="text-[10px] font-bold text-red-500 hover:bg-red-50 px-2 py-1 rounded-lg transition-colors"
+            >
+              DISSOCIER
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="relative">
+          <select 
+            onChange={(e) => linkPostToCampaign(selectedPost.id_t_poste, e.target.value)}
+            className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-[#D4A017] outline-none appearance-none transition-all hover:bg-gray-100"
+          >
+            <option value="">Sélectionner une campagne...</option>
+            {acceptedCampaigns.map(camp => (
+              <option key={camp.id_t_campagne} value={camp.id_t_campagne}>
+                🎯 {camp.title}
+              </option>
+            ))}
+          </select>
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+
+          </div>
+        </div>
+      )}
+    </div>
+  ) : (
+    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+      <p className="text-xs text-gray-500 italic text-center">Aucune campagne acceptée disponible pour liaison.</p>
+    </div>
+  )}
+</div>
+{selectedPost.id_t_campagne && (
+  <div className="mt-6 pt-6 border-t border-gray-200">
+    <p className="text-[10px] uppercase font-bold text-gray-400 mb-3 flex items-center gap-2">
+      <Shield size={12} /> Validation Admin
+    </p>
+    
+    {selectedPost.is_validated ? (
+      <div className="p-4 bg-green-50 rounded-2xl border border-green-200">
+        <div className="flex items-center gap-3 mb-2">
+          <CheckCircle size={20} className="text-green-600" />
+          <div>
+            <p className="text-sm font-bold text-green-800">Post validé</p>
+            {selectedPost.validated_at && (
+              <p className="text-xs text-green-600">
+                Validé le {formatDate(selectedPost.validated_at)}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    ) : (
+      <div className="p-4 bg-orange-50 rounded-2xl border border-orange-200">
+        <div className="flex items-center gap-3 mb-3">
+          <AlertCircle size={20} className="text-orange-600" />
+          <div>
+            <p className="text-sm font-bold text-orange-800">En attente de validation</p>
+            <p className="text-xs text-orange-600">
+              L'admin doit valider ce post pour la campagne
+            </p>
+          </div>
+        </div>
+        <p className="text-xs text-orange-700 bg-orange-100 p-2 rounded-lg">
+          💡 Le post sera comptabilisé une fois validé par l'administrateur
+        </p>
+      </div>
+    )}
+  </div>
+)}
       
-      {/* PARTIE STATISTIQUES - INCHANGÉE */}
+      {/* PARTIE STATISTIQUES -  */}
+      
       <div className="w-full md:w-[40%] p-8 flex flex-col bg-white overflow-y-auto">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-4 pb-4 border-b">
@@ -587,7 +738,9 @@ const filteredPosts = useMemo(() => {
             <div className="col-span-2 p-4 bg-gradient-to-br from-amber-50 to-yellow-50 rounded-2xl border border-amber-100">
               <p className="text-[10px] uppercase font-bold text-amber-400 mb-2">Engagement</p>
               <p className="text-3xl font-black text-amber-600">{selectedPost.eng}</p>
+              
             </div>
+            
             
             {(selectedPost.location_country || selectedPost.location_city) && (
               <div className="col-span-2 p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-100">
@@ -606,15 +759,19 @@ const filteredPosts = useMemo(() => {
               </div>
             )}
           </div>
+          
         </div>
 
         <button 
           onClick={() => setSelectedPost(null)}
           className="w-full py-4 mt-6 border-2 border-gray-200 text-gray-700 rounded-full font-bold hover:bg-gray-50"
+          
         >
           ✕ Fermer
         </button>
+      
       </div>
+      
     </div>
   </div>
 )}
@@ -769,21 +926,21 @@ const filteredPosts = useMemo(() => {
                         <span className="text-[9px] font-bold uppercase">{platform.name}</span>
                       </div>
                       <div className="grid grid-cols-4 gap-2 text-center">
-                        <div>
-                          <p className="text-xs font-black">{platform.followers}</p>
-                          <p className="text-[7px] text-gray-400 uppercase font-bold">Abonnés</p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-black">{platform.follows}</p>
-                          <p className="text-[7px] text-gray-400 uppercase font-bold">Abonnements</p>
-                        </div>
+                       <div>
+  <p className="text-xs font-black">{platform.followers}</p>
+  <p className="text-[7px]">Abonnés</p> 
+</div>
+<div>
+  <p className="text-xs font-black">{platform.following}</p>
+  <p className="text-[7px]">Abonnements</p>
+</div>
                         <div>
                           <p className="text-xs font-black">{platform.engagement}</p>
-                          <p className="text-[7px] text-gray-400 uppercase font-bold">Engagement</p>
+                          <p className="text-[7px] ">Engagement</p>
                         </div>
                         <div>
                           <p className="text-xs font-black">{platform.posts}</p>
-                          <p className="text-[7px] text-gray-400 uppercase font-bold">Posts</p>
+                          <p className="text-[7px] ">Posts</p>
                         </div>
                       </div>
                     </button>
@@ -843,42 +1000,23 @@ const filteredPosts = useMemo(() => {
                           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
 
-                        <div className="p-5">
-                          <h4 className="text-sm font-bold mb-3 line-clamp-2 min-h-[40px] group-hover:text-[#D4A017] transition-colors">
+                        <div className="p-3">
+                          <p className="text-l font-bold mb-3 line-clamp-2 min-h-[40px] group-hover:text-[#D4A017] transition-colors">
                             {post.title}
-                          </h4>
+                          </p>
 
-                          {(post.location_country || post.location_city) && (
-                            <div className="mb-3 pb-3 border-b border-gray-100">
-                              <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 bg-blue-50 rounded-full flex items-center justify-center">
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-600">
-                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                                    <circle cx="12" cy="10" r="3"/>
-                                  </svg>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-[9px] text-gray-400 uppercase font-bold mb-0.5">Zone touchée</p>
-                                  <p className="text-xs font-bold text-blue-600 truncate">
-                                    {post.location_city && post.location_country 
-                                      ? `${post.location_city}, ${post.location_country}`
-                                      : post.location_city || post.location_country || 'Non spécifié'}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
+                         
                           
                           <div className="grid grid-cols-4 gap-2 text-center">
                             <div className="group/stat hover:bg-red-50 p-2 rounded-lg transition-colors">
-                              <Heart size={12} className="text-red-500 fill-red-500 mx-auto mb-1 group-hover/stat:scale-125 transition-transform" />
-                              <p className="text-[10px] font-black text-gray-700">{post.likes}</p>
-                              <p className="text-[8px] text-gray-400 uppercase font-bold">Likes</p>
+                              <Heart size={10} className="text-red-500 fill-red-500 mx-auto mb-1 group-hover/stat:scale-125 transition-transform" />
+                              <p className="text-[7px] font-black text-gray-700">{post.likes}</p>
+                              <p className="text-[7px] text-gray-400 uppercase font-bold">Likes</p>
                             </div>
                             <div className="group/stat hover:bg-blue-50 p-2 rounded-lg transition-colors">
                               <Eye size={12} className="text-blue-500 mx-auto mb-1 group-hover/stat:scale-125 transition-transform" />
-                              <p className="text-[10px] font-black text-gray-700">{post.views}</p>
-                              <p className="text-[8px] text-gray-400 uppercase font-bold">Vues</p>
+                              <p className="text-[7px] font-black text-gray-700">{post.views}</p>
+                              <p className="text-[7px] text-gray-400 uppercase font-bold">Vues</p>
                             </div>
                             <div className="group/stat hover:bg-green-50 p-2 rounded-lg transition-colors">
                               <MessageCircle size={12} className="text-green-500 mx-auto mb-1 group-hover/stat:scale-125 transition-transform" />
@@ -893,351 +1031,181 @@ const filteredPosts = useMemo(() => {
                           </div>
 
                           <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-                            <span className="text-[9px] text-gray-400 uppercase font-bold">Engagement</span>
+                            <span className="text-[8px] text-gray-400 uppercase font-bold">Engagement</span>
                             <div className="flex items-center gap-1 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
                               <TrendingUp size={10} className="text-amber-600" />
                               <span className="text-xs font-black text-amber-700">{post.eng}</span>
                             </div>
+                            {post.id_t_campagne && (
+    <div className="mt-2 pt-2 border-t border-gray-100">
+      {post.is_validated ? (
+        <div className="flex items-center gap-1.5 px-2 py-1 bg-green-50 rounded-lg border border-green-200">
+          <CheckCircle size={10} className="text-green-600" />
+          <span className="text-[8px] font-bold text-green-700">Validé</span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-1.5 px-2 py-1 bg-orange-50 rounded-lg border border-orange-200">
+          <AlertCircle size={10} className="text-orange-600" />
+          <span className="text-[8px] font-bold text-orange-700">En attente</span>
+        </div>
+      )}
+    </div>
+  )}
+</div>
                           </div>
-                        </div>
+                          
+                        
+                        
                       </button>
                     ))}
                   </div>
+                  
                 )}
               </div>
+              
             </div>
+            
           ) : activeTab === 'Opportunités' ? (
   <div>
-    {notifications > 0 && (
-      <div className="mb-6 bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-center gap-3">
-        <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center animate-pulse">
-          <Bell size={24} className="text-white" />
-        </div>
-        <div>
-          <p className="font-bold text-blue-900">
-            🎉 {notifications} nouvelle{notifications > 1 ? 's' : ''} campagne{notifications > 1 ? 's' : ''} !
-          </p>
-          <p className="text-sm text-blue-700">
-            Une marque vous a attribué {notifications > 1 ? 'des campagnes' : 'une campagne'}
-          </p>
-        </div>
+  {/* NOTIFICATION BANDEAU */}
+  {notifications > 0 && (
+    <div className="mb-6 bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
+      <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center animate-pulse shrink-0">
+        <Bell size={26} className="text-white" />
       </div>
-    )}
-
-    {pendingCampaigns.length === 0 ? (
-      <div className="text-center py-16 bg-white rounded-[32px] border border-gray-100">
-        <Briefcase size={64} className="mx-auto text-gray-200 mb-4" />
-        <h2 className="text-xl font-bold text-gray-600 mb-2">Aucune opportunité</h2>
-        <p className="text-gray-400">
-          Les marques vous proposeront des campagnes ici
+      <div className="flex-1">
+        <p className="font-black text-blue-900 text-lg mb-1">
+          🎉 {notifications} nouvelle{notifications > 1 ? 's' : ''} opportunité{notifications > 1 ? 's' : ''} !
+        </p>
+        <p className="text-sm text-blue-700 font-medium">
+          {notifications > 1 ? 'Des marques vous ont attribué des campagnes' : 'Une marque vous a attribué une campagne'}
         </p>
       </div>
-    ) : (
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden">
-        {/* EN-TÊTE */}
-        <div className="p-5 md:p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-cyan-50">
-          <h2 className="text-xl font-bold text-[#111827]">
-            Nouvelles opportunités ({pendingCampaigns.length})
-          </h2>
-          <p className="text-xs text-gray-500 mt-1">
-            Cliquez sur "Accepter" ou "Refuser" pour gérer vos opportunités
-          </p>
-        </div>
+    </div>
+  )}
 
-        {/* LISTE RESPONSIVE */}
-        <div className="overflow-x-auto">
-          {/* VERSION DESKTOP - Tableau */}
-          <table className="hidden md:table w-full">
-            <thead className="bg-gray-50 border-b border-gray-100">
-              <tr>
-                <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500">
-                  Campagne
-                </th>
-                <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500">
-                  Marque
-                </th>
-                <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500">
-                  Budget
-                </th>
-                <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500">
-                  Période
-                </th>
-                <th className="text-right px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {pendingCampaigns.map((campaign) => {
-                const daysLeft = Math.max(0, Math.ceil((new Date(campaign.end_date).getTime() - new Date().getTime()) / (1000 * 3600 * 24)));
-                
-                return (
-                  <tr key={campaign.id_t_campagne} className="hover:bg-blue-50/50 transition-colors">
-                    {/* CAMPAGNE */}
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
-                          <Briefcase size={20} className="text-blue-600" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-bold text-gray-900 text-sm truncate">
-                            {campaign.title || 'Campagne'}
-                          </p>
-                          <span className="inline-block text-[10px] px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-bold mt-1">
-                            🆕 Nouvelle
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-{/* SECTION DES POSTS */}
-              <div className="mt-10">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-bold">
-                    {activeFilter ? `Posts ${activeFilter}` : 'Toutes les publications'}
-                  </h2>
-                  {activeFilter && (
-                    <button 
-                      onClick={() => setActiveFilter(null)}
-                      className="text-xs font-bold text-[#D4A017] hover:underline"
-                    >
-                      Réinitialiser le filtre
-                    </button>
-                  )}
+  {/* ÉTAT VIDE */}
+  {pendingCampaigns.length === 0 ? (
+    <div className="text-center py-20 bg-white rounded-3xl border-2 border-gray-100">
+      <Briefcase size={72} className="mx-auto text-gray-200 mb-6" />
+      <h2 className="text-2xl font-bold text-gray-700 mb-3">Aucune opportunité</h2>
+      <p className="text-gray-500">
+        Les marques vous proposeront des campagnes ici
+      </p>
+    </div>
+  ) : (
+    <div className="space-y-4">
+      {/* LISTE DES CAMPAGNES - VERSION SIMPLIFIÉE */}
+      {pendingCampaigns.map((campaign) => {
+        const daysLeft = Math.max(0, Math.ceil((new Date(campaign.end_date).getTime() - new Date().getTime()) / (1000 * 3600 * 24)));
+        
+        return (
+          <div 
+            key={campaign.id_t_campagne} 
+            className="bg-white rounded-2xl border-2 border-gray-100 hover:border-blue-300 transition-all shadow-sm hover:shadow-lg overflow-hidden"
+          >
+            {/* EN-TÊTE DE LA CARTE */}
+            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 px-6 py-4 border-b border-blue-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shrink-0">
+                    <Briefcase size={24} className="text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-black text-gray-900 text-lg truncate">
+                      {campaign.title || 'Campagne sans titre'}
+                    </h3>
+                  </div>
                 </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {filteredPosts.length > 0 ? (
-                    filteredPosts.map((post) => (
-                      <motion.div
-                        layout
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        key={post.id}
-                        onClick={() => setSelectedPost(post)}
-                        className="group relative aspect-[3/4] rounded-[24px] overflow-hidden bg-gray-200 cursor-pointer shadow-sm hover:shadow-xl transition-all"
-                      >
-                        {/* MÉDIA (Priorité au local) */}
-                        {post.local_media_url ? (
-                          post.type === 'video' ? (
-                            <div className="w-full h-full relative">
-                               <video className="w-full h-full object-cover">
-                                 <source src={post.local_media_url} />
-                               </video>
-                               <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                                 <Play className="text-white fill-white" size={32} />
-                               </div>
-                            </div>
-                          ) : (
-                            <img 
-                              src={post.local_media_url} 
-                              alt="" 
-                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                            />
-                          )
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 text-gray-400 p-4">
-                            <ImageIcon size={32} className="mb-2 opacity-20" />
-                            <span className="text-[10px] text-center font-bold uppercase tracking-tighter">Hébergement en cours...</span>
-                          </div>
-                        )}
-
-                        {/* OVERLAY INFOS */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end">
-                           <div className="flex items-center gap-3 text-white">
-                              <div className="flex items-center gap-1">
-                                <Heart size={14} className="fill-red-500 text-red-500" />
-                                <span className="text-xs font-bold">{post.likes}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <MessageCircle size={14} className="fill-white text-white" />
-                                <span className="text-xs font-bold">{post.comments}</span>
-                              </div>
-                           </div>
-                        </div>
-
-                        {/* BADGE PLATEFORME */}
-                        <div className="absolute top-3 right-3 p-1.5 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm">
-                          {post.icon}
-                        </div>
-                      </motion.div>
-                    ))
-                  ) : (
-                    <div className="col-span-full py-20 text-center bg-white rounded-[32px] border-2 border-dashed border-gray-100">
-                      <Ghost size={48} className="mx-auto text-gray-200 mb-4" />
-                      <p className="text-gray-400 font-medium">Aucun post trouvé pour cette plateforme</p>
-                    </div>
-                  )}
+                
+                <div className="shrink-0 ml-4">
+                  <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 text-white rounded-full text-xs font-black shadow-sm">
+                    ✨ Nouvelle
+                  </span>
                 </div>
               </div>
-                    {/* MARQUE */}
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <Building2 size={14} className="text-gray-400 shrink-0" />
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold text-gray-700 truncate">
-                            {campaign.marque?.nom_marque || 'Marque'}
-                          </p>
-                          {campaign.marque?.domaine && (
-                            <p className="text-xs text-gray-400 truncate">
-                              {campaign.marque.domaine}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </td>
+            </div>
 
-                    {/* BUDGET */}
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-1">
-                        <TrendingUp size={12} className="text-[#D4A017]" />
-                        <span className="text-sm font-black text-[#D4A017]">
-                          {parseFloat(campaign.budget || 0).toLocaleString('fr-FR')}
-                        </span>
-                        <span className="text-xs text-gray-500">CFA</span>
-                      </div>
-                    </td>
-
-                    {/* PÉRIODE */}
-                    <td className="px-4 py-4">
-                      <div className="text-xs text-gray-600">
-                        <p className="font-medium">{formatDate(campaign.start_date)}</p>
-                        <p className="text-gray-400">au {formatDate(campaign.end_date)}</p>
-                        {daysLeft > 0 && (
-                          <span className="inline-block mt-1 text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-bold">
-                            {daysLeft}j restants
-                          </span>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* ACTIONS */}
-                    <td className="px-4 py-4">
-                      <div className="flex gap-2 justify-end">
-                        <button
-                          onClick={() => handleRejectCampaign(campaign.id_t_campagne)}
-                          disabled={processingCampaign === campaign.id_t_campagne}
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
-                          title="Refuser"
-                        >
-                          {processingCampaign === campaign.id_t_campagne ? (
-                            <Loader2 size={18} className="animate-spin" />
-                          ) : (
-                            <CloseIcon size={18} />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => handleAcceptCampaign(campaign.id_t_campagne)}
-                          disabled={processingCampaign === campaign.id_t_campagne}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-[#D4A017] text-white rounded-lg text-xs font-bold hover:bg-[#B88A14] transition-all disabled:opacity-50"
-                        >
-                          {processingCampaign === campaign.id_t_campagne ? (
-                            <Loader2 size={14} className="animate-spin" />
-                          ) : (
-                            <>
-                              <Check size={14} />
-                              Accepter
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-
-          {/* VERSION MOBILE - Liste compacte */}
-          <div className="md:hidden divide-y divide-gray-100">
-            {pendingCampaigns.map((campaign) => {
-              const daysLeft = Math.max(0, Math.ceil((new Date(campaign.end_date).getTime() - new Date().getTime()) / (1000 * 3600 * 24)));
-              
-              return (
-                <div key={campaign.id_t_campagne} className="p-4 hover:bg-blue-50/50 transition-colors">
-                  {/* En-tête mobile */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
-                        <Briefcase size={18} className="text-blue-600" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-bold text-sm text-gray-900 truncate">
-                          {campaign.title || 'Campagne'}
-                        </p>
-                        <p className="text-xs text-gray-500 truncate flex items-center gap-1">
-                          <Building2 size={10} />
-                          {campaign.marque?.nom_marque || 'Marque'}
-                        </p>
-                      </div>
+            {/* CONTENU DE LA CARTE */}
+            <div className="p-6">
+              {/* DURÉE */}
+              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-5 border border-blue-200 mb-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                      <Calendar size={20} className="text-white" />
                     </div>
-                    <span className="text-[10px] px-2 py-1 bg-blue-100 text-blue-700 rounded-full font-bold shrink-0 ml-2">
-                      🆕 Nouvelle
-                    </span>
-                  </div>
-
-                  {/* Infos principales */}
-                  <div className="grid grid-cols-2 gap-3 mb-3 text-xs">
-                    <div className="bg-green-50 p-2 rounded-lg border border-green-100">
-                      <p className="text-green-600 font-bold mb-0.5">Budget</p>
-                      <p className="font-black text-green-700">
-                        {parseFloat(campaign.budget || 0).toLocaleString('fr-FR')} CFA
-                      </p>
-                    </div>
-                    <div className="bg-blue-50 p-2 rounded-lg border border-blue-100">
-                      <p className="text-blue-600 font-bold mb-0.5">Durée</p>
-                      <p className="font-black text-blue-700">{daysLeft} jours</p>
+                    <div>
+                      <p className="text-xs font-black uppercase text-blue-600 mb-1">Durée de la campagne</p>
+                      <p className="text-3xl font-black text-blue-700">{daysLeft}</p>
                     </div>
                   </div>
+                  <p className="text-sm font-bold text-blue-600">jours restants</p>
+                </div>
+              </div>
 
-                  {/* Période */}
-                  <div className="text-xs text-gray-500 mb-3 pb-3 border-b">
-                    <p>Du {formatDate(campaign.start_date)} au {formatDate(campaign.end_date)}</p>
-                    {campaign.marque?.domaine && (
-                      <p className="mt-1">
-                        <span className="font-bold text-gray-600">{campaign.marque.domaine}</span>
-                      </p>
-                    )}
+              {/* DATES */}
+              <div className="bg-gray-50 rounded-xl p-4 mb-6 border border-gray-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Calendar size={14} className="text-gray-400" />
+                    <span className="font-bold text-gray-600">Début :</span>
+                    <span className="font-black text-gray-900">{formatDate(campaign.start_date)}</span>
                   </div>
-
-                  {/* Actions mobile */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleRejectCampaign(campaign.id_t_campagne)}
-                      disabled={processingCampaign === campaign.id_t_campagne}
-                      className="flex-1 py-2.5 border-2 border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      {processingCampaign === campaign.id_t_campagne ? (
-                        <Loader2 size={16} className="animate-spin" />
-                      ) : (
-                        <>
-                          <CloseIcon size={16} />
-                          Refuser
-                        </>
-                      )}
-                    </button>
-                    <button
-                      onClick={() => handleAcceptCampaign(campaign.id_t_campagne)}
-                      disabled={processingCampaign === campaign.id_t_campagne}
-                      className="flex-1 py-2.5 bg-[#D4A017] text-white rounded-lg text-sm font-bold hover:bg-[#B88A14] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      {processingCampaign === campaign.id_t_campagne ? (
-                        <Loader2 size={16} className="animate-spin" />
-                      ) : (
-                        <>
-                          <Check size={16} />
-                          Accepter
-                        </>
-                      )}
-                    </button>
+                  <div className="flex items-center gap-2">
+                    <Calendar size={14} className="text-gray-400" />
+                    <span className="font-bold text-gray-600">Fin :</span>
+                    <span className="font-black text-gray-900">{formatDate(campaign.end_date)}</span>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+
+
+              {/* ACTIONS */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleRejectCampaign(campaign.id_t_campagne)}
+                  disabled={processingCampaign === campaign.id_t_campagne}
+                  className="flex-1 py-4 px-6 bg-gray-100 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 border-2 border-gray-200"
+                >
+                  {processingCampaign === campaign.id_t_campagne ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      <span>Traitement...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CloseIcon size={18} />
+                      <span>Refuser</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => handleAcceptCampaign(campaign.id_t_campagne)}
+                  disabled={processingCampaign === campaign.id_t_campagne}
+                  className="flex-1 py-4 px-6 bg-gradient-to-r from-[#D4A017] to-[#FFD700] text-white rounded-xl font-bold text-sm hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {processingCampaign === campaign.id_t_campagne ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      <span>Acceptation...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check size={18} />
+                      <span>Accepter la campagne</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-    )}
-  </div>
+        );
+      })}
+    </div>
+  )}
+</div>
 ) : activeTab === 'Mes campagnes' ? (
             <div>
               {acceptedCampaigns.length === 0 ? (
@@ -1290,13 +1258,7 @@ const filteredPosts = useMemo(() => {
                         </div>
 
                         <div className="grid grid-cols-3 gap-4">
-                          <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-100">
-                            <p className="text-xs text-green-400 uppercase font-bold mb-1">Budget</p>
-                            <p className="text-lg font-black text-green-600">
-                              {parseFloat(campaign.budget || 0).toLocaleString('fr-FR')}
-                            </p>
-                            <p className="text-xs text-green-500">CFA</p>
-                          </div>
+                          
                           <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-100">
                             <p className="text-xs text-blue-400 uppercase font-bold mb-1">Jours restants</p>
                             <p className="text-lg font-black text-blue-600">{daysLeft}</p>
@@ -1349,13 +1311,7 @@ const filteredPosts = useMemo(() => {
                       </div>
 
                       <div className="grid grid-cols-3 gap-4">
-                        <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-100">
-                          <p className="text-xs text-green-400 uppercase font-bold mb-1">Gain</p>
-                          <p className="text-xl font-black text-green-600">
-                            {parseFloat(campaign.budget || 0).toLocaleString('fr-FR')}
-                          </p>
-                          <p className="text-xs text-green-500">CFA</p>
-                        </div>
+                        
                         <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-100">
                           <p className="text-xs text-blue-400 uppercase font-bold mb-1">Durée</p>
                           <p className="text-xl font-black text-blue-600">

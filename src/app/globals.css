@@ -40,9 +40,9 @@
 
 /* --- 🌙 MODE SOMBRE (Récupère tes couleurs Booster) --- */
 .dark {
-  --background: #050505; /* Ta couleur booster-bg */
+  --background: #050505; 
   --foreground: #ffffff;
-  --card: #0A0A0A;       /* Ta couleur booster-card */
+  --card: #0A0A0A;      
   --card-foreground: #ffffff;
   --border: rgba(255, 255, 255, 0.1);
   --card: #0F0F0F;

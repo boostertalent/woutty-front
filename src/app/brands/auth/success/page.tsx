@@ -17,7 +17,6 @@ export default function RegistrationSuccess() {
 
   // Fonction pour nettoyer et naviguer
   const handleFinalize = (destination: 'login' | 'home') => {
-    // Nettoyer localStorage
     const keys = [
       'signup_email',
       'signup_name',
@@ -133,7 +132,7 @@ export default function RegistrationSuccess() {
         </div>
       </motion.div>
 
-      {/* Animation de confettis (optionnelle) */}
+      {/* Animation de confettis */}
       <style jsx global>{`
         @keyframes confetti {
           0% { transform: translateY(-100vh) rotate(0deg); }

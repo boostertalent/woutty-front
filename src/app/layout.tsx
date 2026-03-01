@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google"; // Ajout de Instrument_Serif
+import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google"; 
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 

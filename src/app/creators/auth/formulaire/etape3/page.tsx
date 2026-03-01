@@ -95,7 +95,7 @@ export default function SocialMediaSelection() {
       const userId = data.user.id;
       console.log("✅ Compte créé:", userId);
 
-      // 2. UPLOAD DE L'AVATAR VERS SUPABASE STORAGE (si existe)
+      // 2. UPLOAD DE L'AVATAR VERS SUPABASE STORAGE 
       let avatarUrl = null;
 
       if (avatarBase64) {
@@ -124,7 +124,6 @@ export default function SocialMediaSelection() {
           } else {
             console.log("✅ Avatar uploadé:", filePath);
 
-            // Obtenir l'URL publique
             const { data: { publicUrl } } = supabase.storage
               .from('creator-avatars')
               .getPublicUrl(filePath);
@@ -137,7 +136,7 @@ export default function SocialMediaSelection() {
         }
       }
 
-// 3. CRÉER OU METTRE À JOUR LE PROFIL (UPSERT)
+// 3. CRÉER OU METTRE À JOUR LE PROFIL 
       const { error: profileError } = await supabase
         .from('createur')
         .upsert({
@@ -169,7 +168,7 @@ export default function SocialMediaSelection() {
 
       console.log("✅ Profil finalisé avec succès");
 
-      // 4. NETTOYER ET REDIRIGER
+      // 4.  REDIRIGER
       localStorage.clear();
       router.push('/brands/auth/success');
 

@@ -30,9 +30,7 @@ export default function EntrepriseDetails() {
     domain: '',
     customDomain: '',
     website: ''
-  });
-
-  // Charger les données si l'utilisateur revient en arrière
+  })
   useEffect(() => {
     const savedName = localStorage.getItem('brand_company_name');
     if (savedName) {
@@ -55,12 +53,10 @@ export default function EntrepriseDetails() {
     formData.domain !== '' &&
     (formData.domain !== "Autre" || formData.customDomain.trim() !== '');
 
-  // Gestion du changement de champ
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Gestion du bouton Continuer
   const handleContinue = (e: React.FormEvent | React.MouseEvent) => {
     e.preventDefault();
 
@@ -70,7 +66,6 @@ export default function EntrepriseDetails() {
     try {
       const finalDomain = formData.domain === "Autre" ? formData.customDomain : formData.domain;
 
-      // Persistance locale pour le tunnel d'inscription
       localStorage.setItem('brand_company_name', formData.companyName);
       localStorage.setItem('brand_company_phone', formData.phone);
       localStorage.setItem('brand_company_email', formData.email);

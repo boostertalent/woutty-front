@@ -134,7 +134,7 @@ export default function BrandsPage() {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-3xl font-bold">🏢 Gestion des marques</h2>
         <div className="flex gap-2">
-          <button onClick={() => router.push('/brands/auth/entreprise')}
+          <button onClick={() => router.push('/brands/auth//formulaire/etape1')}
             className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl font-bold hover:from-purple-700 hover:to-purple-800 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
             <Plus size={20} /> Créer une marque
           </button>

@@ -100,11 +100,19 @@ export default function CampaignDetailDynamic() {
           throw new Error("Vous n'avez pas accès à cette campagne");
         }
 
-        const { data: postsData } = await supabase
+        // ✅ CHARGER UNIQUEMENT LES POSTS VALIDÉS
+        const { data: postsData, error: postsError } = await supabase
           .from('info_poste')
           .select('*')
           .eq('id_t_campagne', id_t_campagne)
+          .eq('is_validated', true) 
           .order('date_poste', { ascending: false });
+        
+        if (postsError) {
+          console.error('⚠️ Erreur chargement posts:', postsError);
+        }
+        
+        console.log(`✅ ${postsData?.length || 0} posts validés chargés pour la campagne`);
         
         const postsWithEngagement = (postsData || []).map(post => ({
           ...post,
@@ -312,11 +320,20 @@ export default function CampaignDetailDynamic() {
           </div>
         </div>
 
-        {/* POSTS COMPACT */}
+        {/* POSTS VALIDÉS UNIQUEMENT */}
         <div>
-          <h2 className="text-base font-bold text-[#111827] mb-3">
-            Posts ({posts.length})
-          </h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-bold text-[#111827]">
+              Posts validés ({posts.length})
+            </h2>
+            {/* ✅ Badge indicateur */}
+            <span className="text-xs bg-green-50 text-green-700 px-3 py-1 rounded-full font-bold border border-green-200 flex items-center gap-1">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              Validés uniquement
+            </span>
+          </div>
           
           {posts.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -331,6 +348,13 @@ export default function CampaignDetailDynamic() {
                     </div>
                     <div className="absolute top-2 right-2 bg-black/60 px-2 py-1 rounded-full text-[9px] font-bold text-white">
                       {formatDate(post.date_poste)}
+                    </div>
+                    {/* ✅ Badge "Validé" */}
+                    <div className="absolute bottom-2 right-2 bg-green-500 px-2 py-1 rounded-full text-[9px] font-bold text-white flex items-center gap-1">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      Validé
                     </div>
                   </div>
                   <div className="p-2">
@@ -354,8 +378,10 @@ export default function CampaignDetailDynamic() {
           ) : (
             <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-8 flex flex-col items-center text-center">
               <Sparkles className="text-gray-300 mb-3" size={32} />
-              <h3 className="text-base font-bold text-[#111827] mb-1">Aucun post</h3>
-              <p className="text-xs text-gray-400">Les posts apparaîtront ici</p>
+              <h3 className="text-base font-bold text-[#111827] mb-1">Aucun post validé</h3>
+              <p className="text-xs text-gray-400 max-w-md">
+                Les posts apparaîtront ici une fois validés par l'administrateur
+              </p>
             </div>
           )}
         </div>

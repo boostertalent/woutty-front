@@ -12,7 +12,6 @@ export default function MatchingAnalysis() {
   const id_t_campagne = searchParams.get('campaign');
 
   useEffect(() => {
-    // Vérifier qu'on a bien un campaignId
     if (!id_t_campagne) {
       router.push('/brands/dashboard');
       return;

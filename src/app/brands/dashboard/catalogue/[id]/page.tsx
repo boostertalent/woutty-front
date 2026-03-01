@@ -23,7 +23,7 @@ export default function PublicCreatorProfile() {
     async function fetchPublicProfile() {
       try {
         setLoading(true);
-        // On récupère les infos essentielles
+        //  récupère les infos essentielles
         const { data: profileData } = await supabase
           .from('info_profile')
           .select('*')
@@ -150,7 +150,7 @@ export default function PublicCreatorProfile() {
       {/* FOOTER PUBLIC */}
       <footer className="bg-gray-50 py-10 text-center border-t border-gray-100">
           <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
-            Propulsé par <span className="text-[#D4A017]">VotrePlateforme</span> — 2024
+            Propulsé par <span className="text-[#D4A017]">VotrePlateforme</span> — 2026
           </p>
       </footer>
     </div>

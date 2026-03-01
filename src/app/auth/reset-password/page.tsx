@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function ResetPasswordPage() {
   const router = useRouter();
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false); // État pour l'œil
+  const [showPassword, setShowPassword] = useState(false); 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -91,7 +91,7 @@ export default function ResetPasswordPage() {
             <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
             
             <input
-              type={showPassword ? "text" : "password"} // Bascule le type ici
+              type={showPassword ? "text" : "password"}
               placeholder="Minimum 8 caractères"
               className="w-full pl-14 pr-12 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:border-[#ceaf4a] focus:ring-4 focus:ring-[#ceaf4a]/5 outline-none transition-all text-black font-medium"
               value={password}

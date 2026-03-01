@@ -71,7 +71,6 @@ export default function BrandCollaborations() {
     );
   }
 
-  // ✅ Plus de sidebar ici - gérée par layout.tsx
   return (
     <div className="p-4 md:p-8">
       <div className="max-w-5xl mx-auto">

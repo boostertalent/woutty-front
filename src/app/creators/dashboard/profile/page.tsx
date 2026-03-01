@@ -99,10 +99,25 @@ export default function CreatorProfile() {
     fetchCreatorData();
   }, []);
 
+  // ✅ VALIDATION DES USERNAMES
+  const validateUsername = (username: string): boolean => {
+    const regex = /^[a-zA-Z0-9._]+$/;
+    return regex.test(username) || username === '';
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    
+    // ✅ Validation pour les usernames
+    if (name.includes('username')) {
+      if (!validateUsername(value)) {
+        return; 
+      }
+    }
+    
     setCreatorData({
       ...creatorData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
   };
 
@@ -117,6 +132,27 @@ export default function CreatorProfile() {
         ...creatorData,
         niche: [...creatorData.niche, niche]
       });
+    }
+  };
+
+  // ✅ SUPPRESSION DE L'ANCIEN AVATAR AVANT UPLOAD
+  const deleteOldAvatar = async (avatarUrl: string) => {
+    try {
+      const urlParts = avatarUrl.split('/');
+      const fileName = urlParts[urlParts.length - 1];
+      const filePath = `avatars/${fileName}`;
+
+      const { error } = await supabase.storage
+        .from('creator-avatars')
+        .remove([filePath]);
+
+      if (error) {
+        console.warn("⚠️ Impossible de supprimer l'ancien avatar:", error);
+      } else {
+        console.log("✅ Ancien avatar supprimé");
+      }
+    } catch (err) {
+      console.warn("⚠️ Erreur suppression:", err);
     }
   };
 
@@ -140,6 +176,11 @@ export default function CreatorProfile() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
+
+      // ✅ Supprimer l'ancien avatar si existant
+      if (creatorData.avatar_url) {
+        await deleteOldAvatar(creatorData.avatar_url);
+      }
 
       const fileExt = file.name.split('.').pop();
       const fileName = `${session.user.id}-${Date.now()}.${fileExt}`;
@@ -183,19 +224,32 @@ export default function CreatorProfile() {
         return;
       }
 
+      // ✅ VALIDATION FINALE AVANT SAUVEGARDE
+      if (!creatorData.full_name.trim()) {
+        setError("Le nom complet est requis");
+        setSaving(false);
+        return;
+      }
+
+      if (!creatorData.email.trim()) {
+        setError("L'email est requis");
+        setSaving(false);
+        return;
+      }
+
       const updateData = {
-        full_name: creatorData.full_name,
-        email: creatorData.email,
-        phone: creatorData.phone,
+        full_name: creatorData.full_name.trim(),
+        email: creatorData.email.trim(),
+        phone: creatorData.phone.trim(),
         age: creatorData.age ? parseInt(creatorData.age) : null,
         niche: creatorData.niche,
         avatar_url: creatorData.avatar_url,
-        instagram_username: creatorData.instagram_username,
-        youtube_username: creatorData.youtube_username,
-        tiktok_username: creatorData.tiktok_username,
-        twitter_username: creatorData.twitter_username,
-        facebook_username: creatorData.facebook_username,
-        snapchat_username: creatorData.snapchat_username
+        instagram_username: creatorData.instagram_username.trim(),
+        youtube_username: creatorData.youtube_username.trim(),
+        tiktok_username: creatorData.tiktok_username.trim(),
+        twitter_username: creatorData.twitter_username.trim(),
+        facebook_username: creatorData.facebook_username.trim(),
+        snapchat_username: creatorData.snapchat_username.trim()
       };
 
       const { data: existingData } = await supabase
@@ -229,6 +283,9 @@ export default function CreatorProfile() {
       setSuccess(true);
       setEditMode(false);
       await fetchCreatorData();
+      
+      // ✅ Masquer le message de succès après 5s
+      setTimeout(() => setSuccess(false), 5000);
       
     } catch (err: any) {
       console.error("❌ Erreur sauvegarde:", err);
@@ -342,7 +399,7 @@ export default function CreatorProfile() {
               
               {editMode && (
                 <div className="flex-1">
-                  <label className="inline-flex items-center gap-2 px-6 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-sm text-gray-700">
+                  <label className="inline-flex items-center gap-2 px-6 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-sm text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors">
                     <Upload size={16} />
                     Changer la photo
                     <input 
@@ -528,7 +585,7 @@ export default function CreatorProfile() {
                       value={creatorData.instagram_username}
                       onChange={handleChange}
                       placeholder="votre_nom"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all text-gray-700"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-r-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all text-gray-700"
                     />
                   </div>
                 ) : (
@@ -555,7 +612,7 @@ export default function CreatorProfile() {
                       value={creatorData.youtube_username}
                       onChange={handleChange}
                       placeholder="votre_chaine"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all text-gray-700"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-r-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all text-gray-700"
                     />
                   </div>
                 ) : (
@@ -582,7 +639,7 @@ export default function CreatorProfile() {
                       value={creatorData.tiktok_username}
                       onChange={handleChange}
                       placeholder="votre_nom"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all text-gray-700"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-r-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all text-gray-700"
                     />
                   </div>
                 ) : (
@@ -609,7 +666,7 @@ export default function CreatorProfile() {
                       value={creatorData.twitter_username}
                       onChange={handleChange}
                       placeholder="votre_nom"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all text-gray-700"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-r-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all text-gray-700"
                     />
                   </div>
                 ) : (
@@ -636,7 +693,7 @@ export default function CreatorProfile() {
                       value={creatorData.facebook_username}
                       onChange={handleChange}
                       placeholder="votre_nom"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all text-gray-700"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-r-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all text-gray-700"
                     />
                   </div>
                 ) : (
@@ -663,7 +720,7 @@ export default function CreatorProfile() {
                       value={creatorData.snapchat_username}
                       onChange={handleChange}
                       placeholder="votre_nom"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all text-gray-700"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-r-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent outline-none transition-all text-gray-700"
                     />
                   </div>
                 ) : (
@@ -682,6 +739,7 @@ export default function CreatorProfile() {
                 type="button"
                 onClick={() => {
                   setEditMode(false);
+                  setError(null);
                   fetchCreatorData();
                 }}
                 className="flex-1 py-4 border-2 border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all"

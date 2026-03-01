@@ -281,14 +281,11 @@ export default function CampaignChoice() {
       const packData = PACKS_DATA[packId as keyof typeof PACKS_DATA];
 
       // 💾 SAUVEGARDER LE PACK DANS SUPABASE
-      // 1. On nettoie l'ancien brouillon (Option "Panier unique")
 await supabase
   .from('campaign_drafts')
   .delete()
   .eq('brand_id', session.user.id)
   .eq('status', 'draft');
-
-// 2. On insère le nouveau choix (Pas besoin d'upsert ici puisque c'est propre)
 const { error } = await supabase
   .from('campaign_drafts')
   .insert({
@@ -306,7 +303,6 @@ const { error } = await supabase
     bonus: packData.bonus || null,
     has_image_rights: packData.imageRights || false,
     status: 'draft'
-    // Pas besoin de created_at/updated_at, SQL s'en occupe tout seul !
   });
 
       if (error) {
@@ -397,8 +393,9 @@ const { error } = await supabase
           </motion.p>
         </div>
 
-        {/* GRILLE DES 3 PACKS */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+        {/* GRILLE DES 3 PACKS - côte à côte, largeur limitée */}
+        <div className="flex justify-center mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
           
           {/* PACK 1 : LOCAL STARTER */}
           <motion.div
@@ -670,6 +667,7 @@ const { error } = await supabase
               {selectedPack === 'national-scale' ? 'Sélectionné' : 'Choisir ce pack'}
             </button>
           </motion.div>
+          </div>
         </div>
 
         {/* SECTION OPTIONS DE CRÉATION - Visible après sélection */}

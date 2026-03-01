@@ -3,7 +3,7 @@ import { createBrowserClient } from '@supabase/ssr'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-// On crée une instance unique (Singleton) pour le client
+// On crée une instance unique pour le client
 let client: ReturnType<typeof createBrowserClient> | undefined;
 
 export const getSupabaseBrowserClient = () => {

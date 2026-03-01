@@ -113,7 +113,6 @@ export default function BrandPackView() {
 
       if (fetchError) {
         if (fetchError.code === 'PGRST116') {
-          // Aucun pack sélectionné
           setPackData(null);
         } else {
           throw fetchError;
@@ -330,7 +329,7 @@ export default function BrandPackView() {
         </button>
 
         <button
-          onClick={() => router.push('/brands/auth/campagne')}
+          onClick={() => router.push('/brands/campaign-choice')}
           className="py-4 px-6 bg-[#D4A017] text-white rounded-xl font-bold hover:bg-[#B88A14] transition-all flex items-center justify-center gap-2"
         >
           Créer ma campagne

@@ -18,7 +18,6 @@ export default function LoginPage() {
     password: '',
   });
 
-  // Utilisation d'un state pour le client afin d'éviter les re-créations inutiles
   const [supabase] = useState(() => createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -41,7 +40,6 @@ export default function LoginPage() {
     if (authData.user) {
       const userId = authData.user.id;
 
-      // 2. On vérifie d'abord s'il est Créateur (et on récupère son rôle)
       const { data: creatorData } = await supabase
         .from('createur')
         .select('id_w, role') 
@@ -49,7 +47,6 @@ export default function LoginPage() {
         .maybeSingle(); 
 
       if (creatorData) {
-        // Redirection spécifique si c'est un ADMIN PRINCIPAL
         if (creatorData.role === 'admin') {
           console.log("✅ Admin principal connecté");
           router.push('/admin/dashboard');
@@ -61,7 +58,6 @@ export default function LoginPage() {
         return;
       }
 
-      // 3. Vérifier dans la table admin (ADMINS SECONDAIRES)
       const { data: adminData } = await supabase
         .from('admin')
         .select('id_w, role')
@@ -75,7 +71,6 @@ export default function LoginPage() {
         return;
       }
 
-      // 4. Sinon, on cherche dans 'marque'
       const { data: brandData } = await supabase
         .from('marque')
         .select('id_w')
@@ -89,7 +84,6 @@ export default function LoginPage() {
         return;
       }
 
-      // 5. Cas particulier : Compte sans profil métier
       console.log("❌ Profil introuvable");
       setErrorMsg("Votre profil est introuvable. Veuillez contacter le support.");
     }

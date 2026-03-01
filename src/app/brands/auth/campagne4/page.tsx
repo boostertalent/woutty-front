@@ -41,7 +41,7 @@ export default function Step4() {
   // Gestion de la saisie numérique
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    if (/^[0-9]*$/.test(val)) { // seulement chiffres
+    if (/^[0-9]*$/.test(val)) { 
       setBudget(val);
       setShowError(false);
       setServerError(null);
@@ -80,21 +80,19 @@ export default function Step4() {
       const startDate = s1.startDate ? new Date(s1.startDate) : null;
       const endDate = s1.endDate ? new Date(s1.endDate) : null;
       
-      let status = 'pending'; // Valeur par défaut
+      let status = 'pending'; 
       
       if (startDate && endDate) {
         if (today < startDate) {
-          status = 'planned'; // La campagne est planifiée pour plus tard
+          status = 'planned'; 
         } else if (today >= startDate && today <= endDate) {
-          status = 'active'; // La campagne est en cours
+          status = 'active';
         } else if (today > endDate) {
-          status = 'completed'; // La campagne est terminée
+          status = 'completed';
         }
       } else if (startDate && today >= startDate) {
-        // Si seulement la date de début est définie et qu'on est après
         status = 'active';
       } else if (startDate && today < startDate) {
-        // Si seulement la date de début est définie et qu'on est avant
         status = 'planned';
       }
 
@@ -113,14 +111,13 @@ export default function Step4() {
         tone: finalTone,
         budget: Number(valInCFA),
         currency: "CFA",
-        status: status, // Utiliser le statut calculé
+        status: status, 
         id_w: session.user.id 
       };
 
       console.log("Envoi à Supabase - Statut:", status);
       console.log("Données de la campagne:", finalPayload);
 
-      // IMPORTANT : Récupérer l'ID de la campagne créée avec .select().single()
       const { data: newCampaign, error } = await supabase
         .from('campaigns')
         .insert([finalPayload])
@@ -135,10 +132,7 @@ export default function Step4() {
 
       console.log("✅ Campagne créée avec succès, ID:", newCampaign.id_t_campagne);
 
-      // Nettoyage LocalStorage
       ['campaign_step_1','campaign_step_2','campaign_step_3','campaign_step_4'].forEach(key => localStorage.removeItem(key));
-
-      // Redirection vers la page d'analyse IA avec l'ID de la campagne
       router.push(`/brands/matching-analysis?campaign=${newCampaign.id_t_campagne}`);
 
     } catch (err: any) {

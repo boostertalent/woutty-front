@@ -18,8 +18,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.get(name)?.value
         },
         set(name: string, value: string, options: CookieOptions) {
-          // On met à jour la requête ET la réponse pour que le cookie soit 
-          // disponible immédiatement et envoyé au navigateur
+        
           request.cookies.set({ name, value, ...options })
           response = NextResponse.next({
             request: {
@@ -41,7 +40,6 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // IMPORTANT : getUser() rafraîchit la session automatiquement si nécessaire
   const { data: { user } } = await supabase.auth.getUser()
 
   // PROTECTION DES ROUTES
@@ -52,7 +50,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
-  // Optionnel : Rediriger un utilisateur déjà connecté qui essaie d'aller sur /login
   if (user && isAuthRoute && request.nextUrl.pathname === '/auth/login') {
     return NextResponse.redirect(new URL('/brands/dashboard', request.url))
   }

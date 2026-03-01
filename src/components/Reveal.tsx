@@ -12,7 +12,7 @@ export function Reveal({ children }: { children: React.ReactNode }) {
           setIsVisible(true);
         }
       },
-      { threshold: 0.1 } // Se déclenche quand 10% de l'élément est visible
+      { threshold: 0.1 } 
     );
 
     if (ref.current) observer.observe(ref.current);

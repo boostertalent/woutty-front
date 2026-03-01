@@ -161,7 +161,7 @@ export default function CreatorsPage() {
         <h2 className="text-3xl font-bold">👥 Gestion des créateurs</h2>
         <div className="flex gap-2">
           <button
-            onClick={() => router.push('/creators/auth/profil')}
+            onClick={() => router.push('/creators/auth/formulaire/etape1')}
             className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl font-bold hover:from-green-700 hover:to-green-800 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
           >
             <Plus size={20} />

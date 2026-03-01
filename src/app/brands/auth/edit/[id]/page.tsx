@@ -7,7 +7,6 @@ import { createBrowserClient } from '@supabase/ssr';
 
 export default function EditCampaign() {
   const params = useParams();
-  // CORRECTION : On récupère "id" car le dossier est [id]
   const id_t_campagne = params?.id; 
   const router = useRouter();
   

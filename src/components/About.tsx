@@ -55,14 +55,13 @@ function FeatureCard({ title, description, index }: { title: string; description
       initial="initial"
       whileHover="active"
       whileTap="active"
-      /* ✅ bg-card et border-border pour l'adaptation automatique */
       className="relative h-[250px] flex items-center justify-center rounded-[2.5rem] bg-card border border-border overflow-hidden p-8 cursor-pointer shadow-2xl transition-colors duration-300"
       variants={{
         initial: { borderColor: "var(--border)" },
-        active: { borderColor: "#F5C200" } // Devient jaune au survol
+        active: { borderColor: "#F5C200" } 
       }}
     >
-      {/* TEXTE CACHÉ - ✅ text-foreground pour lisibilité adaptative */}
+      {/* TEXTE CACHÉ - */}
       <motion.div
         variants={{
           initial: { opacity: 0, scale: 0.9, filter: "blur(10px)" },
@@ -74,7 +73,7 @@ function FeatureCard({ title, description, index }: { title: string; description
         {description}
       </motion.div>
 
-      {/* TITRE JAUNE - Reste jaune car c'est l'identité Booster Talent */}
+      {/* TITRE JAUNE*/}
       <motion.span 
         variants={{
           initial: { opacity: 1, y: 0 },
@@ -102,7 +101,7 @@ function FeatureCard({ title, description, index }: { title: string; description
         className="absolute inset-0 z-0 bg-booster-yellow rounded-full blur-[60px]"
       />
 
-      {/* FOND INTERNE - ✅ Utilise bg-card au lieu de #111 fixe */}
+      {/* FOND INTERNE - */}
       <motion.div 
         variants={{
           initial: { opacity: 1 },

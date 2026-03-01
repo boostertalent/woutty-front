@@ -62,7 +62,7 @@ export default function Step2() {
     }
   }, []);
 
-  // 2. SAUVEGARDE AUTOMATIQUE : Crucial pour que tout soit envoyé en base de données plus tard
+  // 2. SAUVEGARDE AUTOMATIQUE 
   useEffect(() => {
     const step2Data = {
       ageRange,

@@ -46,7 +46,6 @@ export default function ForgotPasswordPro() {
   };
 
   return (
-    // bg-white ici force l'arrière-plan de toute la page en blanc
     <div className="flex flex-col items-center justify-center w-full min-h-screen bg-white p-4 font-sans">
       
       <motion.div
