@@ -65,7 +65,9 @@ jest.mock('framer-motion', () => ({
 }));
 
 describe('page', () => {
-  it('renders without crashing', () => {
+  it('renders forgot password form', () => {
     render(<Component />);
+    expect(screen.getByPlaceholderText(/votre adresse email/i)).toBeInTheDocument();
+    expect(screen.getByRole('button')).toBeInTheDocument();
   });
 });

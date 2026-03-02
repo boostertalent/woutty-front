@@ -1,25 +1,16 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import Component from './page';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { useRouter } from 'next/navigation';
+import NicheSelection from './page';
 
 // Mock router Next.js
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: jest.fn(),
-  }),
+  useRouter: jest.fn()
 }));
 
 // Mock next/link
 jest.mock('next/link', () => ({
   __esModule: true,
   default: ({ children, href }: any) => <a href={href}>{children}</a>,
-}));
-
-// Mock icônes
-jest.mock('lucide-react', () => ({
-  Sparkles: () => <div data-testid="sparkles" />,
-  X: () => <div data-testid="x-icon" />,
-  Plus: () => <div data-testid="plus" />,
-  ChevronRight: () => <div data-testid="chevron-right" />,
 }));
 
 // Mock localStorage
@@ -31,102 +22,161 @@ const localStorageMock = {
 };
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
-describe('NicheSelection', () => {
+describe('NicheSelection Page', () => {
+  const mockPush = jest.fn();
+  
   beforeEach(() => {
-    localStorageMock.setItem.mockClear();
+    jest.clearAllMocks();
+    (useRouter as jest.Mock).mockReturnValue({
+      push: mockPush
+    });
   });
 
-  it('renders without crashing and shows essential niche selection elements', () => {
-    render(<Component />);
+  it('affiche la sélection de niches', () => {
+    render(<NicheSelection />);
 
-    // Vérifie le titre principal
-    expect(
-      screen.getByText(/tes thèmes/i)
-    ).toBeInTheDocument();
-
-    // Vérifie la description
-    expect(
-      screen.getByText(/sélectionnez vos thématiques/i)
-    ).toBeInTheDocument();
-
+    expect(screen.getByText('Tes thèmes')).toBeInTheDocument();
+    expect(screen.getByText('Sélectionnez vos thématiques')).toBeInTheDocument();
+    
     // Vérifie les niches principales
-    expect(
-      screen.getByRole('button', { name: /mode/i })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: /beauté/i })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: /lifestyle/i })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: /tech/i })
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Mode' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Beauté' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Lifestyle' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tech' })).toBeInTheDocument();
 
     // Vérifie le champ de saisie personnalisé
-    expect(
-      screen.getByPlaceholderText(/ex: jardinage, yoga\.\.\./i)
-    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Ex: Jardinage, Yoga...')).toBeInTheDocument();
 
     // Vérifie le compteur de sélections
-    expect(
-      screen.getByText(/0 thématique\(s\) sélectionnée\(s\)/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText('0 thématique(s) sélectionnée(s)')).toBeInTheDocument();
 
     // Vérifie les boutons d'action
-    expect(
-      screen.getByRole('link', { name: /retour/i })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: /continuer/i })
-    ).toBeInTheDocument();
-
-    // Vérifie la présence des icônes
-    expect(screen.getByTestId('sparkles')).toBeInTheDocument();
-    expect(screen.getByTestId('chevron-right')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Retour' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continuer' })).toBeInTheDocument();
   });
 
-  it('allows niche selection and updates counter', () => {
-    render(<Component />);
+  it('permet la sélection de niches et met à jour le compteur', () => {
+    render(<NicheSelection />);
 
-    const modeButton = screen.getByRole('button', { name: /mode/i });
+    const modeButton = screen.getByRole('button', { name: 'Mode' });
     fireEvent.click(modeButton);
 
-    // Vérifie que la niche est sélectionnée
+    // Vérifie que la niche est sélectionnée (apparence changée)
     expect(modeButton).toHaveClass('border-[#ceaf4a]', 'bg-[#ceaf4a]', 'text-white');
 
     // Vérifie le compteur mis à jour
-    expect(
-      screen.getByText(/1 thématique\(s\) sélectionnée\(s\)/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText('1 thématique(s) sélectionnée(s)')).toBeInTheDocument();
   });
 
-  it('enables continue button when niches are selected', () => {
-    render(<Component />);
+  it('active le bouton continuer quand des niches sont sélectionnées', () => {
+    render(<NicheSelection />);
 
-    const continueButton = screen.getByRole('button', { name: /continuer/i });
+    const continueButton = screen.getByRole('button', { name: 'Continuer' });
     expect(continueButton).toBeDisabled();
 
     // Sélectionner une niche
-    const modeButton = screen.getByRole('button', { name: /mode/i });
+    const modeButton = screen.getByRole('button', { name: 'Mode' });
     fireEvent.click(modeButton);
 
     expect(continueButton).not.toBeDisabled();
   });
 
-  it('allows custom niche addition', () => {
-    render(<Component />);
+  it('permet d\'ajouter une niche personnalisée', () => {
+    render(<NicheSelection />);
 
-    const customInput = screen.getByPlaceholderText(/ex: jardinage, yoga\.\.\./i);
-    const addButton = screen.getByText(/ajouter un réseau/i);
-
+    const customInput = screen.getByPlaceholderText('Ex: Jardinage, Yoga...');
+    
     fireEvent.change(customInput, { target: { value: 'Jardinage' } });
+    
+    // Cliquer sur le bouton plus
+    const addButton = screen.getByRole('button');
     fireEvent.click(addButton);
 
     // Vérifie que la niche personnalisée est ajoutée
-    expect(
-      screen.getByText(/jardinage/i)
-    ).toBeTruthy();
+    expect(screen.getByText('Jardinage')).toBeInTheDocument();
     expect(customInput).toHaveValue('');
+  });
+
+  it('permet d\'ajouter une niche personnalisée avec la touche Entrée', () => {
+    render(<NicheSelection />);
+
+    const customInput = screen.getByPlaceholderText('Ex: Jardinage, Yoga...');
+    
+    fireEvent.change(customInput, { target: { value: 'Yoga' } });
+    fireEvent.keyDown(customInput, { key: 'Enter' });
+
+    // Vérifie que la niche personnalisée est ajoutée
+    expect(screen.getByText('Yoga')).toBeInTheDocument();
+    expect(customInput).toHaveValue('');
+  });
+
+  it('permet de désélectionner une niche', () => {
+    render(<NicheSelection />);
+
+    const modeButton = screen.getByRole('button', { name: 'Mode' });
+    fireEvent.click(modeButton);
+
+    // Vérifie que la niche est sélectionnée
+    expect(screen.getByText('1 thématique(s) sélectionnée(s)')).toBeInTheDocument();
+
+    // Cliquer à nouveau pour désélectionner
+    fireEvent.click(modeButton);
+
+    // Vérifie que la niche est désélectionnée
+    expect(screen.getByText('0 thématique(s) sélectionnée(s)')).toBeInTheDocument();
+  });
+
+  it('permet de supprimer une niche avec la croix', () => {
+    render(<NicheSelection />);
+
+    const modeButton = screen.getByRole('button', { name: 'Mode' });
+    fireEvent.click(modeButton);
+
+    // Trouver et cliquer sur le bouton X dans le tag (aucun label accessible)
+    const modeTag = screen.getByText('Mode');
+    const removeButton = modeTag.closest('div')?.querySelector('button');
+    expect(removeButton).toBeDefined();
+    if (removeButton) fireEvent.click(removeButton as HTMLElement);
+
+    // Vérifie que la niche est supprimée
+    expect(screen.getByText('0 thématique(s) sélectionnée(s)')).toBeInTheDocument();
+  });
+
+  it('sauvegarde les niches et navigue vers l\'étape 3', async () => {
+    render(<NicheSelection />);
+
+    // Sélectionner quelques niches
+    fireEvent.click(screen.getByRole('button', { name: 'Mode' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Beauté' }));
+
+    // Cliquer sur continuer
+    const continueButton = screen.getByRole('button', { name: 'Continuer' });
+    fireEvent.click(continueButton);
+
+    await waitFor(() => {
+      expect(localStorageMock.setItem).toHaveBeenCalledWith(
+        'signup_niche',
+        JSON.stringify(['Mode', 'Beauté'])
+      );
+      expect(mockPush).toHaveBeenCalledWith('/creators/auth/formulaire/etape3');
+    });
+  });
+
+  it('empêche la navigation si aucune niche n\'est sélectionnée', () => {
+    render(<NicheSelection />);
+
+    const continueButton = screen.getByRole('button', { name: 'Continuer' });
+    fireEvent.click(continueButton);
+
+    // Ne devrait pas naviguer
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(localStorageMock.setItem).not.toHaveBeenCalled();
+  });
+
+  it('affiche le lien de retour vers l\'étape 1', () => {
+    render(<NicheSelection />);
+
+    const retourLink = screen.getByRole('link', { name: 'Retour' });
+    expect(retourLink).toHaveAttribute('href', '/creators/auth/formulaire/etape1');
   });
 });

@@ -41,7 +41,8 @@ jest.mock('framer-motion', () => ({
 }));
 
 describe('TalentCatalogue', () => {
-  it('renders without crashing', () => {
+  it('renders and shows a creator from mock data', async () => {
     render(<TalentCatalogue />);
+    expect(await screen.findByText(/Test Creator/i)).toBeInTheDocument();
   });
 });

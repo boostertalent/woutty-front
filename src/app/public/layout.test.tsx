@@ -1,8 +1,11 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import Component from './layout';
 
-describe('layout', () => {
-  it('renders without crashing', () => {
+// simple layout, just render and check main exists
+
+describe('Public layout', () => {
+  it('renders and contains a main element', () => {
     render(<Component />);
+    expect(screen.getByRole('main')).toBeInTheDocument();
   });
 });

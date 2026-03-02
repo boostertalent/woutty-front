@@ -1,83 +1,85 @@
-import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import Component from './page';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { useRouter } from 'next/navigation';
+import ContactPrincipal from './page';
 
-// Mock next/navigation
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: jest.fn(),
-    refresh: jest.fn()
-  })
+  useRouter: jest.fn()
 }));
 
-// Mock next/link
 jest.mock('next/link', () => ({
   __esModule: true,
-  default: ({ children }: any) => children,
+  default: ({ children, href }: any) => <a href={href}>{children}</a>,
 }));
 
-// Mock Supabase
-jest.mock('@supabase/ssr', () => ({
-  createBrowserClient: jest.fn(() => ({
-    auth: {
-      getSession: jest.fn(() => Promise.resolve({
-        data: { session: { user: { id: 'test-user-id', email: 'test@example.com' } } }
-      }))
-    },
-    from: jest.fn(() => ({
-      select: jest.fn(() => ({
-        eq: jest.fn(() => Promise.resolve({
-          data: [],
-          error: null
-        }))
-      })),
-      update: jest.fn(() => ({
-        eq: jest.fn(() => Promise.resolve({ error: null }))
-      }))
-    }))
-  }))
-}));
+const localStorageMock = {
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+  removeItem: jest.fn(),
+  clear: jest.fn(),
+};
+Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
-// Mock framer-motion
-jest.mock('framer-motion', () => ({
-  motion: new Proxy({}, {
-    get: () => (props: any) => <div {...props} />
-  })
-}));
+describe('ContactPrincipal', () => {
+  const mockPush = jest.fn();
+  
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (useRouter as jest.Mock).mockReturnValue({ push: mockPush });
+    localStorageMock.getItem.mockReturnValue(null);
+  });
 
-describe('CreatorSocialPage', () => {
-  it('renders without crashing and shows essential social media elements', () => {
-    render(<Component />);
+  it('affiche le formulaire contact', () => {
+    render(<ContactPrincipal />);
+    expect(screen.getByText('Contact principal')).toBeInTheDocument();
+    expect(screen.getByText('Nom complet*')).toBeInTheDocument();
+    expect(screen.getByText('Fonction')).toBeInTheDocument();
+    expect(screen.getByText('Email professionnel*')).toBeInTheDocument();
+    expect(screen.getByText('Téléphone')).toBeInTheDocument();
+  });
 
-    // Vérifie le titre principal
-    expect(
-      screen.getByText(/vos réseaux/i)
-    ).toBeInTheDocument();
+  it('valide le formulaire', () => {
+    render(<ContactPrincipal />);
+    const button = screen.getByRole('button', { name: 'Continuer' });
+    expect(button).toBeDisabled();
+  });
 
-    // Vérifie la description
-    expect(
-      screen.getByText(/ajoute tes réseaux sociaux pour booster ta visibilité/i)
-    ).toBeInTheDocument();
+  it('active le bouton quand formulaire valide', () => {
+    render(<ContactPrincipal />);
+    
+    fireEvent.change(screen.getByPlaceholderText('Ex: Jean Dupont'), {
+      target: { value: 'Jean Dupont' }
+    });
+    fireEvent.change(screen.getByPlaceholderText('jean@entreprise.com'), {
+      target: { value: 'jean@entreprise.com' }
+    });
 
-    // Vérifie les champs principaux des réseaux sociaux
-    expect(
-      screen.getByPlaceholderText(/https:\/\/instagram\.com\/votreprofil/i)
-    ).toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText(/https:\/\/tiktok\.com\/@votreprofil/i)
-    ).toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText(/https:\/\/youtube\.com\/votrechaîne/i)
-    ).toBeInTheDocument();
+    const button = screen.getByRole('button', { name: 'Continuer' });
+    expect(button).not.toBeDisabled();
+  });
 
-    // Vérifie le lien de retour
-    expect(
-      screen.getByRole('link', { name: /retour/i })
-    ).toBeInTheDocument();
+  it('sauvegarde et navigue', async () => {
+    render(<ContactPrincipal />);
+    
+    fireEvent.change(screen.getByPlaceholderText('Ex: Jean Dupont'), {
+      target: { value: 'Jean Dupont' }
+    });
+    fireEvent.change(screen.getByPlaceholderText('jean@entreprise.com'), {
+      target: { value: 'jean@entreprise.com' }
+    });
 
-    // Vérifie le bouton de continuation
-    expect(
-      screen.getByRole('button', { name: /continuer/i })
-    ).toBeInTheDocument();
+    const button = screen.getByRole('button', { name: 'Continuer' });
+    fireEvent.click(button);
+
+    await waitFor(() => {
+      expect(localStorageMock.setItem).toHaveBeenCalledWith('brand_contact_fullname', 'Jean Dupont');
+      expect(localStorageMock.setItem).toHaveBeenCalledWith('brand_contact_professional_email', 'jean@entreprise.com');
+      expect(mockPush).toHaveBeenCalledWith('/brands/auth/formulaire/etape3');
+    });
+  });
+
+  it('affiche le lien de retour', () => {
+    render(<ContactPrincipal />);
+    const retourLink = screen.getByRole('link', { name: 'Retour' });
+    expect(retourLink).toHaveAttribute('href', '/brands/auth/formulaire/etape1');
   });
 });

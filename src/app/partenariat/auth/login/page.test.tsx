@@ -64,7 +64,9 @@ jest.mock('framer-motion', () => ({
 }));
 
 describe('page', () => {
-  it('renders without crashing', () => {
+  it('renders login form', () => {
     render(<Component />);
+    expect(screen.getByPlaceholderText(/email/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/mot de passe/i)).toBeInTheDocument();
   });
 });

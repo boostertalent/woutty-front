@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import PublicCampaigns from './page';
 
 // Mock next/link
@@ -49,7 +49,8 @@ jest.mock('framer-motion', () => ({
 }));
 
 describe('PublicCampaigns', () => {
-  it('renders without crashing', () => {
+  it('renders and lists campaigns from mock data', async () => {
     render(<PublicCampaigns />);
+    expect(await screen.findByText(/Test Campaign/i)).toBeInTheDocument();
   });
 });

@@ -24,7 +24,7 @@ jest.mock('@/lib/supabaseClient', () => ({
   }
 }));
 
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import Component from './page';
 
 // Mock next/navigation
@@ -65,7 +65,9 @@ jest.mock('framer-motion', () => ({
 }));
 
 describe('page', () => {
-  it('renders without crashing', () => {
+  it('renders reset password form inputs', () => {
     render(<Component />);
+    expect(screen.getByPlaceholderText(/nouveau mot de passe/i)).toBeInTheDocument();
+    expect(screen.getByRole('button')).toBeInTheDocument();
   });
 });

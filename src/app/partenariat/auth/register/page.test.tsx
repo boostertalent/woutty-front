@@ -64,7 +64,10 @@ jest.mock('framer-motion', () => ({
 }));
 
 describe('page', () => {
-  it('renders without crashing', () => {
+  it('renders and shows signup form fields', () => {
     render(<Component />);
+    // should at least have email/password inputs
+    expect(screen.getByPlaceholderText(/email/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/mot de passe/i)).toBeInTheDocument();
   });
 });

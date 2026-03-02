@@ -63,7 +63,9 @@ jest.mock('framer-motion', () => ({
 }));
 
 describe('CreatorProfile', () => {
-  it('renders without crashing', () => {
+  it('renders and shows user name and email', async () => {
     render(<CreatorProfile />);
+    expect(await screen.findByText(/Test Creator/i)).toBeInTheDocument();
+    expect(screen.getByText(/test@example.com/i)).toBeInTheDocument();
   });
 });
