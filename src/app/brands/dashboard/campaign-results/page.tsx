@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import Link from 'next/link';
+import { createNotification } from '@/lib/notifications';
+import { triggerEmailNotification } from '@/lib/n8n';
 
 const XLogo = ({ size = 16 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -239,14 +241,50 @@ export default function CampaignMatchResults() {
     }
     
     console.log("✅ Campagne mise à jour:", data);
-    
+
     if (data && data.length > 0) {
       console.log("✅ SUCCÈS !");
       console.log("   - creator_status:", data[0].creator_status);
       console.log("   - assigned_creator_id:", data[0].assigned_creator_id);
       console.log("   - Le créateur verra cette campagne ");
     }
-    
+
+    // Notification : campaign_assigned → notifie le créateur
+    try {
+      const { data: brandData } = await supabase
+        .from('marque')
+        .select('nom_marque')
+        .eq('id_w', campaign?.id_w)
+        .maybeSingle();
+
+      const notifMeta = {
+        campaign_title: campaign?.title || 'Sans titre',
+        brand_name: brandData?.nom_marque || 'Marque',
+        action_url: '/creators/dashboard',
+      };
+
+      await createNotification({
+        campaign_id: id_t_campagne!,
+        brand_id: campaign?.id_w,
+        recipient_id: selectedCreator.id_w,
+        recipient_role: 'creator',
+        notification_type: 'campaign_assigned',
+        metadata: notifMeta,
+      });
+
+      const creatorEmail = creatorDetails?.email || selectedCreator?.email;
+      if (creatorEmail) {
+        await triggerEmailNotification({
+          event: 'campaign_assigned',
+          recipient_email: creatorEmail,
+          recipient_name: selectedCreator.full_name || 'Créateur',
+          metadata: notifMeta,
+        });
+      }
+    } catch (notifErr) {
+      console.error('⚠️ Notification campaign_assigned non envoyée:', notifErr);
+    }
+
     alert(
       `✅ Campagne attribuée avec succès à ${selectedCreator?.full_name} !\n\n` +
       `📧 Le créateur verra cette campagne .\n\n` +

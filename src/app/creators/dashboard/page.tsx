@@ -4,7 +4,9 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { createBrowserClient } from '@supabase/ssr'; 
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { motion } from 'framer-motion'; 
+import { motion } from 'framer-motion';
+import { createNotification } from '@/lib/notifications';
+import { triggerEmailNotification } from '@/lib/n8n';
 
 
 import { 
@@ -403,6 +405,50 @@ const linkPostToCampaign = async (postId, campaignId) => {
     }));
 
     console.log("✅ Post lié avec succès (en attente de validation)");
+
+    // Notification : content_submitted → notifie l'admin
+    try {
+      const { data: campaignData } = await supabase
+        .from('campaigns')
+        .select('title, id_w')
+        .eq('id_t_campagne', campaignId)
+        .maybeSingle();
+
+      const { data: adminData } = await supabase
+        .from('createur')
+        .select('id_w, email, full_name')
+        .eq('role', 'admin')
+        .limit(1)
+        .maybeSingle();
+
+      if (adminData) {
+        const notifMeta = {
+          campaign_title: campaignData?.title || 'Sans titre',
+          creator_name: creatorInfo?.full_name || 'Créateur',
+          post_id: postId,
+          action_url: '/admin/validate-posts',
+        };
+
+        await createNotification({
+          campaign_id: campaignId,
+          creator_id: creatorInfo?.id_w,
+          recipient_id: adminData.id_w,
+          recipient_role: 'admin',
+          notification_type: 'content_submitted',
+          metadata: notifMeta,
+        });
+
+        await triggerEmailNotification({
+          event: 'content_submitted',
+          recipient_email: adminData.email,
+          recipient_name: adminData.full_name || 'Admin',
+          metadata: notifMeta,
+        });
+      }
+    } catch (notifErr) {
+      console.error('⚠️ Notification content_submitted non envoyée:', notifErr);
+    }
+
   } catch (err) {
     console.error("❌ Erreur:", err);
     setError("Impossible de lier le post à la campagne.");

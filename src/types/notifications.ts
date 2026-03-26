@@ -1,0 +1,51 @@
+export type NotificationEventType =
+  | 'campaign_created'    // Marque crée une campagne → Admin
+  | 'campaign_assigned'   // Admin assigne un créateur → Créateur
+  | 'content_submitted'   // Créateur soumet un contenu → Admin
+  | 'content_validated'   // Admin valide un contenu → Créateur
+  | 'content_rejected'    // Admin rejette un contenu → Créateur
+  | 'content_published';  // Créateur publie → Marque + Admin
+
+export type RecipientRole = 'admin' | 'brand' | 'creator';
+
+export interface Notification {
+  id: string;
+  campaign_id: string | null;
+  creator_id: string | null;
+  brand_id: string | null;
+  recipient_id: string;
+  recipient_role: RecipientRole;
+  notification_type: NotificationEventType;
+  is_read: boolean;
+  read_at: string | null;
+  created_at: string;
+  metadata: NotificationMetadata | null;
+}
+
+export interface NotificationMetadata {
+  campaign_title?: string;
+  brand_name?: string;
+  creator_name?: string;
+  post_id?: string;
+  action_url?: string;
+  message?: string;
+}
+
+// Payload pour créer une notification
+export interface CreateNotificationPayload {
+  campaign_id?: string;
+  creator_id?: string;
+  brand_id?: string;
+  recipient_id: string;
+  recipient_role: RecipientRole;
+  notification_type: NotificationEventType;
+  metadata?: NotificationMetadata;
+}
+
+// Payload pour déclencher un email via n8n
+export interface N8nEmailPayload {
+  event: NotificationEventType;
+  recipient_email: string;
+  recipient_name: string;
+  metadata: NotificationMetadata;
+}

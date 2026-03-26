@@ -4,10 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import Link from 'next/link';
-import { 
-  Users, Building2, BarChart3, Shield, Search, 
+import {
+  Users, Building2, BarChart3, Shield, Search,
   LogOut, Loader2, X, User, Activity, HeadphonesIcon, MessageCircle
 } from 'lucide-react';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [adminUser, setAdminUser] = useState<any>(null);
   const [isPrincipalAdmin, setIsPrincipalAdmin] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [userId, setUserId] = useState<string | null>(null);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -38,6 +40,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     try {
       const { data: { user }, error } = await supabase.auth.getUser();
       if (error || !user) { router.push('/auth/login'); return; }
+      setUserId(user.id);
 
       const { data: creatorCheck } = await supabase
         .from('createur').select('*').eq('id_w', user.id).maybeSingle();
@@ -166,6 +169,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           <div className="flex items-center gap-4 ml-auto">
+            <NotificationBell recipientId={userId} />
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-bold capitalize leading-none mb-1">{adminUser?.name}</p>

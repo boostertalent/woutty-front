@@ -5,6 +5,8 @@ import { ChevronLeft, AlertCircle, Sparkles, Loader2, Coins } from 'lucide-react
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
+import { createNotification } from '@/lib/notifications';
+import { triggerEmailNotification } from '@/lib/n8n';
 
 export default function Step4() {
   const router = useRouter();
@@ -130,7 +132,37 @@ export default function Step4() {
         throw new Error("Impossible de récupérer l'ID de la campagne créée");
       }
 
-      console.log("✅ Campagne créée avec succès, ID:", newCampaign.id_t_campagne);
+      // Notifier l'admin principal de la nouvelle campagne (F1 — CDC)
+      const { data: adminData } = await supabase
+        .from('createur')
+        .select('id_w, email, full_name')
+        .eq('role', 'admin')
+        .limit(1)
+        .maybeSingle();
+
+      if (adminData) {
+        const notifMeta = {
+          campaign_title: s1.title || 'Sans titre',
+          brand_name: 'Marque',
+          action_url: '/admin/dashboard',
+        };
+
+        await createNotification({
+          campaign_id: newCampaign.id_t_campagne,
+          brand_id: session.user.id,
+          recipient_id: adminData.id_w,
+          recipient_role: 'admin',
+          notification_type: 'campaign_created',
+          metadata: notifMeta,
+        });
+
+        await triggerEmailNotification({
+          event: 'campaign_created',
+          recipient_email: adminData.email,
+          recipient_name: adminData.full_name || 'Admin',
+          metadata: notifMeta,
+        });
+      }
 
       ['campaign_step_1','campaign_step_2','campaign_step_3','campaign_step_4'].forEach(key => localStorage.removeItem(key));
       router.push(`/brands/matching-analysis?campaign=${newCampaign.id_t_campagne}`);
