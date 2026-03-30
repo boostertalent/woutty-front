@@ -5,7 +5,6 @@ import { NextResponse } from 'next/server'
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const roleFromUrl = searchParams.get('role') || 'creator'
 
   if (code) {
     const cookieStore = await cookies()
@@ -29,33 +28,39 @@ export async function GET(request: Request) {
     
     if (!authError && authData.user) {
       const user = authData.user;
-      
-      // 1. VÉRIFICATION CRÉATEUR / ADMIN
+
+      // 1. Vérifier admin secondaire
+      const { data: adminData } = await supabase
+        .from('admin')
+        .select('id_w, role')
+        .eq('id_w', user.id)
+        .maybeSingle();
+      if (adminData) {
+        return NextResponse.redirect(`${origin}/admin/dashboard`);
+      }
+
+      // 2. Vérifier créateur
       const { data: creatorData } = await supabase
         .from('createur')
         .select('id_w, role')
         .eq('id_w', user.id)
         .maybeSingle();
-      
       if (creatorData) {
         const path = creatorData.role === 'admin' ? '/admin/dashboard' : '/creators/dashboard';
         return NextResponse.redirect(`${origin}${path}`);
       }
 
-      // 2. VÉRIFICATION MARQUE
+      // 3. Vérifier marque
       const { data: brandData } = await supabase
         .from('marque')
-        .select('id_w') /
+        .select('id_w')
         .eq('id_w', user.id)
         .maybeSingle();
-
       if (brandData) {
-        return NextResponse.redirect(`${origin}/brands/dashboard`);
+        return NextResponse.redirect(`${origin}/brands/auth/dashboard`);
       }
 
-     
-
-      
+      return NextResponse.redirect(`${origin}/auth/login?error=profile_not_found`);
     }
   }
 
