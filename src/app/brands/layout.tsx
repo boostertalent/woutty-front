@@ -6,6 +6,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import Link from 'next/link';
 import { LayoutDashboard, UserCheck, Settings, LogOut, Loader2 } from 'lucide-react';
 import NotificationBell from '@/components/notifications/NotificationBell';
+import ChatWidget from '@/components/ChatWidget';
 
 export default function BrandsLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -158,6 +159,7 @@ export default function BrandsLayout({ children }: { children: React.ReactNode }
         {children}
       </main>
 
+      <ChatWidget />
     </div>
   );
 }
