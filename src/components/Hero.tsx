@@ -889,14 +889,14 @@ export function HeroCreatorPartnerCards() {
             <div className="space-y-5">
               <h2 className="font-black text-2xl md:text-3xl tracking-tighter uppercase">Vous êtes une marque</h2>
               <p className="text-black text-base leading-relaxed">
-                Gagnez du temps, réduisez vos coûts et améliorez vos performances marketing avec du contenu qui parle vraiment à votre audience. [cite: 1, 2]
+                Gagnez du temps, réduisez vos coûts et améliorez vos performances marketing avec du contenu qui parle vraiment à votre audience.
               </p>
               <p className="text-black/70 text-sm leading-relaxed italic border-l-2 border-[#FFD000] pl-4">
-                Grâce à nos créateurs de contenu, obtenez du contenu engageant, naturel et optimisé pour les réseaux sociaux, sans passer par des productions coûteuses. [cite: 1, 3]
+                Grâce à nos créateurs de contenu, obtenez du contenu engageant, naturel et optimisé pour les réseaux sociaux, sans passer par des productions coûteuses.
               </p>
             </div>
             <Link
-              href="/auth"
+              href="/brands/auth/formulaire/etape1"
               className="mt-8 inline-flex items-center justify-center bg-black text-white rounded-full px-8 py-4 font-black text-xs hover:bg-gray-900 transition-colors uppercase tracking-widest w-full sm:w-auto"
             >
               Lancer une campagne →
@@ -933,14 +933,14 @@ export function HeroCreatorPartnerCards() {
             <div className="space-y-5">
               <h2 className="font-black text-2xl md:text-3xl tracking-tighter uppercase">Vous aimez créer du contenu</h2>
               <p className="text-black text-base leading-relaxed">
-                Gagnez de l'argent en créant du contenu authentique pour les marques, même sans être influenceur. [cite: 1, 13, 14]
+                Gagnez de l'argent en créant du contenu authentique pour les marques, même sans être influenceur.
               </p>
               <p className="text-black/70 text-sm leading-relaxed italic border-l-2 border-[#FFD000] pl-4">
-                Pas besoin d'avoir une grande audience : ce qui compte, c'est votre capacité à créer du contenu naturel et engageant. [cite: 1, 15]
+                Pas besoin d'avoir une grande audience : ce qui compte, c'est votre capacité à créer du contenu naturel et engageant.
               </p>
             </div>
             <Link
-              href="/auth?mode=creator"
+              href="/creators/auth/formulaire/etape1"
               className="mt-8 inline-flex items-center justify-center bg-[#FFD000] text-black rounded-full px-8 py-4 font-black text-xs hover:bg-yellow-400 transition-colors uppercase tracking-widest w-full sm:w-auto"
             >
               Rejoindre Woutty →

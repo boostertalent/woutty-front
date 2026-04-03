@@ -53,7 +53,7 @@ export default function AuthChoicePage() {
         <p className="text-xl text-black font-medium italic">Choisissez votre profil pour commencer</p>
       </motion.div>
 
-      <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-8 w-full max-w-6xl">
+      <div className="grid lg:grid-cols-2 md:grid-cols-2 grid-cols-1 gap-8 w-full max-w-6xl">
         <ChoiceCard
           icon={<Users size={60} strokeWidth={1.2} />}
           title="Créateur"
@@ -71,15 +71,6 @@ export default function AuthChoicePage() {
           href="/brands/auth/formulaire/etape1"
           buttonText="Je suis une marque/Entreprise"
           delay={0.2}
-        />
-        <ChoiceCard
-          icon={<Handshake size={60} strokeWidth={1.2} />}
-          title="Partenariat"
-          description={<>Développez l'écosystème <br/> via une alliance stratégique</>}
-          features={["Projets exclusifs", "Ressources dédiées", "Visibilité mutuelle"]}
-          href="/auth/register-partner"
-          buttonText="Devenir partenaire"
-          delay={0.3}
         />
       </div>
 

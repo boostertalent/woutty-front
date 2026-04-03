@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
 import { Loader2, AlertCircle, Mail, Eye, EyeOff, ChevronLeft } from 'lucide-react';
@@ -31,6 +31,7 @@ function BrandMarquee() {
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -117,6 +118,24 @@ export default function LoginPage() {
       setErrorMsg("Erreur lors de la connexion avec Google.");
     }
   };
+
+  // Affiche un message clair si l'utilisateur arrive après OAuth
+  // (ex: callback redirect sur `/auth/login?error=profile_not_found`)
+  useEffect(() => {
+    const err = searchParams.get('error');
+    if (!err) return;
+    // Ne pas écraser une erreur déjà générée par la connexion manuelle
+    setErrorMsg((prev) => {
+      if (prev) return prev;
+      if (err === 'profile_not_found') {
+        return "Connexion Google réussie, mais aucun profil n'existe encore. Veuillez créer votre profil (créateur ou marque).";
+      }
+      if (err === 'auth_failed') {
+        return "Erreur lors de la connexion Google. Réessayez.";
+      }
+      return "Une erreur est survenue pendant la connexion. Réessayez.";
+    });
+  }, [searchParams]);
 
   return (
     <div className="min-h-screen bg-white text-black">

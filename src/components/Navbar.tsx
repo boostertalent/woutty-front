@@ -18,7 +18,6 @@ export default function Navbar() {
     { name: "Comment ça marche", href: "#process" },
     { name: "Créateurs", href: "#creators" },
     { name: "Marques", href: "#brands" },
-    { name: "Partenariat", href: "#partenariat" },
   ];
 
   useEffect(() => {
