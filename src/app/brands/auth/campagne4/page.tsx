@@ -29,13 +29,21 @@ export default function Step4() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showError, setShowError]     = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [estimatedCost, setEstimatedCost] = useState<number>(0);
 
   useEffect(() => {
-    const saved = localStorage.getItem('campaign_step_4');
-    if (saved) {
+    const saved4 = localStorage.getItem('campaign_step_4');
+    if (saved4) {
       try {
-        const data = JSON.parse(saved);
+        const data = JSON.parse(saved4);
         if (data.budget) setBudget(data.budget);
+      } catch (e) { console.error(e); }
+    }
+    const saved3 = localStorage.getItem('campaign_step_3');
+    if (saved3) {
+      try {
+        const data = JSON.parse(saved3);
+        if (data.estimatedCost) setEstimatedCost(data.estimatedCost);
       } catch (e) { console.error(e); }
     }
   }, []);
@@ -96,10 +104,11 @@ export default function Step4() {
         c === "Autre" ? s2.customCountry : c
       ).filter(Boolean);
 
-      // Réseaux sociaux + formats (nouvelle structure step 3)
+      // Réseaux sociaux + formats (structure avec nb pubs par format)
       const socialNetworks = s3.entries || [];
       const totalPublications = socialNetworks.reduce(
-        (sum: number, e: { nbPublications: number }) => sum + (e.nbPublications || 0), 0
+        (sum: number, e: { formats: { nbPublications: number }[] }) =>
+          sum + (e.formats || []).reduce((s: number, f: { nbPublications: number }) => s + (f.nbPublications || 0), 0), 0
       );
 
       // Statut automatique selon dates
@@ -128,7 +137,7 @@ export default function Step4() {
         interests:        finalInterests,
         social_networks:  socialNetworks,
         nb_publications:  totalPublications,
-        formats:          socialNetworks.flatMap((e: { formats: string[] }) => e.formats || []),
+        formats:          socialNetworks.flatMap((e: { formats: { name: string }[] }) => (e.formats || []).map((f: { name: string }) => f.name)),
         budget:           valInCFA,
         currency:         "CFA",
         status,
@@ -286,6 +295,36 @@ export default function Step4() {
                 <div className="flex items-center justify-between px-6 py-4 bg-gray-50">
                   <span className="text-sm font-black">Total TTC</span>
                   <span className="text-base font-black text-[#111827]">{formatFCFA(breakdown.totalTTC)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Comparaison budget libre vs coût estimé */}
+          {estimatedCost > 0 && budgetSaisi >= MIN_BUDGET_CFA && (
+            <div className="rounded-2xl border overflow-hidden animate-in fade-in duration-300 border-gray-100">
+              <div className="px-6 py-4 bg-gray-50 border-b border-gray-100 flex items-center gap-2">
+                <Info size={14} className="text-gray-400" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Comparaison avec le coût estimé</span>
+              </div>
+              <div className="divide-y divide-gray-50">
+                <div className="flex items-center justify-between px-6 py-3.5">
+                  <span className="text-sm text-gray-600 font-medium">Votre budget</span>
+                  <span className="text-sm font-bold">{formatFCFA(budgetSaisi)}</span>
+                </div>
+                <div className="flex items-center justify-between px-6 py-3.5">
+                  <span className="text-sm text-gray-600 font-medium">Coût estimé des publications</span>
+                  <span className="text-sm font-bold">{formatFCFA(estimatedCost)}</span>
+                </div>
+                <div className={`flex items-center justify-between px-6 py-4 ${budgetSaisi >= estimatedCost ? 'bg-green-50' : 'bg-red-50'}`}>
+                  <span className={`text-sm font-black ${budgetSaisi >= estimatedCost ? 'text-green-700' : 'text-red-600'}`}>
+                    {budgetSaisi >= estimatedCost ? '✓ Budget suffisant' : '⚠ Budget insuffisant'}
+                  </span>
+                  <span className={`text-sm font-black ${budgetSaisi >= estimatedCost ? 'text-green-700' : 'text-red-600'}`}>
+                    {budgetSaisi >= estimatedCost
+                      ? `+ ${formatFCFA(budgetSaisi - estimatedCost)}`
+                      : `− ${formatFCFA(estimatedCost - budgetSaisi)}`}
+                  </span>
                 </div>
               </div>
             </div>

@@ -1,44 +1,52 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { ChevronLeft, AlertCircle, Plus, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ChevronLeft, AlertCircle, Plus, Trash2, Info } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 const steps = [1, 2, 3, 4];
 
-// Réseaux disponibles avec leurs formats
 const NETWORKS: Record<string, { label: string; formats: string[] }> = {
-  Instagram: {
-    label: 'Instagram',
-    formats: ['Post image', 'Reels', 'Story', 'Carrousel'],
-  },
-  TikTok: {
-    label: 'TikTok',
-    formats: ['Vidéo courte', 'Live'],
-  },
-  YouTube: {
-    label: 'YouTube',
-    formats: ['Vidéo longue', 'Short', 'Live'],
-  },
-  Facebook: {
-    label: 'Facebook',
-    formats: ['Post image', 'Vidéo', 'Story', 'Reels'],
-  },
-  X: {
-    label: 'X (Twitter)',
-    formats: ['Tweet', 'Vidéo', 'Thread'],
-  },
-  Snapchat: {
-    label: 'Snapchat',
-    formats: ['Snap', 'Story'],
-  },
+  Instagram: { label: 'Instagram', formats: ['Post image', 'Reels', 'Story', 'Carrousel'] },
+  TikTok:    { label: 'TikTok',    formats: ['Vidéo courte', 'Live'] },
+  YouTube:   { label: 'YouTube',   formats: ['Vidéo longue', 'Short', 'Live'] },
+  Facebook:  { label: 'Facebook',  formats: ['Post image', 'Vidéo', 'Story', 'Reels'] },
+  X:         { label: 'X (Twitter)', formats: ['Tweet', 'Vidéo', 'Thread'] },
+  Snapchat:  { label: 'Snapchat',  formats: ['Snap', 'Story'] },
 };
+
+const FORMAT_PRICES: Record<string, Record<string, number>> = {
+  Instagram: { 'Post image': 15000, 'Reels': 25000, 'Story': 8000, 'Carrousel': 20000 },
+  TikTok:    { 'Vidéo courte': 20000, 'Live': 35000 },
+  YouTube:   { 'Vidéo longue': 60000, 'Short': 25000, 'Live': 45000 },
+  Facebook:  { 'Post image': 10000, 'Vidéo': 18000, 'Story': 6000, 'Reels': 15000 },
+  X:         { 'Tweet': 8000, 'Vidéo': 15000, 'Thread': 10000 },
+  Snapchat:  { 'Snap': 8000, 'Story': 10000 },
+};
+
+function formatFCFA(amount: number): string {
+  return new Intl.NumberFormat('fr-FR').format(Math.round(amount)) + ' FCFA';
+}
+
+interface FormatEntry {
+  name: string;
+  nbPublications: number;
+}
 
 interface NetworkEntry {
   network: string;
-  formats: string[];
-  nbPublications: number;
+  formats: FormatEntry[];
+}
+
+function getEntryEstimate(entry: NetworkEntry): number {
+  if (!entry.network || entry.formats.length === 0) return 0;
+  const prices = FORMAT_PRICES[entry.network] || {};
+  return entry.formats.reduce((sum, f) => sum + (prices[f.name] || 0) * f.nbPublications, 0);
+}
+
+function getEntryTotalPubs(entry: NetworkEntry): number {
+  return entry.formats.reduce((sum, f) => sum + f.nbPublications, 0);
 }
 
 export default function Step3() {
@@ -54,62 +62,69 @@ export default function Step3() {
       try {
         const data = JSON.parse(saved);
         if (Array.isArray(data.entries) && data.entries.length > 0) {
-          setEntries(data.entries);
+          // Migration ancienne structure (formats: string[]) → nouvelle
+          const migrated = data.entries.map((e: any) => ({
+            network: e.network || '',
+            formats: Array.isArray(e.formats)
+              ? e.formats.map((f: any) =>
+                  typeof f === 'string'
+                    ? { name: f, nbPublications: e.nbPublications || 1 }
+                    : f
+                )
+              : [],
+          }));
+          setEntries(migrated);
         } else {
-          setEntries([{ network: '', formats: [], nbPublications: 1 }]);
+          setEntries([{ network: '', formats: [] }]);
         }
       } catch (e) {
         console.error("Erreur localStorage", e);
-        setEntries([{ network: '', formats: [], nbPublications: 1 }]);
+        setEntries([{ network: '', formats: [] }]);
       }
     } else {
-      setEntries([{ network: '', formats: [], nbPublications: 1 }]);
+      setEntries([{ network: '', formats: [] }]);
     }
     setIsLoaded(true);
   }, []);
 
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem('campaign_step_3', JSON.stringify({ entries }));
+      const estimatedCost = entries.reduce((sum, e) => sum + getEntryEstimate(e), 0);
+      localStorage.setItem('campaign_step_3', JSON.stringify({ entries, estimatedCost }));
     }
   }, [entries, isLoaded]);
 
-  const addNetwork = () => {
-    setEntries(prev => [...prev, { network: '', formats: [], nbPublications: 1 }]);
-  };
+  const addNetwork = () => setEntries(prev => [...prev, { network: '', formats: [] }]);
 
-  const removeNetwork = (index: number) => {
-    setEntries(prev => prev.filter((_, i) => i !== index));
-  };
+  const removeNetwork = (index: number) => setEntries(prev => prev.filter((_, i) => i !== index));
 
   const updateNetwork = (index: number, network: string) => {
-    setEntries(prev => prev.map((e, i) =>
-      i === index ? { ...e, network, formats: [] } : e
-    ));
+    setEntries(prev => prev.map((e, i) => i === index ? { ...e, network, formats: [] } : e));
     setShowError(false);
   };
 
-  const toggleFormat = (index: number, format: string) => {
+  const toggleFormat = (entryIndex: number, formatName: string) => {
     setEntries(prev => prev.map((e, i) => {
-      if (i !== index) return e;
-      const formats = e.formats.includes(format)
-        ? e.formats.filter(f => f !== format)
-        : [...e.formats, format];
+      if (i !== entryIndex) return e;
+      const exists = e.formats.find(f => f.name === formatName);
+      const formats = exists
+        ? e.formats.filter(f => f.name !== formatName)
+        : [...e.formats, { name: formatName, nbPublications: 1 }];
       return { ...e, formats };
     }));
     setShowError(false);
   };
 
-  const updateNbPubs = (index: number, value: number) => {
+  const updateFormatNbPubs = (entryIndex: number, formatName: string, value: number) => {
     const n = Math.max(1, Math.min(20, value));
-    setEntries(prev => prev.map((e, i) => i === index ? { ...e, nbPublications: n } : e));
+    setEntries(prev => prev.map((e, i) => {
+      if (i !== entryIndex) return e;
+      return { ...e, formats: e.formats.map(f => f.name === formatName ? { ...f, nbPublications: n } : f) };
+    }));
   };
 
   const usedNetworks = entries.map(e => e.network).filter(Boolean);
-
-  const isFormValid = () =>
-    entries.length > 0 &&
-    entries.every(e => e.network !== '' && e.formats.length > 0 && e.nbPublications >= 1);
+  const isFormValid = () => entries.length > 0 && entries.every(e => e.network !== '' && e.formats.length > 0);
 
   const handleContinue = () => {
     if (isFormValid()) {
@@ -120,7 +135,8 @@ export default function Step3() {
     }
   };
 
-  const totalPublications = entries.reduce((sum, e) => sum + e.nbPublications, 0);
+  const totalPublications = entries.reduce((sum, e) => sum + getEntryTotalPubs(e), 0);
+  const totalEstimatedCost = entries.reduce((sum, e) => sum + getEntryEstimate(e), 0);
 
   if (!isLoaded) return null;
 
@@ -151,9 +167,9 @@ export default function Step3() {
 
       <div className="max-w-3xl mx-auto bg-white border border-gray-100 rounded-[32px] p-10 shadow-sm min-h-[500px]">
         {showError && (
-          <div className="mb-8 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-600 animate-in fade-in slide-in-from-top-4">
+          <div className="mb-8 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-600">
             <AlertCircle size={20} />
-            <p className="text-sm font-medium">Veuillez configurer chaque réseau : choisir au moins un format et indiquer le nombre de publications.</p>
+            <p className="text-sm font-medium">Veuillez choisir un réseau et au moins un format pour chaque bloc.</p>
           </div>
         )}
 
@@ -168,96 +184,115 @@ export default function Step3() {
           </div>
 
           <div className="space-y-6">
-            {entries.map((entry, index) => (
-              <div key={index} className="p-6 bg-gray-50 rounded-2xl border border-gray-100 space-y-5 animate-in fade-in slide-in-from-top-2 duration-300">
+            {entries.map((entry, entryIndex) => {
+              const entryEstimate = getEntryEstimate(entry);
+              const entryPubs = getEntryTotalPubs(entry);
+              return (
+                <div key={entryIndex} className="p-6 bg-gray-50 rounded-2xl border border-gray-100 space-y-5">
 
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black uppercase text-gray-400 tracking-widest">Réseau {index + 1}</span>
-                  {entries.length > 1 && (
-                    <button onClick={() => removeNetwork(index)} className="text-gray-400 hover:text-red-500 transition-colors">
-                      <Trash2 size={16} />
-                    </button>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black uppercase text-gray-400 tracking-widest">Réseau {entryIndex + 1}</span>
+                    {entries.length > 1 && (
+                      <button type="button" onClick={() => removeNetwork(entryIndex)} className="text-gray-400 hover:text-red-500 transition-colors">
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Choix du réseau */}
+                  <div className="flex flex-wrap gap-2">
+                    {Object.keys(NETWORKS).map(net => {
+                      const isSelected = entry.network === net;
+                      const isUsedElsewhere = usedNetworks.includes(net) && !isSelected;
+                      return (
+                        <button
+                          key={net}
+                          type="button"
+                          disabled={isUsedElsewhere}
+                          onClick={() => updateNetwork(entryIndex, net)}
+                          className={`px-4 py-2 rounded-2xl text-sm font-medium transition-all border ${
+                            isSelected ? "bg-[#D4A017] text-white border-[#D4A017] shadow-md"
+                              : isUsedElsewhere ? "bg-gray-100 text-gray-300 border-gray-100 cursor-not-allowed"
+                              : "bg-white text-gray-600 border-gray-200 hover:border-[#D4A017]/40"
+                          }`}
+                        >
+                          {NETWORKS[net].label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Formats avec compteur par format */}
+                  {entry.network && (
+                    <div className="space-y-3">
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Formats de contenu *</p>
+                      <div className="space-y-2">
+                        {NETWORKS[entry.network].formats.map(fmt => {
+                          const formatEntry = entry.formats.find(f => f.name === fmt);
+                          const isSelected = !!formatEntry;
+                          const price = FORMAT_PRICES[entry.network]?.[fmt];
+                          return (
+                            <div
+                              key={fmt}
+                              className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${
+                                isSelected ? "bg-[#111827] border-[#111827]" : "bg-white border-gray-200"
+                              }`}
+                            >
+                              {/* Nom + tarif (cliquable pour toggle) */}
+                              <button
+                                type="button"
+                                onClick={() => toggleFormat(entryIndex, fmt)}
+                                className="flex flex-col items-start flex-1 text-left"
+                              >
+                                <span className={`text-sm font-medium ${isSelected ? 'text-white' : 'text-gray-700'}`}>{fmt}</span>
+                                {price && (
+                                  <span className={`text-[10px] font-bold mt-0.5 ${isSelected ? 'text-[#D4A017]' : 'text-gray-400'}`}>
+                                    {formatFCFA(price)} / pub
+                                  </span>
+                                )}
+                              </button>
+
+                              {/* Compteur (visible si sélectionné) */}
+                              {isSelected && formatEntry && (
+                                <div className="flex items-center gap-2 ml-4">
+                                  <button
+                                    type="button"
+                                    onClick={e => { e.stopPropagation(); updateFormatNbPubs(entryIndex, fmt, formatEntry.nbPublications - 1); }}
+                                    className="w-7 h-7 rounded-full border border-white/20 flex items-center justify-center text-white hover:bg-white/10 transition-all font-bold"
+                                  >−</button>
+                                  <span className="w-6 text-center font-black text-[#D4A017]">{formatEntry.nbPublications}</span>
+                                  <button
+                                    type="button"
+                                    onClick={e => { e.stopPropagation(); updateFormatNbPubs(entryIndex, fmt, formatEntry.nbPublications + 1); }}
+                                    className="w-7 h-7 rounded-full border border-white/20 flex items-center justify-center text-white hover:bg-white/10 transition-all font-bold"
+                                  >+</button>
+                                  {price && (
+                                    <span className="ml-2 text-xs font-bold text-[#D4A017] w-24 text-right">
+                                      {formatFCFA(price * formatEntry.nbPublications)}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sous-total réseau */}
+                  {entryPubs > 0 && entryEstimate > 0 && (
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                        {entryPubs} pub{entryPubs > 1 ? 's' : ''} — {NETWORKS[entry.network]?.label}
+                      </span>
+                      <span className="text-sm font-black text-[#111827]">{formatFCFA(entryEstimate)}</span>
+                    </div>
                   )}
                 </div>
+              );
+            })}
 
-                {/* Choix du réseau */}
-                <div className="flex flex-wrap gap-2">
-                  {Object.keys(NETWORKS).map(net => {
-                    const isSelected = entry.network === net;
-                    const isUsedElsewhere = usedNetworks.includes(net) && !isSelected;
-                    return (
-                      <button
-                        key={net}
-                        type="button"
-                        disabled={isUsedElsewhere}
-                        onClick={() => updateNetwork(index, net)}
-                        className={`px-4 py-2 rounded-2xl text-sm font-medium transition-all border ${
-                          isSelected
-                            ? "bg-[#D4A017] text-white border-[#D4A017] shadow-md"
-                            : isUsedElsewhere
-                              ? "bg-gray-100 text-gray-300 border-gray-100 cursor-not-allowed"
-                              : "bg-white text-gray-600 border-gray-200 hover:border-[#D4A017]/40"
-                        }`}
-                      >
-                        {NETWORKS[net].label}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Formats */}
-                {entry.network && (
-                  <div className="space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Formats de contenu *</p>
-                    <div className="flex flex-wrap gap-2">
-                      {NETWORKS[entry.network].formats.map(fmt => {
-                        const isSelected = entry.formats.includes(fmt);
-                        return (
-                          <button
-                            key={fmt}
-                            type="button"
-                            onClick={() => toggleFormat(index, fmt)}
-                            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
-                              isSelected
-                                ? "bg-[#111827] text-white border-[#111827]"
-                                : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
-                            }`}
-                          >
-                            {fmt}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Nombre de publications */}
-                {entry.network && (
-                  <div className="flex items-center gap-4 animate-in fade-in duration-200">
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider shrink-0">Nombre de publications *</p>
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => updateNbPubs(index, entry.nbPublications - 1)}
-                        className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:border-[#D4A017] hover:text-[#D4A017] transition-all font-bold"
-                      >
-                        −
-                      </button>
-                      <span className="w-8 text-center font-black text-lg text-[#D4A017]">{entry.nbPublications}</span>
-                      <button
-                        type="button"
-                        onClick={() => updateNbPubs(index, entry.nbPublications + 1)}
-                        className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:border-[#D4A017] hover:text-[#D4A017] transition-all font-bold"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {/* Ajouter un réseau */}
             {entries.length < Object.keys(NETWORKS).length && (
               <button
                 type="button"
@@ -269,6 +304,46 @@ export default function Step3() {
               </button>
             )}
           </div>
+
+          {/* Récapitulatif global */}
+          {totalPublications > 0 && (
+            <div className="mt-8 rounded-2xl border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 bg-gray-50 border-b border-gray-100 flex items-center gap-2">
+                <Info size={14} className="text-gray-400" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Récapitulatif</span>
+              </div>
+              <div className="divide-y divide-gray-50">
+                {entries.filter(e => e.network && e.formats.length > 0).flatMap((e, i) =>
+                  e.formats.map((f, j) => (
+                    <div key={`${i}-${j}`} className="flex items-center justify-between px-6 py-3">
+                      <div>
+                        <span className="text-sm font-bold text-gray-700">{NETWORKS[e.network]?.label}</span>
+                        <span className="text-xs text-gray-400 ml-2">{f.name}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs font-bold text-gray-500">{f.nbPublications} pub{f.nbPublications > 1 ? 's' : ''}</span>
+                        {FORMAT_PRICES[e.network]?.[f.name] && (
+                          <p className="text-xs text-gray-400">{formatFCFA(FORMAT_PRICES[e.network][f.name] * f.nbPublications)}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+                <div className="flex items-center justify-between px-6 py-4 bg-[#D4A017]/5">
+                  <span className="text-sm font-black text-[#D4A017]">Total — {totalPublications} publication{totalPublications > 1 ? 's' : ''}</span>
+                  {totalEstimatedCost > 0 && (
+                    <span className="text-sm font-black text-[#D4A017]">{formatFCFA(totalEstimatedCost)}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {totalEstimatedCost > 0 && (
+            <p className="mt-3 text-xs text-gray-400 text-center">
+              * Tarifs indicatifs basés sur les prix moyens du marché — le coût réel dépend du profil des créateurs sélectionnés.
+            </p>
+          )}
 
           <div className="flex justify-between items-center pt-10">
             <Link href="/brands/auth/campagne2" className="px-8 py-3.5 bg-[#111827] text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-lg">

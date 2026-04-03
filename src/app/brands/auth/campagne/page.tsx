@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { Loader2, ChevronLeft, Target, FileText, ChevronDown, Info, MessageCircle, Headphones } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Loader2, ChevronLeft, Target, FileText, ChevronDown, Info, Headphones } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -131,10 +131,11 @@ export default function CreateCampaign() {
                 📩 Une fois validée, vous recevrez une notification. Vous aurez <strong>24h</strong> pour apporter des modifications.
               </p>
 
+              <p className="mt-3 text-xs text-gray-500 bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5">
+                🤖 <strong>Besoin d&apos;aide ?</strong> Notre assistant IA est disponible à tout moment pour répondre à vos questions sur la création de campagne.
+              </p>
+
               <div className="mt-3 flex flex-wrap gap-2">
-                <button type="button" className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-[#B88A14] border border-gray-200 rounded-lg px-3 py-1.5 transition-colors">
-                  <MessageCircle size={12} /> Chat IA
-                </button>
                 <button type="button" className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-[#B88A14] border border-gray-200 rounded-lg px-3 py-1.5 transition-colors">
                   <Headphones size={12} /> Contacter l&apos;assistance
                 </button>

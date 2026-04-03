@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { ChevronLeft, AlertCircle, Shirt, Monitor, Heart, Utensils, Trophy, Sparkles, Plane, Plus, X } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ChevronLeft, AlertCircle, Shirt, Monitor, Heart, Utensils, Trophy, Sparkles, Plane, Plus, X, ChevronDown, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -31,12 +31,15 @@ const countriesList = [
 export default function Step2() {
   const router = useRouter();
 
-  const [ageRange, setAgeRange]               = useState({ min: 13, max: 80 });
+  const [ageRange, setAgeRange]                 = useState({ min: 13, max: 80 });
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
-  const [customInterest, setCustomInterest]   = useState("");
+  const [customInterest, setCustomInterest]     = useState("");
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
-  const [customCountry, setCustomCountry]     = useState("");
-  const [showError, setShowError]             = useState(false);
+  const [customCountry, setCustomCountry]       = useState("");
+  const [showError, setShowError]               = useState(false);
+  const [countrySearch, setCountrySearch]       = useState("");
+  const [dropdownOpen, setDropdownOpen]         = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('campaign_step_2');
@@ -46,7 +49,6 @@ export default function Step2() {
         if (data.ageRange)          setAgeRange(data.ageRange);
         if (data.selectedInterests) setSelectedInterests(data.selectedInterests);
         if (data.customInterest)    setCustomInterest(data.customInterest);
-        // compatibilité ancienne clé (selectedCountry string) + nouvelle (selectedCountries array)
         if (data.selectedCountries) setSelectedCountries(data.selectedCountries);
         else if (data.selectedCountry) setSelectedCountries([data.selectedCountry]);
         if (data.customCountry)     setCustomCountry(data.customCountry);
@@ -64,10 +66,26 @@ export default function Step2() {
     }
   }, [ageRange, selectedInterests, customInterest, selectedCountries, customCountry]);
 
-  const toggleCountry = (country: string) => {
-    setSelectedCountries(prev =>
-      prev.includes(country) ? prev.filter(c => c !== country) : [...prev, country]
-    );
+  // Fermer dropdown au clic extérieur
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filteredCountries = countriesList.filter(c =>
+    c.toLowerCase().includes(countrySearch.toLowerCase()) &&
+    !selectedCountries.includes(c)
+  );
+
+  const selectCountry = (country: string) => {
+    setSelectedCountries(prev => [...prev, country]);
+    setCountrySearch('');
+    setDropdownOpen(false);
     setShowError(false);
   };
 
@@ -159,9 +177,11 @@ export default function Step2() {
               </div>
             </div>
 
-            {/* Localisation multi-pays */}
+            {/* Localisation multi-pays — dropdown */}
             <div className="space-y-4">
-              <label className="block text-[15px] font-bold text-gray-700">Pays cibles * <span className="text-xs font-normal text-gray-400">(sélection multiple)</span></label>
+              <label className="block text-[15px] font-bold text-gray-700">
+                Pays cibles * <span className="text-xs font-normal text-gray-400">(sélection multiple)</span>
+              </label>
 
               {/* Tags pays sélectionnés */}
               {selectedCountries.length > 0 && (
@@ -169,7 +189,7 @@ export default function Step2() {
                   {selectedCountries.map(c => (
                     <span key={c} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#D4A017] text-white text-xs font-bold rounded-full">
                       {c}
-                      <button onClick={() => removeCountry(c)} className="hover:opacity-70 transition-opacity">
+                      <button type="button" onClick={() => removeCountry(c)} className="hover:opacity-70 transition-opacity">
                         <X size={12} />
                       </button>
                     </span>
@@ -177,25 +197,47 @@ export default function Step2() {
                 </div>
               )}
 
-              {/* Grille de pays */}
-              <div className="flex flex-wrap gap-2">
-                {countriesList.map(country => {
-                  const isSelected = selectedCountries.includes(country);
-                  return (
-                    <button
-                      key={country}
-                      type="button"
-                      onClick={() => toggleCountry(country)}
-                      className={`px-4 py-2 rounded-2xl text-sm font-medium transition-all border ${
-                        isSelected
-                          ? "bg-[#D4A017] text-white border-[#D4A017] shadow-md"
-                          : "bg-white text-gray-600 border-gray-100 hover:border-[#D4A017]/30 hover:bg-gray-50"
-                      }`}
-                    >
-                      {country}
-                    </button>
-                  );
-                })}
+              {/* Dropdown avec recherche */}
+              <div ref={dropdownRef} className="relative">
+                <div
+                  className={`flex items-center gap-2 px-4 py-3 rounded-xl border bg-white cursor-text transition-all ${
+                    dropdownOpen ? 'border-[#D4A017] ring-4 ring-[#D4A017]/5' : 'border-gray-200'
+                  }`}
+                  onClick={() => setDropdownOpen(true)}
+                >
+                  <Search size={16} className="text-gray-400 shrink-0" />
+                  <input
+                    type="text"
+                    value={countrySearch}
+                    onChange={(e) => { setCountrySearch(e.target.value); setDropdownOpen(true); }}
+                    onFocus={() => setDropdownOpen(true)}
+                    placeholder="Rechercher un pays..."
+                    className="flex-1 outline-none text-sm bg-transparent text-gray-700 placeholder:text-gray-400"
+                  />
+                  <ChevronDown size={16} className={`text-gray-400 shrink-0 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+                </div>
+
+                {dropdownOpen && filteredCountries.length > 0 && (
+                  <div className="absolute z-20 w-full mt-1 bg-white border border-gray-100 rounded-2xl shadow-xl max-h-52 overflow-y-auto">
+                    {filteredCountries.map(country => (
+                      <button
+                        key={country}
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => selectCountry(country)}
+                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-[#D4A017]/5 hover:text-[#D4A017] transition-colors first:rounded-t-2xl last:rounded-b-2xl font-medium"
+                      >
+                        {country}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {dropdownOpen && filteredCountries.length === 0 && countrySearch.trim() !== '' && (
+                  <div className="absolute z-20 w-full mt-1 bg-white border border-gray-100 rounded-2xl shadow-xl">
+                    <p className="px-4 py-3 text-sm text-gray-400 text-center">Aucun pays trouvé</p>
+                  </div>
+                )}
               </div>
 
               {selectedCountries.includes("Autre") && (
