@@ -176,11 +176,11 @@ export default function CampaignMatchResults() {
         .from('marque').select('nom_marque').eq('id_w', campaign?.id_w).maybeSingle();
       const brandName = brandData?.nom_marque || 'Marque';
 
-      // Insérer dans campaign_creators
+      // Insérer dans campaign_creators avec statut pending_admin
       const rows = selectedCreators.map(c => ({
         campaign_id: id_t_campagne,
         creator_id:  c.id_w,
-        status:      'pending',
+        status:      'pending_admin',
       }));
 
       const { error: insertError } = await supabase
@@ -192,36 +192,41 @@ export default function CampaignMatchResults() {
       // Mettre à jour le statut de la campagne
       await supabase
         .from('campaigns')
-        .update({ status: 'assigned' })
+        .update({ status: 'pending_admin' })
         .eq('id_t_campagne', id_t_campagne);
 
-      // Envoyer une notification à chaque créateur sélectionné
-      const notifMeta = {
-        campaign_title: campaign?.title || 'Sans titre',
-        brand_name:     brandName,
-        action_url:     '/creators/dashboard',
-      };
+      // Notifier l'admin (pas le créateur — l'admin doit valider d'abord)
+      const { data: adminData } = await supabase
+        .from('createur')
+        .select('id_w, email, full_name')
+        .eq('role', 'admin')
+        .limit(1)
+        .maybeSingle();
 
-      await Promise.allSettled(
-        selectedCreators.map(async (creator) => {
-          await createNotification({
-            campaign_id:       id_t_campagne,
-            brand_id:          campaign?.id_w,
-            recipient_id:      creator.id_w,
-            recipient_role:    'creator',
-            notification_type: 'campaign_assigned',
-            metadata:          notifMeta,
+      if (adminData) {
+        const notifMeta = {
+          campaign_title: campaign?.title || 'Sans titre',
+          brand_name:     brandName,
+          action_url:     '/admin/campaigns',
+          campaign_creators_ids: selectedCreators.map(c => c.id_w),
+        };
+        await createNotification({
+          campaign_id:       id_t_campagne,
+          brand_id:          campaign?.id_w,
+          recipient_id:      adminData.id_w,
+          recipient_role:    'admin',
+          notification_type: 'campaign_assigned',
+          metadata:          notifMeta,
+        });
+        if (adminData.email) {
+          await triggerEmailNotification({
+            event:           'campaign_assigned',
+            recipient_email: adminData.email,
+            recipient_name:  adminData.full_name || 'Admin',
+            metadata:        notifMeta,
           });
-          if (creator.email) {
-            await triggerEmailNotification({
-              event:           'campaign_assigned',
-              recipient_email: creator.email,
-              recipient_name:  creator.full_name || 'Créateur',
-              metadata:        notifMeta,
-            });
-          }
-        })
-      );
+        }
+      }
 
       router.push('/brands/dashboard');
     } catch (err: any) {
@@ -397,8 +402,9 @@ export default function CampaignMatchResults() {
                 <div className="text-sm text-blue-700">
                   <p className="font-bold mb-1">Ce qui va se passer :</p>
                   <ul className="space-y-0.5 text-xs">
-                    <li>• Chaque créateur reçoit une notification et un email</li>
-                    <li>• Ils peuvent accepter ou refuser la collaboration</li>
+                    <li>• L'admin Woutty reçoit une notification pour validation</li>
+                    <li>• Si validé, chaque créateur est notifié et peut accepter ou refuser</li>
+                    <li>• Si refusé, vous recevrez un email avec le motif</li>
                     <li>• Vous suivez les réponses depuis votre dashboard</li>
                   </ul>
                 </div>

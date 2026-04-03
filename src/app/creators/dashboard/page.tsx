@@ -76,7 +76,7 @@ export default function CreatorDashboard() {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [processingCampaign, setProcessingCampaign] = useState<number | null>(null);
+  const [processingCampaign, setProcessingCampaign] = useState<string | null>(null);
   const [selectedPlatforms, setSelectedPlatforms] = useState<any[]>([]);
   const [allPosts, setAllPosts] = useState<any[]>([]);
   const [pendingCampaigns, setPendingCampaigns] = useState<any[]>([]);
@@ -298,21 +298,24 @@ const formattedPosts = (postData || []).map((post, index) => {
     
     setAllPosts(formattedPosts);
 
-    // ✅ 7. CHARGER LES CAMPAGNES
-    const { data: pendingData } = await supabase
-      .from('campaigns')
-      .select('*')
-      .eq('assigned_creator_id', creatorIdToLoad)
-      .or('creator_status.is.null,creator_status.eq.pending');
+    // ✅ 7. CHARGER LES CAMPAGNES via campaign_creators
+    const { data: ccPending } = await supabase
+      .from('campaign_creators')
+      .select('campaign_id, campaigns(*)')
+      .eq('creator_id', creatorIdToLoad)
+      .eq('status', 'pending_creator');
 
-    setPendingCampaigns(pendingData || []);
-    setNotifications(pendingData?.length || 0);
+    const pendingData = (ccPending || []).map((row: any) => row.campaigns).filter(Boolean);
+    setPendingCampaigns(pendingData);
+    setNotifications(pendingData.length);
 
-    const { data: acceptedData } = await supabase
-      .from('campaigns')
-      .select('*')
-      .eq('assigned_creator_id', creatorIdToLoad)
-      .eq('creator_status', 'accepted');
+    const { data: ccAccepted } = await supabase
+      .from('campaign_creators')
+      .select('campaign_id, campaigns(*)')
+      .eq('creator_id', creatorIdToLoad)
+      .eq('status', 'accepted');
+
+    const acceptedData = (ccAccepted || []).map((row: any) => row.campaigns).filter(Boolean);
 
     const ongoing = acceptedData?.filter(c => !c.end_date || new Date(c.end_date) >= new Date()) || [];
     const finished = acceptedData?.filter(c => c.end_date && new Date(c.end_date) < new Date()) || [];
@@ -357,23 +360,51 @@ const filteredPosts = useMemo(() => {
   console.log(`🔍 ${filtered.length} post(s) trouvé(s) pour "${activeFilter}"`);
   return filtered;
 }, [activeFilter, allPosts]);
-  const handleAcceptCampaign = async (campaignId: string) => { 
+  const handleAcceptCampaign = async (campaignId: string) => {
     setProcessingCampaign(campaignId);
     try {
+      const creatorId = creatorInfo?.id_w;
+
+      // Mettre à jour campaign_creators
       const { error } = await supabase
-        .from('campaigns')
-        .update({ 
-          creator_status: 'accepted',
-          accepted_at: new Date().toISOString()
-        })
-        .eq('id_t_campagne', campaignId); 
+        .from('campaign_creators')
+        .update({ status: 'accepted', accepted_at: new Date().toISOString() })
+        .eq('campaign_id', campaignId)
+        .eq('creator_id', creatorId);
 
       if (error) throw error;
 
-      console.log("✅ Campagne acceptée");
+      // Notifier l'admin et la marque
+      const { data: campaignData } = await supabase
+        .from('campaigns').select('title, id_w').eq('id_t_campagne', campaignId).maybeSingle();
+      const { data: adminData } = await supabase
+        .from('createur').select('id_w, email, full_name').eq('role', 'admin').limit(1).maybeSingle();
+
+      const meta = {
+        campaign_title: campaignData?.title || 'Sans titre',
+        creator_name: creatorInfo?.full_name || 'Créateur',
+        action_url: '/admin/campaigns',
+      };
+
+      if (adminData) {
+        await createNotification({
+          campaign_id: campaignId, creator_id: creatorId,
+          recipient_id: adminData.id_w, recipient_role: 'admin',
+          notification_type: 'creator_accepted', metadata: meta,
+        });
+      }
+      if (campaignData?.id_w) {
+        await createNotification({
+          campaign_id: campaignId, creator_id: creatorId,
+          brand_id: campaignData.id_w,
+          recipient_id: campaignData.id_w, recipient_role: 'brand',
+          notification_type: 'creator_accepted', metadata: { ...meta, action_url: '/brands/dashboard' },
+        });
+      }
+
       await fetchData();
     } catch (err: any) {
-      console.error("❌ Erreur détaillée:", err);
+      console.error("❌ Erreur:", err);
       setError("Erreur lors de l'acceptation de la campagne");
     } finally {
       setProcessingCampaign(null);
@@ -454,25 +485,53 @@ const linkPostToCampaign = async (postId, campaignId) => {
     setError("Impossible de lier le post à la campagne.");
   }
 };
- const handleRejectCampaign = async (campaignId: string) => { 
+const handleRejectCampaign = async (campaignId: string) => {
     if (!confirm('Êtes-vous sûr de vouloir refuser cette campagne ?')) return;
 
     setProcessingCampaign(campaignId);
     try {
+      const creatorId = creatorInfo?.id_w;
+
+      // Mettre à jour campaign_creators
       const { error } = await supabase
-        .from('campaigns')
-        .update({ 
-          creator_status: 'rejected',
-          assigned_creator_id: null 
-        })
-        .eq('id_t_campagne', campaignId); 
+        .from('campaign_creators')
+        .update({ status: 'declined_creator' })
+        .eq('campaign_id', campaignId)
+        .eq('creator_id', creatorId);
 
       if (error) throw error;
 
-      console.log("✅ Campagne refusée");
+      // Notifier l'admin et la marque
+      const { data: campaignData } = await supabase
+        .from('campaigns').select('title, id_w').eq('id_t_campagne', campaignId).maybeSingle();
+      const { data: adminData } = await supabase
+        .from('createur').select('id_w, email, full_name').eq('role', 'admin').limit(1).maybeSingle();
+
+      const meta = {
+        campaign_title: campaignData?.title || 'Sans titre',
+        creator_name: creatorInfo?.full_name || 'Créateur',
+        action_url: '/admin/campaigns',
+      };
+
+      if (adminData) {
+        await createNotification({
+          campaign_id: campaignId, creator_id: creatorId,
+          recipient_id: adminData.id_w, recipient_role: 'admin',
+          notification_type: 'creator_declined', metadata: meta,
+        });
+      }
+      if (campaignData?.id_w) {
+        await createNotification({
+          campaign_id: campaignId, creator_id: creatorId,
+          brand_id: campaignData.id_w,
+          recipient_id: campaignData.id_w, recipient_role: 'brand',
+          notification_type: 'creator_declined', metadata: { ...meta, action_url: '/brands/dashboard' },
+        });
+      }
+
       await fetchData();
     } catch (err: any) {
-      console.error("❌ Erreur détaillée:", err);
+      console.error("❌ Erreur:", err);
       setError("Erreur lors du refus de la campagne");
     } finally {
       setProcessingCampaign(null);

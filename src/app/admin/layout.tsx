@@ -87,6 +87,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Tous les items de navigation - chaque item est une vraie route
   const navItems = [
     { href: '/admin/dashboard',   label: "Vue d'ensemble", icon: <BarChart3 size={20} />, always: true },
+    { href: '/admin/campaigns',   label: 'Campagnes',       icon: <MessageCircle size={20} />, always: true },
     { href: '/admin/creators',    label: 'Créateurs',       icon: <Users size={20} />,      always: true },
     { href: '/admin/brands',      label: 'Marques',         icon: <Building2 size={20} />,  always: true },
     { href: '/admin/admins',      label: 'Admins',          icon: <Shield size={20} />,     always: true },

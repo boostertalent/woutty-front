@@ -1,10 +1,14 @@
 export type NotificationEventType =
-  | 'campaign_created'    // Marque crée une campagne → Admin
-  | 'campaign_assigned'   // Admin assigne un créateur → Créateur
-  | 'content_submitted'   // Créateur soumet un contenu → Admin
-  | 'content_validated'   // Admin valide un contenu → Créateur
-  | 'content_rejected'    // Admin rejette un contenu → Créateur
-  | 'content_published';  // Créateur publie → Marque + Admin
+  | 'campaign_created'          // Marque crée une campagne → Admin
+  | 'campaign_assigned'         // Marque assigne des créateurs → Admin (en attente validation)
+  | 'campaign_validated'        // Admin valide l'assignation → Créateur notifié
+  | 'campaign_declined'         // Admin refuse l'assignation → Marque notifiée (avec motif)
+  | 'creator_accepted'          // Créateur accepte la campagne → Admin + Marque
+  | 'creator_declined'          // Créateur refuse la campagne → Admin + Marque
+  | 'content_submitted'         // Créateur soumet un contenu → Admin
+  | 'content_validated'         // Admin valide un contenu → Créateur
+  | 'content_rejected'          // Admin rejette un contenu → Créateur
+  | 'content_published';        // Créateur publie → Marque + Admin
 
 export type RecipientRole = 'admin' | 'brand' | 'creator';
 
@@ -29,6 +33,8 @@ export interface NotificationMetadata {
   post_id?: string;
   action_url?: string;
   message?: string;
+  decline_reason?: string;
+  campaign_creators_ids?: string[]; // IDs des campaign_creators concernés
 }
 
 // Payload pour créer une notification
