@@ -8,6 +8,10 @@ import {
   CheckCircle,
   XCircle,
   Upload,
+  ShieldCheck,
+  ShieldX,
+  ThumbsUp,
+  ThumbsDown,
 } from 'lucide-react';
 import type { Notification } from '@/types/notifications';
 
@@ -53,6 +57,30 @@ const CONFIG = {
     bg: 'bg-yellow-50',
     label: 'Contenu publié',
   },
+  campaign_validated: {
+    icon: ShieldCheck,
+    color: 'text-green-500',
+    bg: 'bg-green-50',
+    label: 'Campagne validée',
+  },
+  campaign_declined: {
+    icon: ShieldX,
+    color: 'text-red-500',
+    bg: 'bg-red-50',
+    label: 'Campagne refusée',
+  },
+  creator_accepted: {
+    icon: ThumbsUp,
+    color: 'text-blue-500',
+    bg: 'bg-blue-50',
+    label: 'Créateur accepte',
+  },
+  creator_declined: {
+    icon: ThumbsDown,
+    color: 'text-orange-500',
+    bg: 'bg-orange-50',
+    label: 'Créateur refuse',
+  },
 };
 
 function timeAgo(dateString: string): string {
@@ -89,6 +117,14 @@ export default function NotificationItem({
         return `Votre contenu pour "${meta?.campaign_title ?? 'la campagne'}" a été refusé`;
       case 'content_published':
         return `${meta?.creator_name ?? 'Un créateur'} a publié son contenu pour "${meta?.campaign_title ?? 'la campagne'}"`;
+      case 'campaign_validated':
+        return `Votre assignation à "${meta?.campaign_title ?? 'la campagne'}" a été validée par l'admin`;
+      case 'campaign_declined':
+        return `Votre assignation à "${meta?.campaign_title ?? 'la campagne'}" a été refusée${meta?.decline_reason ? ` : ${meta.decline_reason}` : ''}`;
+      case 'creator_accepted':
+        return `${meta?.creator_name ?? 'Un créateur'} a accepté la campagne "${meta?.campaign_title ?? ''}"`;
+      case 'creator_declined':
+        return `${meta?.creator_name ?? 'Un créateur'} a refusé la campagne "${meta?.campaign_title ?? ''}"`;
       default:
         return 'Nouvelle notification';
     }

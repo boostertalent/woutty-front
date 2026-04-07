@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { createNotification } from '@/lib/notifications';
 import { triggerEmailNotification } from '@/lib/n8n';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 
 import { 
@@ -85,6 +86,7 @@ export default function CreatorDashboard() {
   const [creatorInfo, setCreatorInfo] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<number>(0);
+  const [userId, setUserId] = useState<string | null>(null);
    const normalizeId = useCallback((id: any): string => {
     if (!id) return '';
     return String(id).split('.')[0].trim().toLowerCase().replace(/\s+/g, '');
@@ -135,6 +137,7 @@ export default function CreatorDashboard() {
     }
 
     const USER_ID = session.user.id;
+    setUserId(USER_ID);
     const adminViewingId = searchParams.get('viewing');
     let creatorIdToLoad = adminViewingId || USER_ID;
     setIsAdminViewing(!!adminViewingId);
@@ -972,14 +975,17 @@ const handleRejectCampaign = async (campaignId: string) => {
 
       {/* MAIN */}
       <main className="flex-1 flex flex-col p-4 md:p-10 h-full overflow-hidden pb-20 md:pb-10">
-        <header className="mb-8">
-          <h1 className="text-3xl font-serif font-bold">{activeTab}</h1>
-          <p className="text-gray-400 text-sm mt-1">
-            {activeTab === 'Ma performance' && 'Gérez votre influence en temps réel'}
-            {activeTab === 'Opportunités' && `${notifications} nouvelle${notifications > 1 ? 's' : ''} opportunité${notifications > 1 ? 's' : ''}`}
-            {activeTab === 'Mes campagnes' && 'Suivez vos contrats en cours'}
-            {activeTab === 'Terminées' && 'Vos campagnes accomplies'}
-          </p>
+        <header className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-serif font-bold">{activeTab}</h1>
+            <p className="text-gray-400 text-sm mt-1">
+              {activeTab === 'Ma performance' && 'Gérez votre influence en temps réel'}
+              {activeTab === 'Opportunités' && `${notifications} nouvelle${notifications > 1 ? 's' : ''} opportunité${notifications > 1 ? 's' : ''}`}
+              {activeTab === 'Mes campagnes' && 'Suivez vos contrats en cours'}
+              {activeTab === 'Terminées' && 'Vos campagnes accomplies'}
+            </p>
+          </div>
+          <NotificationBell recipientId={userId} />
         </header>
 
         <div className="flex-1 overflow-y-auto">
