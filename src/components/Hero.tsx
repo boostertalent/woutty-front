@@ -896,7 +896,7 @@ export function HeroCreatorPartnerCards() {
               </p>
             </div>
             <Link
-              href="/brands/auth/formulaire/etape1"
+              href="/auth/login"
               className="mt-8 inline-flex items-center justify-center bg-black text-white rounded-full px-8 py-4 font-black text-xs hover:bg-gray-900 transition-colors uppercase tracking-widest w-full sm:w-auto"
             >
               Lancer une campagne →

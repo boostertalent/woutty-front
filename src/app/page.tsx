@@ -5,6 +5,7 @@ import Hero from "@/components/Hero";
 import Process from "@/components/Process";
 import CreatorBenefits from "@/components/CreatorBenefits";
 import BrandBenefits from "@/components/BrandBenefits";
+import PartnershipBenefits from "@/components/PartnershipBenefits";
 import FAQ from "@/components/FAQ";
 import Footer from "@/components/Footer";
 import { HeroCreatorPartnerCards } from "@/components/Hero";
@@ -33,6 +34,11 @@ export default function Home() {
       {/* 4. Section Marques */}
       <section id="brands" className="scroll-mt-24">
         <BrandBenefits />
+      </section>
+
+      {/* Nos campagnes réalisées (galerie visuelle) */}
+      <section id="campagnes-realisees" className="scroll-mt-24">
+        <PartnershipBenefits />
       </section>
 
       {/* Questionnaire */}

@@ -149,7 +149,7 @@ export default function PartnershipBenefits() {
           transition={{ delay: 0.3, duration: 0.8 }}
           className="text-muted-foreground mb-16 max-w-2xl mx-auto text-lg leading-relaxed"
         >
-          Nous croyons en la force du collectif. Devenez partenaire de Booster Talent et accédez à des opportunités de croissance uniques.
+          Un aperçu de contenus et campagnes menés avec des marques et des créateurs sur Woutty.
         </motion.p>
 
         {/* Grille masonry */}
@@ -171,13 +171,13 @@ export default function PartnershipBenefits() {
 
         {/* Bouton */}
         <div className="mt-16 flex justify-center">
-          <Link href="/auth" className="w-full sm:w-auto">
+          <Link href="/auth/login" className="w-full sm:w-auto">
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="bg-booster-yellow text-black px-10 py-4 rounded-full font-bold text-center shadow-xl shadow-yellow-500/10 cursor-pointer"
             >
-              Devenir partenaire
+              Lancer une campagne
             </motion.div>
           </Link>
         </div>
