@@ -43,6 +43,9 @@ export default function CampaignMatchResults() {
   // Sélection multiple
   const [selectedIds, setSelectedIds]             = useState<Set<string>>(new Set());
 
+  // Nb publications par créateur (creatorId → nb)
+  const [publicationsMap, setPublicationsMap]     = useState<Record<string, number>>({});
+
   // Modal détail créateur
   const [modalCreator, setModalCreator]           = useState<any>(null);
   const [creatorDetails, setCreatorDetails]       = useState<any>(null);
@@ -145,10 +148,20 @@ export default function CampaignMatchResults() {
   const toggleSelect = (creatorId: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
-      next.has(creatorId) ? next.delete(creatorId) : next.add(creatorId);
+      if (next.has(creatorId)) {
+        next.delete(creatorId);
+        setPublicationsMap(m => { const copy = { ...m }; delete copy[creatorId]; return copy; });
+      } else {
+        next.add(creatorId);
+        setPublicationsMap(m => ({ ...m, [creatorId]: 1 }));
+      }
       return next;
     });
   };
+
+  const totalPubCampagne = campaign?.nb_publications ?? 0;
+  const totalPubAssignees = Object.values(publicationsMap).reduce((s, v) => s + v, 0);
+  const pubRestantes = totalPubCampagne - totalPubAssignees;
 
   const openModal = async (creator: any) => {
     setModalCreator(creator);
@@ -178,9 +191,10 @@ export default function CampaignMatchResults() {
 
       // Insérer dans campaign_creators avec statut pending_admin
       const rows = selectedCreators.map(c => ({
-        campaign_id: id_t_campagne,
-        creator_id:  c.id_w,
-        status:      'pending_admin',
+        campaign_id:      id_t_campagne,
+        creator_id:       c.id_w,
+        status:           'pending_admin',
+        nb_publications:  publicationsMap[c.id_w] ?? 0,
       }));
 
       const { error: insertError } = await supabase
@@ -372,11 +386,19 @@ export default function CampaignMatchResults() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-3xl w-full max-w-lg p-8 shadow-2xl border border-gray-100">
             <h3 className="text-xl font-bold mb-2">Confirmer la sélection</h3>
-            <p className="text-sm text-gray-500 mb-6">
+            <p className="text-sm text-gray-500 mb-4">
               Vous allez assigner <strong className="text-[#D4A017]">{selectedCreators.length} créateur{selectedCreators.length > 1 ? 's' : ''}</strong> à la campagne <strong>{campaign?.title}</strong>.
             </p>
 
-            <div className="space-y-2 mb-6 max-h-48 overflow-y-auto">
+            {/* Quota publications */}
+            <div className={`flex items-center justify-between px-4 py-2.5 rounded-xl border mb-4 text-sm font-bold ${
+              pubRestantes < 0 ? 'bg-red-50 border-red-200 text-red-700' : 'bg-[#D4A017]/5 border-[#D4A017]/20 text-[#D4A017]'
+            }`}>
+              <span>Publications assignées</span>
+              <span>{totalPubAssignees} / {totalPubCampagne}</span>
+            </div>
+
+            <div className="space-y-2 mb-6 max-h-56 overflow-y-auto">
               {selectedCreators.map(c => (
                 <div key={c.id_w} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                   <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden shrink-0">
@@ -389,9 +411,19 @@ export default function CampaignMatchResults() {
                     <p className="text-sm font-bold truncate">{c.full_name}</p>
                     <p className="text-[10px] text-gray-400">{formatNumber(c.totalFollowers)} followers · {c.primaryPlatform}</p>
                   </div>
-                  <span className="text-[10px] bg-green-50 text-green-600 px-2 py-0.5 rounded-full font-bold border border-green-200">
-                    {Math.min(95, Math.round(c.matchScore))}% match
-                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      onClick={() => setPublicationsMap(m => ({ ...m, [c.id_w]: Math.max(1, (m[c.id_w] ?? 1) - 1) }))}
+                      className="w-6 h-6 rounded-full border border-gray-300 text-gray-500 hover:border-[#D4A017] hover:text-[#D4A017] flex items-center justify-center font-bold text-sm transition-colors"
+                    >−</button>
+                    <span className="w-6 text-center text-sm font-black text-[#111827]">{publicationsMap[c.id_w] ?? 1}</span>
+                    <button
+                      onClick={() => setPublicationsMap(m => ({ ...m, [c.id_w]: (m[c.id_w] ?? 1) + 1 }))}
+                      disabled={pubRestantes <= 0}
+                      className="w-6 h-6 rounded-full border border-gray-300 text-gray-500 hover:border-[#D4A017] hover:text-[#D4A017] flex items-center justify-center font-bold text-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >+</button>
+                    <span className="text-[9px] text-gray-400 ml-1">pub.</span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -425,7 +457,7 @@ export default function CampaignMatchResults() {
               </button>
               <button
                 onClick={handleConfirmAssign}
-                disabled={isAssigning}
+                disabled={isAssigning || pubRestantes < 0}
                 className="flex-1 py-3 bg-[#D4A017] text-white rounded-xl font-bold hover:bg-[#B88A14] transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
               >
                 {isAssigning

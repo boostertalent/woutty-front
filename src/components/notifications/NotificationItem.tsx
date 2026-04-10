@@ -118,7 +118,7 @@ export default function NotificationItem({
       case 'content_published':
         return `${meta?.creator_name ?? 'Un créateur'} a publié son contenu pour "${meta?.campaign_title ?? 'la campagne'}"`;
       case 'campaign_validated':
-        return `Votre assignation à "${meta?.campaign_title ?? 'la campagne'}" a été validée par l'admin`;
+        return `Votre assignation à "${meta?.campaign_title ?? 'la campagne'}" a été validée par l'admin${meta?.nb_publications ? ` — ${meta.nb_publications} publication${meta.nb_publications > 1 ? 's' : ''} à produire` : ''}`;
       case 'campaign_declined':
         return `Votre assignation à "${meta?.campaign_title ?? 'la campagne'}" a été refusée${meta?.decline_reason ? ` : ${meta.decline_reason}` : ''}`;
       case 'creator_accepted':

@@ -35,6 +35,7 @@ export interface NotificationMetadata {
   message?: string;
   decline_reason?: string;
   campaign_creators_ids?: string[]; // IDs des campaign_creators concernés
+  nb_publications?: number; // Nombre de publications assignées au créateur
 }
 
 // Payload pour créer une notification

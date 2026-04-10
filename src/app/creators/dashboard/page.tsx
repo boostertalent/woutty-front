@@ -314,18 +314,26 @@ const formattedPosts = (postData || []).map((post, index) => {
 
     const { data: ccAccepted } = await supabase
       .from('campaign_creators')
-      .select('campaign_id, campaigns(*)')
+      .select('campaign_id, nb_publications, campaigns(*)')
       .eq('creator_id', creatorIdToLoad)
       .eq('status', 'accepted');
 
-    const acceptedData = (ccAccepted || []).map((row: any) => row.campaigns).filter(Boolean);
+    const acceptedData = (ccAccepted || []).map((row: any) => {
+      const campaign = row.campaigns;
+      if (!campaign) return null;
+      const totalPub = campaign.nb_publications || 0;
+      const creatorPub = row.nb_publications || 0;
+      const ratio = totalPub > 0 ? creatorPub / totalPub : 1;
+      const remuneration = (parseFloat(campaign.budget) || 0) * ratio * 0.85;
+      return { ...campaign, remuneration };
+    }).filter(Boolean);
 
-    const ongoing = acceptedData?.filter(c => !c.end_date || new Date(c.end_date) >= new Date()) || [];
-    const finished = acceptedData?.filter(c => c.end_date && new Date(c.end_date) < new Date()) || [];
+    const ongoing = acceptedData?.filter((c: any) => !c.end_date || new Date(c.end_date) >= new Date()) || [];
+    const finished = acceptedData?.filter((c: any) => c.end_date && new Date(c.end_date) < new Date()) || [];
 
     setAcceptedCampaigns(ongoing);
     setCompletedCampaigns(finished);
-    setTotalRevenue(finished.reduce((sum, c) => sum + (parseFloat(c.budget) || 0), 0));
+    setTotalRevenue(finished.reduce((sum: number, c: any) => sum + (c.remuneration || 0), 0));
     setCompletedCampaignsCount(finished.length);
 
     console.log("✅ Chargement terminé avec succès");
@@ -1369,7 +1377,6 @@ const handleRejectCampaign = async (campaignId: string) => {
                         </div>
 
                         <div className="grid grid-cols-3 gap-4">
-                          
                           <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-100">
                             <p className="text-xs text-blue-400 uppercase font-bold mb-1">Jours restants</p>
                             <p className="text-lg font-black text-blue-600">{daysLeft}</p>
@@ -1381,6 +1388,11 @@ const handleRejectCampaign = async (campaignId: string) => {
                               <TrendingUp className="mx-auto" size={24} />
                             </p>
                             <p className="text-xs text-purple-500">En cours</p>
+                          </div>
+                          <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-100">
+                            <p className="text-xs text-green-400 uppercase font-bold mb-1">Ma rémunération</p>
+                            <p className="text-sm font-black text-green-600">{Math.round(campaign.remuneration || 0).toLocaleString('fr-FR')}</p>
+                            <p className="text-xs text-green-500">CFA</p>
                           </div>
                         </div>
                       </div>
@@ -1422,7 +1434,6 @@ const handleRejectCampaign = async (campaignId: string) => {
                       </div>
 
                       <div className="grid grid-cols-3 gap-4">
-                        
                         <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-100">
                           <p className="text-xs text-blue-400 uppercase font-bold mb-1">Durée</p>
                           <p className="text-xl font-black text-blue-600">
@@ -1435,6 +1446,11 @@ const handleRejectCampaign = async (campaignId: string) => {
                           <p className="text-sm font-black text-purple-600">
                             {formatDate(campaign.end_date)}
                           </p>
+                        </div>
+                        <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-100">
+                          <p className="text-xs text-green-400 uppercase font-bold mb-1">Rémunération</p>
+                          <p className="text-sm font-black text-green-600">{Math.round(campaign.remuneration || 0).toLocaleString('fr-FR')}</p>
+                          <p className="text-xs text-green-500">CFA</p>
                         </div>
                       </div>
                     </div>

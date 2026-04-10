@@ -61,7 +61,7 @@ export default function AdminCampaignsPage() {
             creators: [],
           };
         }
-        grouped[cid].creators.push({ ...row.createur, cc_id: row.id, cc_status: row.status });
+        grouped[cid].creators.push({ ...row.createur, cc_id: row.id, cc_status: row.status, cc_nb_publications: row.nb_publications ?? 0 });
       }
 
       // Enrichir avec le nom de la marque
@@ -112,6 +112,7 @@ export default function AdminCampaignsPage() {
             campaign_title: campaignTitle,
             brand_name: brandName,
             action_url: '/creators/dashboard',
+            nb_publications: creator.cc_nb_publications,
           };
           await createNotification({
             campaign_id: campaignId,
