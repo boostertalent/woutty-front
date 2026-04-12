@@ -10,12 +10,12 @@ import { triggerEmailNotification } from '@/lib/n8n';
 import NotificationBell from '@/components/notifications/NotificationBell';
 
 
-import { 
-  BarChart3, 
-  Briefcase, 
-  Send, 
-  User, 
-  Instagram, 
+import {
+  BarChart3,
+  Briefcase,
+  Send,
+  User,
+  Instagram,
   MessageCircle,
   Heart,
   Eye,
@@ -38,7 +38,8 @@ import {
   TrendingUp,
   CheckCircle,
   Bell,
-  Archive
+  Archive,
+  Upload
 } from 'lucide-react';
 
 const XLogo = ({ size = 14 }: { size?: number }) => (
@@ -1395,6 +1396,15 @@ const handleRejectCampaign = async (campaignId: string) => {
                             <p className="text-xs text-green-500">CFA</p>
                           </div>
                         </div>
+
+                        {/* BOUTON ZONE TAMPON */}
+                        <button
+                          onClick={() => router.push(`/creators/dashboard/submit/${campaign.id_t_campagne}`)}
+                          className="mt-5 w-full flex items-center justify-center gap-2 py-3 bg-[#D4A017] text-white rounded-2xl font-bold hover:bg-[#b8962f] transition-colors"
+                        >
+                          <Upload size={18} />
+                          Soumettre une vidéo pour validation
+                        </button>
                       </div>
                     );
                   })}

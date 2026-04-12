@@ -6,7 +6,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import Link from 'next/link';
 import {
   Users, Building2, BarChart3, Shield, Search,
-  LogOut, Loader2, X, User, Activity, HeadphonesIcon, MessageCircle
+  LogOut, Loader2, X, User, Activity, HeadphonesIcon, MessageCircle, FileVideo
 } from 'lucide-react';
 import NotificationBell from '@/components/notifications/NotificationBell';
 
@@ -91,6 +91,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: '/admin/creators',    label: 'Créateurs',       icon: <Users size={20} />,      always: true },
     { href: '/admin/brands',      label: 'Marques',         icon: <Building2 size={20} />,  always: true },
     { href: '/admin/admins',      label: 'Admins',          icon: <Shield size={20} />,     always: true },
+    { href: '/admin/validate-submissions', label: 'Zone Tampon', icon: <FileVideo size={20} />, always: true },
     { href: '/admin/assistance',  label: 'Assistance',      icon: <HeadphonesIcon size={20} />, always: true },
     { href: '/admin/logs',        label: "Logs d'activité", icon: <Activity size={20} />,   always: false },
     { href: '/admin/profile',     label: 'Mon profil',      icon: <User size={20} />,       always: false },
