@@ -11,21 +11,20 @@ export async function POST(
   const cookieStore = await cookies()
 
   const body = await req.json()
-  const { decision, adminNote }: { decision: 'approved' | 'rejected'; adminNote?: string } = body
+  const { decision, brandNote }: { decision: 'approved' | 'rejected'; brandNote?: string } = body
 
   if (!decision || !['approved', 'rejected'].includes(decision)) {
     return NextResponse.json({ error: 'decision invalide' }, { status: 400 })
   }
 
-  // Vérifier que l'utilisateur est authentifié et admin
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get: (name) => cookieStore.get(name)?.value,
-        set: (name, value, options: CookieOptions) => { cookieStore.set({ name, value, ...options }) },
-        remove: (name, options: CookieOptions) => { cookieStore.set({ name, value: '', ...options }) },
+        get: (name: string) => cookieStore.get(name)?.value,
+        set: (name: string, value: string, options: CookieOptions) => { cookieStore.set({ name, value, ...options }) },
+        remove: (name: string, options: CookieOptions) => { cookieStore.set({ name, value: '', ...options }) },
       },
     }
   )
@@ -33,15 +32,6 @@ export async function POST(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  }
-
-  const [{ data: creatorCheck }, { data: adminCheck }] = await Promise.all([
-    supabase.from('createur').select('role').eq('id_w', user.id).maybeSingle(),
-    supabase.from('admin').select('id_w').eq('id_w', user.id).maybeSingle(),
-  ])
-
-  if (creatorCheck?.role !== 'admin' && !adminCheck) {
-    return NextResponse.json({ error: 'Accès réservé aux admins' }, { status: 403 })
   }
 
   const adminClient = createAdminClient()
@@ -57,7 +47,23 @@ export async function POST(
     return NextResponse.json({ error: 'Soumission introuvable' }, { status: 404 })
   }
 
-  // 1. Supprimer le fichier du bucket
+  // Vérifier que l'utilisateur est la marque de cette campagne
+  const { data: campaign } = await adminClient
+    .from('campaigns')
+    .select('id_w, title')
+    .eq('id_t_campagne', submission.campaign_id)
+    .maybeSingle()
+
+  const isBrand = campaign?.id_w === user.id
+  const { data: creatorCheck } = await supabase
+    .from('createur').select('role').eq('id_w', user.id).maybeSingle()
+  const isAdmin = creatorCheck?.role === 'admin'
+
+  if (!isBrand && !isAdmin) {
+    return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 })
+  }
+
+  // 1. Supprimer le fichier du bucket immédiatement
   if (submission.video_path) {
     const { error: deleteError } = await adminClient.storage
       .from('validation-videos')
@@ -73,7 +79,7 @@ export async function POST(
     .from('campaign_submissions')
     .update({
       status: decision,
-      admin_note: adminNote ?? null,
+      admin_note: brandNote ?? null,
       reviewed_at: new Date().toISOString(),
       video_path: null,
     })
@@ -81,16 +87,10 @@ export async function POST(
 
   // 3. Notifier le créateur
   if (submission.creator_id) {
-    const { data: campaignData } = await adminClient
-      .from('campaigns')
-      .select('title')
-      .eq('id_t_campagne', submission.campaign_id)
-      .maybeSingle()
-
     const meta = {
-      campaign_title: campaignData?.title ?? 'Campagne',
+      campaign_title: campaign?.title ?? 'Campagne',
       action_url: '/creators/dashboard',
-      ...(decision === 'rejected' && adminNote ? { message: adminNote } : {}),
+      ...(decision === 'rejected' && brandNote ? { message: brandNote } : {}),
     }
 
     await adminClient.from('campaign_notifications').insert({

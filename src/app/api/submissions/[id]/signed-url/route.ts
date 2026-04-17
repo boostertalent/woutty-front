@@ -16,9 +16,9 @@ export async function GET(
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get: (name) => cookieStore.get(name)?.value,
-        set: (name, value, options: CookieOptions) => { cookieStore.set({ name, value, ...options }) },
-        remove: (name, options: CookieOptions) => { cookieStore.set({ name, value: '', ...options }) },
+        get: (name: string) => cookieStore.get(name)?.value,
+        set: (name: string, value: string, options: CookieOptions) => { cookieStore.set({ name, value, ...options }) },
+        remove: (name: string, options: CookieOptions) => { cookieStore.set({ name, value: '', ...options }) },
       },
     }
   )
@@ -28,22 +28,40 @@ export async function GET(
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   }
 
-  const [{ data: creatorCheck }, { data: adminCheck }] = await Promise.all([
+  const [{ data: creatorCheck }, { data: adminCheck }, { data: brandCheck }] = await Promise.all([
     supabase.from('createur').select('role').eq('id_w', user.id).maybeSingle(),
     supabase.from('admin').select('id_w').eq('id_w', user.id).maybeSingle(),
+    supabase.from('marque').select('id_w').eq('id_w', user.id).maybeSingle(),
   ])
 
-  if (creatorCheck?.role !== 'admin' && !adminCheck) {
-    return NextResponse.json({ error: 'Accès réservé aux admins' }, { status: 403 })
+  const isAdmin = creatorCheck?.role === 'admin' || !!adminCheck
+  const isBrand = !!brandCheck
+
+  if (!isAdmin && !isBrand) {
+    return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 })
   }
 
-  // Récupérer le chemin de la vidéo
   const adminClient = createAdminClient()
+
+  // Récupérer la soumission
   const { data: submission, error } = await adminClient
     .from('campaign_submissions')
-    .select('video_path')
+    .select('video_path, campaign_id')
     .eq('id', id)
     .single()
+
+  // Si c'est une marque, vérifier que la soumission appartient bien à une de ses campagnes
+  if (isBrand && !isAdmin && submission) {
+    const { data: campaign } = await adminClient
+      .from('campaigns')
+      .select('id_w')
+      .eq('id_t_campagne', submission.campaign_id)
+      .maybeSingle()
+
+    if (campaign?.id_w !== user.id) {
+      return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 })
+    }
+  }
 
   if (error || !submission?.video_path) {
     return NextResponse.json({ error: 'Soumission introuvable' }, { status: 404 })

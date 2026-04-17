@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import {
   Megaphone,
   UserCheck,
@@ -102,8 +101,22 @@ export default function NotificationItem({
   const Icon = config.icon;
   const meta = notification.metadata;
 
+  const isDecision =
+    notification.notification_type === 'content_validated' ||
+    notification.notification_type === 'content_rejected';
+
+  const getTitle = (): string => {
+    switch (notification.notification_type) {
+      case 'content_validated':
+        return `Contenu validé — "${meta?.campaign_title ?? 'campagne'}"`;
+      case 'content_rejected':
+        return `Contenu refusé — "${meta?.campaign_title ?? 'campagne'}"`;
+      default:
+        return '';
+    }
+  };
+
   const getMessage = (): string => {
-    if (meta?.message) return meta.message;
     switch (notification.notification_type) {
       case 'campaign_created':
         return `"${meta?.campaign_title ?? 'Campagne'}" créée par ${meta?.brand_name ?? 'une marque'}`;
@@ -112,9 +125,9 @@ export default function NotificationItem({
       case 'content_submitted':
         return `${meta?.creator_name ?? 'Un créateur'} a soumis un contenu pour "${meta?.campaign_title ?? 'une campagne'}"`;
       case 'content_validated':
-        return `Votre contenu pour "${meta?.campaign_title ?? 'la campagne'}" a été validé`;
+        return `Votre contenu pour "${meta?.campaign_title ?? 'la campagne'}" a été validé par la marque.`;
       case 'content_rejected':
-        return `Votre contenu pour "${meta?.campaign_title ?? 'la campagne'}" a été refusé`;
+        return `Votre contenu pour "${meta?.campaign_title ?? 'la campagne'}" a été refusé par la marque.`;
       case 'content_published':
         return `${meta?.creator_name ?? 'Un créateur'} a publié son contenu pour "${meta?.campaign_title ?? 'la campagne'}"`;
       case 'campaign_validated':
@@ -129,6 +142,48 @@ export default function NotificationItem({
         return 'Nouvelle notification';
     }
   };
+
+  if (isDecision) {
+    const brandNote = meta?.message as string | undefined;
+    return (
+      <div
+        onClick={() => !notification.is_read && onRead(notification.id)}
+        className={`w-full px-4 py-3 text-left transition-colors hover:bg-gray-50 cursor-pointer ${
+          !notification.is_read ? 'bg-white border-l-2 border-[#F5C200]' : 'bg-white'
+        }`}
+      >
+        <div className="flex items-start gap-3">
+          <div className={`flex-shrink-0 w-9 h-9 rounded-full ${config.bg} flex items-center justify-center`}>
+            <Icon size={16} className={config.color} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className={`text-xs font-semibold ${config.color} uppercase tracking-wide mb-0.5`}>
+              {config.label}
+            </p>
+            <p className="text-sm text-gray-700 leading-snug">
+              {getMessage()}
+            </p>
+            {brandNote && (
+              <div className={`mt-2 p-2.5 rounded-lg text-xs leading-relaxed ${
+                notification.notification_type === 'content_rejected'
+                  ? 'bg-red-50 text-red-700 border border-red-100'
+                  : 'bg-green-50 text-green-700 border border-green-100'
+              }`}>
+                <span className="font-bold block mb-0.5">Message de la marque :</span>
+                {brandNote}
+              </div>
+            )}
+            <p className="text-[11px] text-gray-400 mt-1">
+              {timeAgo(notification.created_at)}
+            </p>
+          </div>
+          {!notification.is_read && (
+            <span className="flex-shrink-0 w-2 h-2 rounded-full bg-[#F5C200] mt-1.5" />
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <button

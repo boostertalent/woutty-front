@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Play, Loader2, ArrowLeft, User,
-  Shield, AlertCircle, CheckCircle2, Clock, FileVideo, X, Image as ImageIcon
+  Check, X, Play, Loader2, ArrowLeft, User,
+  FileVideo, AlertCircle, CheckCircle2, Clock, Image as ImageIcon
 } from 'lucide-react';
 
 type SubmissionStatus = 'pending' | 'approved' | 'rejected' | 'expired';
@@ -23,16 +23,20 @@ interface Submission {
   creator_avatar?: string | null;
 }
 
-export default function ValidateSubmissionsPage() {
+export default function BrandValidateSubmissionsPage() {
   const router = useRouter();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<SubmissionStatus | 'all'>('all');
+  const [filter, setFilter] = useState<SubmissionStatus | 'all'>('pending');
+  const [processingId, setProcessingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [modalUrl, setModalUrl] = useState<string | null>(null);
   const [modalIsImage, setModalIsImage] = useState(false);
   const [loadingSignedUrl, setLoadingSignedUrl] = useState<string | null>(null);
+
+  const [rejectTarget, setRejectTarget] = useState<string | null>(null);
+  const [brandNote, setBrandNote] = useState('');
 
   useEffect(() => {
     loadSubmissions();
@@ -42,7 +46,7 @@ export default function ValidateSubmissionsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/submissions${filter !== 'all' ? `?status=${filter}` : ''}`);
+      const res = await fetch(`/api/brand/submissions${filter !== 'all' ? `?status=${filter}` : ''}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erreur serveur');
       setSubmissions(data.submissions);
@@ -60,14 +64,37 @@ export default function ValidateSubmissionsPage() {
       const res = await fetch(`/api/submissions/${submissionId}/signed-url`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+      // Détecter si c'est une image via l'extension dans le path
       const sub = submissions.find(s => s.id === submissionId);
-      const ext = sub?.video_path?.split('.').pop()?.toLowerCase() ?? '';
+      const ext = sub?.video_path?.split('.').pop()?.toLowerCase() ?? ''
       setModalIsImage(['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext));
       setModalUrl(data.signedUrl);
     } catch (err: any) {
       setError(`Impossible de charger le contenu : ${err.message}`);
     } finally {
       setLoadingSignedUrl(null);
+    }
+  };
+
+  const decide = async (submissionId: string, decision: 'approved' | 'rejected', note?: string) => {
+    setProcessingId(submissionId);
+    setError(null);
+    try {
+      const res = await fetch(`/api/submissions/${submissionId}/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision, brandNote: note ?? null }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+      setModalUrl(null);
+      setRejectTarget(null);
+      setBrandNote('');
+      await loadSubmissions();
+    } catch (err: any) {
+      setError(`Erreur : ${err.message}`);
+    } finally {
+      setProcessingId(null);
     }
   };
 
@@ -79,10 +106,10 @@ export default function ValidateSubmissionsPage() {
 
   const statusBadge = (status: SubmissionStatus) => {
     const config = {
-      pending:  { label: 'En attente',  className: 'bg-orange-50 text-orange-700 border-orange-200',  icon: <Clock size={12} /> },
-      approved: { label: 'Validé',      className: 'bg-green-50 text-green-700 border-green-200',      icon: <CheckCircle2 size={12} /> },
-      rejected: { label: 'Refusé',      className: 'bg-red-50 text-red-700 border-red-200',            icon: <X size={12} /> },
-      expired:  { label: 'Expiré',      className: 'bg-gray-100 text-gray-500 border-gray-200',        icon: <AlertCircle size={12} /> },
+      pending:  { label: 'En attente',  className: 'bg-orange-50 text-orange-700 border-orange-200', icon: <Clock size={12} /> },
+      approved: { label: 'Validé',      className: 'bg-green-50 text-green-700 border-green-200',    icon: <CheckCircle2 size={12} /> },
+      rejected: { label: 'Refusé',      className: 'bg-red-50 text-red-700 border-red-200',          icon: <X size={12} /> },
+      expired:  { label: 'Expiré',      className: 'bg-gray-100 text-gray-500 border-gray-200',      icon: <AlertCircle size={12} /> },
     };
     const c = config[status];
     return (
@@ -98,12 +125,12 @@ export default function ValidateSubmissionsPage() {
 
   return (
     <div className="min-h-screen bg-[#F9FAFB] p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-5xl mx-auto">
 
         {/* HEADER */}
         <div className="mb-8">
           <button
-            onClick={() => router.push('/admin/dashboard')}
+            onClick={() => router.push('/brands/dashboard')}
             className="flex items-center gap-2 text-gray-400 hover:text-[#D4A017] font-bold mb-4 transition-colors"
           >
             <ArrowLeft size={20} />
@@ -112,12 +139,12 @@ export default function ValidateSubmissionsPage() {
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-serif font-bold text-[#111827] mb-2 flex items-center gap-3">
+              <h1 className="text-3xl font-bold text-[#111827] mb-2 flex items-center gap-3">
                 <FileVideo size={32} className="text-[#D4A017]" />
-                Zone Tampon — Supervision
+                Contenus à valider
               </h1>
               <p className="text-gray-400 text-sm">
-                Vue d'ensemble des contenus soumis. La validation est gérée par les marques.
+                Visionnez et validez les contenus soumis par vos créateurs
               </p>
             </div>
             <button
@@ -146,33 +173,24 @@ export default function ValidateSubmissionsPage() {
         )}
 
         {/* STATS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-orange-50 rounded-2xl p-6 border border-orange-200">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-bold text-orange-600">En attente</span>
-              <Clock size={16} className="text-orange-600" />
-            </div>
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="bg-orange-50 rounded-2xl p-5 border border-orange-200">
+            <p className="text-xs font-bold text-orange-600 mb-1">En attente</p>
             <p className="text-3xl font-black text-orange-700">{pending}</p>
           </div>
-          <div className="bg-green-50 rounded-2xl p-6 border border-green-200">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-bold text-green-600">Validés</span>
-              <CheckCircle2 size={16} className="text-green-600" />
-            </div>
+          <div className="bg-green-50 rounded-2xl p-5 border border-green-200">
+            <p className="text-xs font-bold text-green-600 mb-1">Validés</p>
             <p className="text-3xl font-black text-green-700">{approved}</p>
           </div>
-          <div className="bg-red-50 rounded-2xl p-6 border border-red-200">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-bold text-red-600">Refusés</span>
-              <X size={16} className="text-red-600" />
-            </div>
+          <div className="bg-red-50 rounded-2xl p-5 border border-red-200">
+            <p className="text-xs font-bold text-red-600 mb-1">Refusés</p>
             <p className="text-3xl font-black text-red-700">{rejected}</p>
           </div>
         </div>
 
         {/* FILTRES */}
         <div className="flex flex-wrap gap-2 mb-6">
-          {(['all', 'pending', 'approved', 'rejected', 'expired'] as const).map((f) => (
+          {(['all', 'pending', 'approved', 'rejected'] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
@@ -182,7 +200,7 @@ export default function ValidateSubmissionsPage() {
                   : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
               }`}
             >
-              {f === 'all' ? 'Tous' : f === 'pending' ? 'En attente' : f === 'approved' ? 'Validés' : f === 'rejected' ? 'Refusés' : 'Expirés'}
+              {f === 'all' ? 'Tous' : f === 'pending' ? 'En attente' : f === 'approved' ? 'Validés' : 'Refusés'}
             </button>
           ))}
         </div>
@@ -195,19 +213,18 @@ export default function ValidateSubmissionsPage() {
           </div>
         ) : submissions.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
-            <Shield size={64} className="mx-auto text-gray-200 mb-4" />
-            <h2 className="text-xl font-bold text-gray-600 mb-2">Aucune soumission</h2>
-            <p className="text-gray-400">Les contenus soumis par les créateurs apparaîtront ici</p>
+            <FileVideo size={64} className="mx-auto text-gray-200 mb-4" />
+            <h2 className="text-xl font-bold text-gray-600 mb-2">Aucun contenu</h2>
+            <p className="text-gray-400">Les contenus soumis par vos créateurs apparaîtront ici</p>
           </div>
         ) : (
           <div className="space-y-4">
             {submissions.map((sub) => (
               <div
                 key={sub.id}
-                className={`bg-white rounded-2xl border-2 shadow-sm transition-all overflow-hidden ${
+                className={`bg-white rounded-2xl border-2 shadow-sm hover:shadow-md transition-all overflow-hidden ${
                   sub.status === 'approved' ? 'border-green-200'
                   : sub.status === 'rejected' ? 'border-red-200'
-                  : sub.status === 'expired' ? 'border-gray-200'
                   : 'border-gray-100'
                 }`}
               >
@@ -236,14 +253,10 @@ export default function ValidateSubmissionsPage() {
                   </p>
 
                   {sub.admin_note && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      Note : <span className="italic">{sub.admin_note}</span>
-                    </p>
+                    <p className="text-sm text-gray-500 mt-1 italic">Note : {sub.admin_note}</p>
                   )}
                   {sub.reviewed_at && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      Décision le {formatDate(sub.reviewed_at)}
-                    </p>
+                    <p className="text-xs text-gray-400 mt-1">Décision le {formatDate(sub.reviewed_at)}</p>
                   )}
 
                   {/* Type de contenu */}
@@ -256,9 +269,8 @@ export default function ValidateSubmissionsPage() {
                     </div>
                   )}
 
-                  {/* Supervision : visionner uniquement si fichier encore présent */}
-                  {sub.video_path && (
-                    <div className="mt-4">
+                  {sub.status === 'pending' && sub.video_path && (
+                    <div className="flex flex-wrap gap-3 mt-4">
                       <button
                         onClick={() => openContent(sub.id)}
                         disabled={loadingSignedUrl === sub.id}
@@ -270,6 +282,24 @@ export default function ValidateSubmissionsPage() {
                           <Play size={16} />
                         )}
                         Visionner
+                      </button>
+
+                      <button
+                        onClick={() => decide(sub.id, 'approved')}
+                        disabled={processingId === sub.id}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-green-50 text-green-700 rounded-xl font-bold hover:bg-green-100 transition-all disabled:opacity-50"
+                      >
+                        {processingId === sub.id ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                        Valider
+                      </button>
+
+                      <button
+                        onClick={() => { setRejectTarget(sub.id); setBrandNote(''); }}
+                        disabled={processingId === sub.id}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-red-50 text-red-600 rounded-xl font-bold hover:bg-red-100 transition-all disabled:opacity-50"
+                      >
+                        <X size={16} />
+                        Refuser
                       </button>
                     </div>
                   )}
@@ -291,7 +321,7 @@ export default function ValidateSubmissionsPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h3 className="font-bold text-gray-900">Supervision — contenu</h3>
+              <h3 className="font-bold text-gray-900">Visionner le contenu</h3>
               <button onClick={() => setModalUrl(null)} className="text-gray-400 hover:text-gray-700">
                 <X size={20} />
               </button>
@@ -301,6 +331,44 @@ export default function ValidateSubmissionsPage() {
             ) : (
               <video src={modalUrl} controls autoPlay className="w-full max-h-[60vh] bg-black" />
             )}
+          </div>
+        </div>
+      )}
+
+      {/* MODALE REJET */}
+      {rejectTarget && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+          onClick={() => setRejectTarget(null)}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-bold text-gray-900 mb-4">Motif de refus (optionnel)</h3>
+            <textarea
+              value={brandNote}
+              onChange={(e) => setBrandNote(e.target.value)}
+              placeholder="Ex : Le contenu ne correspond pas au brief de la campagne..."
+              rows={4}
+              className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-300"
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => setRejectTarget(null)}
+                className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => decide(rejectTarget, 'rejected', brandNote || undefined)}
+                disabled={processingId === rejectTarget}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {processingId === rejectTarget ? <Loader2 size={16} className="animate-spin" /> : <X size={16} />}
+                Confirmer le refus
+              </button>
+            </div>
           </div>
         </div>
       )}

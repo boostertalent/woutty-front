@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import Link from 'next/link';
-import { LayoutDashboard, UserCheck, Settings, LogOut, Loader2 } from 'lucide-react';
+import { LayoutDashboard, UserCheck, Settings, LogOut, Loader2, FileVideo } from 'lucide-react';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import ChatWidget from '@/components/ChatWidget';
 
@@ -72,6 +72,11 @@ export default function BrandsLayout({ children }: { children: React.ReactNode }
       name: 'Collaborations',
       icon: <UserCheck size={20} />,
       href: '/brands/dashboard/collaborations',
+    },
+    {
+      name: 'Contenus à valider',
+      icon: <FileVideo size={20} />,
+      href: '/brands/dashboard/validate-submissions',
     },
     {
       name: 'Mon profil',
