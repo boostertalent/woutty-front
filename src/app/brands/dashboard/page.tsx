@@ -75,8 +75,8 @@ export default function BrandDashboard() {
     try {
       const { data: allCreators, error } = await supabase.from('createur').select('*').eq('role', 'creator');
       if (error || !allCreators) return [];
-      const campaignNiches = userCampaigns.map(c => c.niche).filter(Boolean).flat();
-      const scoredCreators = allCreators.map(creator => {
+      const campaignNiches = userCampaigns.map((c: any) => c.niche).filter(Boolean).flat();
+      const scoredCreators = allCreators.map((creator: any) => {
         let score = 0; const reasons: string[] = [];
         if (campaignNiches.length > 0 && creator.niche) {
           const creatorNiches = Array.isArray(creator.niche) ? creator.niche : [];
@@ -102,10 +102,13 @@ export default function BrandDashboard() {
         if (creator.phone) ps += 2;
         if (creator.instagram_username || creator.youtube_username || creator.tiktok_username) ps += 3;
         score += ps; if (ps >= 8) reasons.push("Profil complet");
-        if (userCampaigns.some(c => c.assigned_creator_id === creator.id_w)) { score += 15; reasons.push("Déjà collaboré"); }
+        if (userCampaigns.some((c: any) => c.assigned_creator_id === creator.id_w)) { score += 15; reasons.push("Déjà collaboré"); }
         return { ...creator, matchScore: score, matchReasons: reasons, totalFollowers, primaryPlatform: getPrimaryPlatform(creator) };
       });
-      return scoredCreators.filter(c => c.matchScore > 0).sort((a, b) => b.matchScore - a.matchScore).slice(0, 5);
+      return scoredCreators
+        .filter((c: any) => c.matchScore > 0)
+        .sort((a: any, b: any) => b.matchScore - a.matchScore)
+        .slice(0, 5);
     } catch { return []; }
   };
 
@@ -135,7 +138,7 @@ export default function BrandDashboard() {
         setCampaigns(campaignsData || []);
         if (campaignsData?.length) {
           const today = new Date(); let totalBudget = 0, completedCampaigns = 0, ongoingCampaigns = 0;
-          campaignsData.forEach(c => {
+          campaignsData.forEach((c: any) => {
             totalBudget += parseFloat(c.budget) || 0;
             if (c.start_date && c.end_date) {
               const s = new Date(c.start_date), e = new Date(c.end_date);

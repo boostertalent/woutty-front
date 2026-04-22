@@ -45,7 +45,7 @@ export async function GET(request: Request) {
       // 2. VÉRIFICATION MARQUE
       const { data: brandData } = await supabase
         .from('marque')
-        .select('id_w') /
+        .select('id_w')
         .eq('id_w', user.id)
         .maybeSingle();
 

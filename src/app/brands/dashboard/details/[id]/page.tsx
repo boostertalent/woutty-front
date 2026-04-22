@@ -114,7 +114,7 @@ export default function CampaignDetailDynamic() {
         
         console.log(`✅ ${postsData?.length || 0} posts validés chargés pour la campagne`);
         
-        const postsWithEngagement = (postsData || []).map(post => ({
+        const postsWithEngagement = (postsData || []).map((post: any) => ({
           ...post,
           engagement_rate: calculateEngagementRate(post)
         }));

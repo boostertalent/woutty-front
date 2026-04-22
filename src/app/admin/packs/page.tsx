@@ -19,7 +19,7 @@ interface BrandPackData {
   status: string;
 }
 
-const PACK_ICONS: Record<string, JSX.Element> = {
+const PACK_ICONS: Record<string, React.ReactElement> = {
   'local-starter': <Package size={20} className="text-green-600" />,
   'regional-business': <Star size={20} className="text-[#D4A017]" fill="currentColor" />,
   'national-scale': <Crown size={20} className="text-purple-600" />
@@ -66,7 +66,7 @@ export default function AdminPacksView() {
 
       if (draftsError) throw draftsError;
 
-      const formattedData: BrandPackData[] = (drafts || []).map(draft => ({
+      const formattedData: BrandPackData[] = (drafts || []).map((draft: any) => ({
         brand_id: draft.brand_id,
         brand_name: draft.marque?.nom_marque || 'Marque inconnue',
         brand_email: draft.marque?.email_marque || 'N/A',

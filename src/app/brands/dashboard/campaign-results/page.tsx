@@ -64,14 +64,14 @@ export default function CampaignMatchResults() {
 
       const campaignNiches = Array.isArray(campaignData.interests) ? campaignData.interests : [];
 
-      const scoredCreators = allCreators.map(creator => {
+      const scoredCreators = allCreators.map((creator: any) => {
         let score = 0;
         const reasons: string[] = [];
 
         if (campaignNiches.length > 0 && creator.niche) {
           const creatorNiches = Array.isArray(creator.niche) ? creator.niche : [];
-          const nicheMatch = creatorNiches.some(cn =>
-            campaignNiches.some(campNiche =>
+          const nicheMatch = creatorNiches.some((cn: any) =>
+            campaignNiches.some((campNiche: any) =>
               cn.toLowerCase().includes(campNiche.toLowerCase()) ||
               campNiche.toLowerCase().includes(cn.toLowerCase())
             )
@@ -129,8 +129,8 @@ export default function CampaignMatchResults() {
       });
 
       return scoredCreators
-        .filter(c => c.matchScore > 0)
-        .sort((a, b) => b.matchScore - a.matchScore);
+        .filter((c: any) => c.matchScore > 0)
+        .sort((a: any, b: any) => b.matchScore - a.matchScore);
     } catch (err) {
       console.error("❌ Erreur suggestion:", err);
       return [];

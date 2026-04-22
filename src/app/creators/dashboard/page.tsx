@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { Suspense, useState, useMemo, useEffect, useCallback } from 'react';
 import { createBrowserClient } from '@supabase/ssr'; 
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -61,7 +61,7 @@ const calculateEngagementRate = (post: any): string => {
   return `${(engagement * 100).toFixed(1)}%`;
 };
 
-export default function CreatorDashboard() {
+function CreatorDashboardInner() {
   const searchParams = useSearchParams();
   const [isAdminViewing, setIsAdminViewing] = useState(false);
   const router = useRouter();
@@ -74,7 +74,7 @@ export default function CreatorDashboard() {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [processingCampaign, setProcessingCampaign] = useState<number | null>(null);
+  const [processingCampaign, setProcessingCampaign] = useState<string | null>(null);
   const [selectedPlatforms, setSelectedPlatforms] = useState<any[]>([]);
   const [allPosts, setAllPosts] = useState<any[]>([]);
   const [pendingCampaigns, setPendingCampaigns] = useState<any[]>([]);
@@ -97,7 +97,7 @@ export default function CreatorDashboard() {
     { name: 'Terminées', icon: <Archive size={20} /> },
   ];
 
-  const platformConfig: Record<string, { name: string; icon: JSX.Element }> = useMemo(() => ({
+  const platformConfig: Record<string, { name: string; icon: React.ReactElement }> = useMemo(() => ({
    'instagram': { name: 'Instagram', icon: <Instagram size={14} /> },
     'youtube': { name: 'YouTube', icon: <Youtube size={14} /> },
     'tiktok': { name: 'TikTok', icon: <span className="text-[12px]">🎵</span> },
@@ -165,7 +165,7 @@ export default function CreatorDashboard() {
     }
 
     console.log(`✅ ${profileData?.length || 0} profils chargés`);
-    console.table(profileData?.map(p => ({
+    console.table(profileData?.map((p: any) => ({
       plateforme: p.la_plateforme || p.nom_plateforme,
       id_plateforme: p.id_plateforme,
       followers: p.nbre_followers,
@@ -184,7 +184,7 @@ export default function CreatorDashboard() {
     }
 
     console.log(`✅ ${postData?.length || 0} posts chargés`);
-    console.table(postData?.slice(0, 5).map(p => ({
+    console.table(postData?.slice(0, 5).map((p: any) => ({
       titre: p.titre_poste,
       id_plateforme: p.id_plateforme,
       likes: p.nbre_like,
@@ -195,7 +195,7 @@ export default function CreatorDashboard() {
     // ✅ 4. CRÉER UN MAP DES PROFILS PAR ID_PLATEFORME
    const profileMap = new Map();
 
-(profileData || []).forEach((profile) => {
+(profileData || []).forEach((profile: any) => {
   const cleanId = normalizeId(profile.id_plateforme);
   if (cleanId && cleanId !== 'null' && cleanId !== '') {
     profileMap.set(cleanId, profile);
@@ -203,12 +203,12 @@ export default function CreatorDashboard() {
   }
 });
 
-   const platforms = (profileData || []).map((profile, idx) => {
+   const platforms = (profileData || []).map((profile: any, idx: number) => {
   const platformName = profile.la_plateforme || profile.nom_plateforme || 'Plateforme';
   const platformInfo = getPlatformInfoByName(platformName);
   const cleanId = normalizeId(profile.id_plateforme); 
 
-  const platformPosts = (postData || []).filter(post => {
+  const platformPosts = (postData || []).filter((post: any) => {
     const postCleanId = normalizeId(post.id_plateforme); 
     return postCleanId === cleanId;
   });
@@ -216,10 +216,10 @@ export default function CreatorDashboard() {
       console.log(`📱 ${platformInfo.name} (${cleanId}): ${platformPosts.length} posts`);
 
       // Calculer les stats
-      const totalLikes = platformPosts.reduce((sum, post) => sum + (Number(post.nbre_like) || 0), 0);
-      const totalComments = platformPosts.reduce((sum, post) => sum + (Number(post.nbre_commentaire) || 0), 0);
+      const totalLikes = platformPosts.reduce((sum: number, post: any) => sum + (Number(post.nbre_like) || 0), 0);
+      const totalComments = platformPosts.reduce((sum: number, post: any) => sum + (Number(post.nbre_commentaire) || 0), 0);
       const totalEngagement = totalLikes + totalComments;
-const totalViews = platformPosts.reduce((sum, p) => sum + (Number(p.nbre_vue) || 0), 0);
+const totalViews = platformPosts.reduce((sum: number, p: any) => sum + (Number(p.nbre_vue) || 0), 0);
 const engagementRate = totalViews > 0 
   ? ((totalEngagement / totalViews) * 100).toFixed(1)
   : '0';
@@ -1350,5 +1350,19 @@ const linkPostToCampaign = async (postId, campaignId) => {
         </motion.div>
       )}
     </div>
+  );
+}
+
+export default function CreatorDashboard() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[#050505] text-white">
+          <Loader2 className="w-10 h-10 animate-spin text-booster-yellow" />
+        </div>
+      }
+    >
+      <CreatorDashboardInner />
+    </Suspense>
   );
 }

@@ -36,7 +36,7 @@ export default function BrandCollaborations() {
       if (error || !campaignsData?.length) { setCollaborations([]); return; }
 
       const collaborationsWithCreators = await Promise.all(
-        campaignsData.map(async (campaign) => {
+        campaignsData.map(async (campaign: any) => {
           const { data: creatorInfo } = await supabase
             .from('createur').select('*').eq('id_w', campaign.assigned_creator_id).single();
           return { campaign, creatorInfo };
