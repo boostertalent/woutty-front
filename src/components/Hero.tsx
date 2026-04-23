@@ -152,43 +152,6 @@ function AppPhone() {
   );
 }
 
-function IllustrationVideo({ src, label }: { src: string; label: string }) {
-  const [failed, setFailed] = useState(false);
-
-  return (
-    <div className="relative w-full h-full">
-      {!failed && (
-        <video
-          className="w-full h-full object-cover"
-          autoPlay
-          muted
-          loop
-          playsInline
-          controls
-          preload="metadata"
-          onError={() => setFailed(true)}
-        >
-          <source src={src} type="video/mp4" />
-        </video>
-      )}
-
-      {failed && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#FFF7CC] via-white to-[#FFE9A3]">
-          <div className="text-center px-6">
-            <div className="mx-auto mb-3 h-12 w-12 rounded-2xl border border-black/10 bg-white shadow-sm flex items-center justify-center">
-              <span className="text-lg font-black">▶</span>
-            </div>
-            <div className="text-sm font-black tracking-tight text-black">{label}</div>
-            <div className="mt-1 text-xs text-black/60">
-              Ajoute la vidéo dans <span className="font-semibold">public/videos/</span>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function TikTokIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
@@ -415,20 +378,31 @@ export default function Hero() {
   };
 
   return (
-    <section className="w-full bg-[#FFD000] text-black overflow-hidden" style={{ marginTop: "40px" }}>
-      <div className="max-w-7xl mx-auto px-6 pt-6 pb-6 md:pb-8 flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="flex flex-col items-start gap-4 flex-1 max-w-xl">
+    <section className="w-full bg-[#FFD000] text-black overflow-hidden mt-6 sm:mt-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-6 md:pb-8 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="flex flex-col items-start gap-4 flex-1 max-w-xl w-full">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-black/20 bg-black/10 text-[10px] font-semibold text-black">
             <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
             Lancement Woutty · 2026
           </motion.div>
-          <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} style={{ fontFamily: "'Instrument Serif', 'Georgia', serif" }} className="text-[84px] md:text-[120px] font-normal italic leading-[0.82] tracking-tighter text-black">
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            style={{ fontFamily: "'Instrument Serif', 'Georgia', serif" }}
+            className="text-[56px] sm:text-[84px] md:text-[120px] font-normal italic leading-[0.9] sm:leading-[0.82] tracking-tighter text-black"
+          >
             Woutty
           </motion.h1>
           <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-black/70 text-lg leading-relaxed max-w-md">
             La plateforme qui connecte les marques aux créateurs de contenu authentiques au Sénégal.
           </motion.p>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="flex gap-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="flex flex-col sm:flex-row gap-3 sm:gap-6 w-full"
+          >
             <button
               type="button"
               onMouseEnter={scheduleOpenCreators}
@@ -441,11 +415,11 @@ export default function Hero() {
                 if (!isCreatorsOpen) scheduleCloseCreators();
               }}
               onClick={() => setIsCreatorsOpen((v) => !v)}
-              className="text-left group relative"
+              className="text-left group relative w-full sm:w-auto"
               aria-haspopup="dialog"
               aria-expanded={isCreatorsOpen}
             >
-              <div className="inline-flex items-center gap-2 rounded-full border border-black/15 bg-black/5 px-3 py-2 transition-all group-hover:bg-black/10 group-hover:border-black/25 group-active:scale-[0.99] overflow-hidden">
+              <div className="w-full inline-flex items-center gap-2 rounded-full border border-black/15 bg-black/5 px-3 py-2 transition-all group-hover:bg-black/10 group-hover:border-black/25 group-active:scale-[0.99] overflow-hidden">
                 <span className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity">
                   <span className="absolute -left-1/2 top-0 h-full w-1/3 rotate-12 bg-gradient-to-r from-transparent via-white/35 to-transparent blur-[1px] animate-[shine_1.4s_ease-in-out_infinite]" />
                 </span>
@@ -454,7 +428,7 @@ export default function Hero() {
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-black" />
                 </span>
                 <div className="leading-none">
-                  <div className="text-xl font-black -mt-[1px]">30+ Créateurs</div>
+                  <div className="text-lg sm:text-xl font-black -mt-[1px]">30+ Créateurs</div>
                   <div className="mt-1 text-[9px] font-extrabold text-black/60 uppercase tracking-[0.22em]">
                     Voir des profils
                     <span className="ml-1 inline-block group-hover:translate-x-[2px] transition-transform">→</span>
@@ -478,11 +452,11 @@ export default function Hero() {
                 if (!isBrandsOpen) scheduleCloseBrands();
               }}
               onClick={() => setIsBrandsOpen((v) => !v)}
-              className="text-left group relative"
+              className="text-left group relative w-full sm:w-auto"
               aria-haspopup="dialog"
               aria-expanded={isBrandsOpen}
             >
-              <div className="inline-flex items-center gap-2 rounded-full border border-black/15 bg-black/5 px-3 py-2 transition-all group-hover:bg-black/10 group-hover:border-black/25 group-active:scale-[0.99] overflow-hidden">
+              <div className="w-full inline-flex items-center gap-2 rounded-full border border-black/15 bg-black/5 px-3 py-2 transition-all group-hover:bg-black/10 group-hover:border-black/25 group-active:scale-[0.99] overflow-hidden">
                 <span className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity">
                   <span className="absolute -left-1/2 top-0 h-full w-1/3 rotate-12 bg-gradient-to-r from-transparent via-white/35 to-transparent blur-[1px] animate-[shine_1.4s_ease-in-out_infinite]" />
                 </span>
@@ -491,7 +465,7 @@ export default function Hero() {
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-black" />
                 </span>
                 <div className="leading-none">
-                  <div className="text-xl font-black -mt-[1px]">10+ Marques</div>
+                  <div className="text-lg sm:text-xl font-black -mt-[1px]">10+ Marques</div>
                   <div className="mt-1 text-[9px] font-extrabold text-black/60 uppercase tracking-[0.22em]">
                     Voir la vitrine
                     <span className="ml-1 inline-block group-hover:translate-x-[2px] transition-transform">→</span>
@@ -504,16 +478,16 @@ export default function Hero() {
               </span>
             </button>
 
-            <div>
+            <div className="hidden sm:block">
               <div className="text-2xl font-black">98%</div>
               <div className="text-[9px] font-semibold text-black/60 uppercase tracking-widest">Satisfaction</div>
             </div>
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex flex-wrap gap-3">
-            <Link href="/auth" className="bg-black text-white px-6 py-3 rounded-full font-black text-xs hover:bg-gray-900 transition-colors shadow-md">
+            <Link href="/auth" className="w-full sm:w-auto text-center bg-black text-white px-6 py-3 rounded-full font-black text-sm hover:bg-gray-900 transition-colors shadow-md">
               Commencer maintenant
             </Link>
-            <Link href="#process" className="border-2 border-black/20 text-black px-6 py-3 rounded-full font-bold text-xs hover:bg-black/5 transition-colors">
+            <Link href="#process" className="w-full sm:w-auto text-center border-2 border-black/20 text-black px-6 py-3 rounded-full font-bold text-sm hover:bg-black/5 transition-colors">
               Comment ça marche ?
             </Link>
           </motion.div>
@@ -522,7 +496,7 @@ export default function Hero() {
           initial={{ opacity: 0, x: 40 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2, duration: 0.8 }}
-          className="flex-1 flex justify-center items-center min-h-[480px] relative"
+          className="flex-1 flex justify-center items-center min-h-[320px] sm:min-h-[420px] md:min-h-[480px] relative w-full"
         >
           {/* Pops réseaux sociaux (entre le texte et le téléphone) */}
           <div className="hidden md:block absolute left-0 top-10 w-[220px] pointer-events-none">
@@ -875,78 +849,84 @@ export default function Hero() {
   );
 }
 
+function InvitationImageFrame({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative w-full overflow-hidden bg-background">
+      {children}
+      {/* Fusion très légère sur les bords — zone étroite pour ne pas voiler le texte des visuels */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(to_right,var(--background)_0%,color-mix(in_srgb,var(--background)_22%,transparent)_4%,transparent_9%,transparent_91%,color-mix(in_srgb,var(--background)_22%,transparent)_96%,var(--background)_100%)]"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-[2] bg-[linear-gradient(to_bottom,var(--background)_0%,color-mix(in_srgb,var(--background)_20%,transparent)_3.5%,transparent_8%,transparent_92%,color-mix(in_srgb,var(--background)_20%,transparent)_96.5%,var(--background)_100%)]"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-[3] shadow-[inset_0_0_20px_14px_var(--background)] opacity-[0.18] sm:shadow-[inset_0_0_28px_18px_var(--background)] sm:opacity-[0.22]"
+      />
+    </div>
+  );
+}
+
 export function HeroCreatorPartnerCards() {
   return (
-    <section className="w-full bg-white text-black">
-      <div className="max-w-7xl mx-auto px-6 py-12 space-y-6">
-        {/* Ligne 1 : Vous êtes une marque + Vidéo à droite */}
-        <div className="grid lg:grid-cols-2 gap-6 items-start">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col justify-between"
-          >
-            <div className="space-y-5">
-              <h2 className="font-black text-2xl md:text-3xl tracking-tighter uppercase">Vous êtes une marque</h2>
-              <p className="text-black text-base leading-relaxed">
-                Gagnez du temps, réduisez vos coûts et améliorez vos performances marketing avec du contenu qui parle vraiment à votre audience.
-              </p>
-              <p className="text-black/70 text-sm leading-relaxed italic border-l-2 border-[#FFD000] pl-4">
-                Grâce à nos créateurs de contenu, obtenez du contenu engageant, naturel et optimisé pour les réseaux sociaux, sans passer par des productions coûteuses.
-              </p>
-            </div>
+    <section className="w-full bg-background text-foreground transition-colors duration-500">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-12 space-y-10">
+        {/* 1. Marques — visuel invitation + CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex w-full flex-col gap-5"
+        >
+          <InvitationImageFrame>
+            <Image
+              src="/imgaes-invitation/invitation_marque2.png"
+              alt="Woutty — invitation aux marques"
+              width={1920}
+              height={1080}
+              className="relative z-0 w-full h-auto object-contain"
+              sizes="(max-width: 768px) 100vw, 1280px"
+              priority
+            />
+          </InvitationImageFrame>
+          <div className="flex w-full justify-center">
             <Link
               href="/auth/login"
-              className="mt-8 inline-flex items-center justify-center bg-black text-white rounded-full px-8 py-4 font-black text-xs hover:bg-gray-900 transition-colors uppercase tracking-widest w-full sm:w-auto"
+              className="inline-flex w-full items-center justify-center bg-foreground text-background rounded-full px-8 py-4 font-black text-xs hover:bg-foreground/90 transition-colors uppercase tracking-widest sm:w-auto"
             >
               Lancer une campagne →
             </Link>
-          </motion.div>
+          </div>
+        </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="rounded-[32px] overflow-hidden border border-black/5 bg-white shadow-sm min-h-[320px] flex"
-          >
-            <IllustrationVideo src="/videos/brand-demo.mp4" label="Vidéo illustrative (marque)" />
-          </motion.div>
-        </div>
-
-        {/* Ligne 2 : Vidéo à gauche + Vous aimez créer du contenu à droite (en dessous) */}
-        <div className="grid lg:grid-cols-2 gap-6 items-start">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.08 }}
-            className="rounded-[32px] overflow-hidden border border-black/5 bg-white shadow-sm min-h-[320px] flex lg:order-1"
-          >
-            <IllustrationVideo src="/videos/creator-demo.mp4" label="Vidéo illustrative (créateur)" />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="flex flex-col justify-between lg:order-2"
-          >
-            <div className="space-y-5">
-              <h2 className="font-black text-2xl md:text-3xl tracking-tighter uppercase">Vous aimez créer du contenu</h2>
-              <p className="text-black text-base leading-relaxed">
-                Gagnez de l'argent en créant du contenu authentique pour les marques, même sans être influenceur.
-              </p>
-              <p className="text-black/70 text-sm leading-relaxed italic border-l-2 border-[#FFD000] pl-4">
-                Pas besoin d'avoir une grande audience : ce qui compte, c'est votre capacité à créer du contenu naturel et engageant.
-              </p>
-            </div>
+        {/* 2. Créateurs de contenu — visuel invitation + CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.06 }}
+          className="flex w-full flex-col gap-5"
+        >
+          <InvitationImageFrame>
+            <Image
+              src="/imgaes-invitation/invitation_createur1.png"
+              alt="Woutty — invitation aux créateurs de contenu"
+              width={1920}
+              height={1080}
+              className="relative z-0 w-full h-auto object-contain"
+              sizes="(max-width: 768px) 100vw, 1280px"
+            />
+          </InvitationImageFrame>
+          <div className="flex w-full justify-center">
             <Link
               href="/creators/auth/formulaire/etape1"
-              className="mt-8 inline-flex items-center justify-center bg-[#FFD000] text-black rounded-full px-8 py-4 font-black text-xs hover:bg-yellow-400 transition-colors uppercase tracking-widest w-full sm:w-auto"
+              className="inline-flex w-full items-center justify-center bg-booster-yellow text-black rounded-full px-8 py-4 font-black text-xs hover:opacity-90 transition-colors uppercase tracking-widest sm:w-auto"
             >
               Rejoindre Woutty →
             </Link>
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
       </div>
     </section>
   );

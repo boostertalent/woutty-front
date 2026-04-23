@@ -28,7 +28,7 @@ export default function ResetPasswordPage() {
     };
     checkSession();
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
       if (session) setReady(true);
     });
 

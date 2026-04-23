@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { Suspense, useState, useMemo, useEffect, useCallback } from 'react';
 import { createBrowserClient } from '@supabase/ssr'; 
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -61,7 +61,7 @@ const calculateEngagementRate = (post: any): string => {
   return `${(engagement * 100).toFixed(1)}%`;
 };
 
-export default function CreatorDashboard() {
+function CreatorDashboardInner() {
   const searchParams = useSearchParams();
   const [isAdminViewing, setIsAdminViewing] = useState(false);
   const router = useRouter();
@@ -74,7 +74,7 @@ export default function CreatorDashboard() {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [processingCampaign, setProcessingCampaign] = useState<number | null>(null);
+  const [processingCampaign, setProcessingCampaign] = useState<string | null>(null);
   const [selectedPlatforms, setSelectedPlatforms] = useState<any[]>([]);
   const [allPosts, setAllPosts] = useState<any[]>([]);
   const [pendingCampaigns, setPendingCampaigns] = useState<any[]>([]);
@@ -97,7 +97,7 @@ export default function CreatorDashboard() {
     { name: 'Terminées', icon: <Archive size={20} /> },
   ];
 
-  const platformConfig: Record<string, { name: string; icon: JSX.Element }> = useMemo(() => ({
+  const platformConfig: Record<string, { name: string; icon: React.ReactElement }> = useMemo(() => ({
    'instagram': { name: 'Instagram', icon: <Instagram size={14} /> },
     'youtube': { name: 'YouTube', icon: <Youtube size={14} /> },
     'tiktok': { name: 'TikTok', icon: <span className="text-[12px]">🎵</span> },
@@ -1350,5 +1350,19 @@ const linkPostToCampaign = async (postId, campaignId) => {
         </motion.div>
       )}
     </div>
+  );
+}
+
+export default function CreatorDashboard() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[#050505] text-white">
+          <Loader2 className="w-10 h-10 animate-spin text-booster-yellow" />
+        </div>
+      }
+    >
+      <CreatorDashboardInner />
+    </Suspense>
   );
 }

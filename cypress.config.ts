@@ -24,7 +24,7 @@ export default defineConfig({
 
       // Hook exécuté UNIQUEMENT en mode `cypress run`
       on("after:run", async (results) => {
-        if (!results || !results.runs) {
+        if (!results || !("runs" in results) || !results.runs) {
           return;
         }
 

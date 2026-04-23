@@ -143,7 +143,23 @@ export default function CampaignChoice() {
   );
 
   // Données des packs
-  const PACKS_DATA = {
+  const PACKS_DATA: Record<
+    string,
+    {
+      id: string;
+      name: string;
+      price: number;
+      originalPrice: number;
+      duration: number;
+      posts: number;
+      creators: number;
+      format: string;
+      videos: boolean;
+      reporting: boolean;
+      bonus?: string;
+      imageRights?: boolean;
+    }
+  > = {
     'local-starter': {
       id: 'local-starter',
       name: 'Local Starter',

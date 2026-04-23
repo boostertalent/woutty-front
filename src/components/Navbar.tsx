@@ -176,7 +176,7 @@ export default function Navbar() {
             initial={{ opacity: 0, y: -20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            className="absolute top-20 left-4 right-4 md:hidden pointer-events-auto bg-card border border-border rounded-3xl p-8 shadow-2xl z-40"
+            className="absolute top-20 left-4 right-4 md:hidden pointer-events-auto bg-card border border-border rounded-3xl p-4 shadow-2xl z-40"
           >
             <nav className="flex flex-col gap-2 text-center">
               {navLinks.map((link) => (
@@ -184,7 +184,7 @@ export default function Navbar() {
                   <Link
                     href={link.href}
                     onClick={() => { setActivePath(link.href); setIsOpen(false); }}
-                    className={`block text-xl py-4 rounded-xl transition-all relative ${
+                    className={`block text-lg py-3 rounded-xl transition-all relative ${
                       activePath === link.href ? "text-booster-yellow font-bold" : "text-muted-foreground"
                     }`}
                   >

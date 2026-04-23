@@ -29,11 +29,11 @@ export default function FAQ() {
   };
 
   return (
-    <section className="bg-background text-foreground py-24 px-6 transition-colors duration-500">
+    <section className="bg-background text-foreground py-14 sm:py-24 px-4 sm:px-6 transition-colors duration-500">
       <div className="max-w-3xl mx-auto">
         
         {/* En-tête de section */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-10 sm:mb-16">
           <h2 className="text-3xl font-bold mb-4 tracking-tight">Questions fréquentes</h2>
           <p className="text-muted-foreground text-sm">Tout ce que vous devez savoir pour commencer.</p>
         </div>
@@ -56,7 +56,7 @@ export default function FAQ() {
               >
                 <button
                   onClick={() => setOpenIndex(isOpen ? null : index)}
-                  className="w-full py-7 flex justify-between items-center text-left group transition-all"
+                  className="w-full py-5 sm:py-7 flex justify-between items-center text-left group transition-all"
                 >
                   <span className={`text-sm md:text-base font-medium transition-colors duration-300 ${
                     isOpen ? 'text-booster-yellow' : 'text-foreground/80 group-hover:text-foreground'

@@ -56,7 +56,7 @@ export default function ValidatePostsPage() {
       console.log('✅ Posts chargés:', postsData?.length);
 
       // ✅ Charger les infos des campagnes séparément 
-      const campaignIds = [...new Set(postsData?.map(p => p.id_t_campagne).filter(Boolean))];
+      const campaignIds = [...new Set(postsData?.map((p: any) => p.id_t_campagne).filter(Boolean))];
       const { data: campaignsData, error: campaignsError } = await supabase
         .from('campaigns')
         .select('id_t_campagne, title, start_date, end_date, id_w')
@@ -69,7 +69,7 @@ export default function ValidatePostsPage() {
       console.log('✅ Campagnes chargées:', campaignsData?.length);
 
       // ✅ Charger les infos des créateurs séparément
-      const creatorIds = [...new Set(postsData?.map(p => p.id_w).filter(Boolean))];
+      const creatorIds = [...new Set(postsData?.map((p: any) => p.id_w).filter(Boolean))];
       const { data: creatorsData, error: creatorsError } = await supabase
         .from('createur')
         .select('id_w, full_name, avatar_url')
@@ -82,10 +82,10 @@ export default function ValidatePostsPage() {
       console.log('✅ Créateurs chargés:', creatorsData?.length);
 
       // ✅ Charger les infos des marques séparément
-      const brandIds = [...new Set(campaignsData?.map(c => c.id_w).filter(Boolean))];
+      const brandIds = [...new Set(campaignsData?.map((c: any) => c.id_w).filter(Boolean))];
       console.log('🔍 Brand IDs trouvés:', brandIds);
 
-      let brandsData = null;
+      let brandsData: any[] | null = null;
       if (brandIds.length > 0) {
         const { data, error: brandsError } = await supabase
           .from('marque')
@@ -101,12 +101,12 @@ export default function ValidatePostsPage() {
       console.log('✅ Marques chargées:', brandsData?.length);
 
       // ✅ Mapper les données
-      const campaignsMap = new Map(campaignsData?.map(c => [c.id_t_campagne, c]) || []);
-      const creatorsMap = new Map(creatorsData?.map(c => [c.id_w, c]) || []);
-      const brandsMap = new Map(brandsData?.map(b => [b.id_w, b]) || []);
+      const campaignsMap = new Map(campaignsData?.map((c: any) => [c.id_t_campagne, c]) || []);
+      const creatorsMap = new Map(creatorsData?.map((c: any) => [c.id_w, c]) || []);
+      const brandsMap = new Map(brandsData?.map((b: any) => [b.id_w, b]) || []);
 
-      const enrichedPosts = postsData?.map(post => {
-        const campaign = campaignsMap.get(post.id_t_campagne);
+      const enrichedPosts = postsData?.map((post: any) => {
+        const campaign: any = campaignsMap.get(post.id_t_campagne);
         return {
           ...post,
           campaigns: campaign,

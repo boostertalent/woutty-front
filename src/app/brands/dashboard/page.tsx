@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react'; 
@@ -20,7 +20,7 @@ const XLogo = ({ size = 16 }: { size?: number }) => (
   </svg>
 );
 
-export default function BrandDashboard() {
+function BrandDashboardInner() {
   const searchParams = useSearchParams();
   const [isAdminViewing, setIsAdminViewing] = useState(false);
   const router = useRouter();
@@ -76,8 +76,8 @@ export default function BrandDashboard() {
     try {
       const { data: allCreators, error } = await supabase.from('createur').select('*').eq('role', 'creator');
       if (error || !allCreators) return [];
-      const campaignNiches = userCampaigns.map(c => c.niche).filter(Boolean).flat();
-      const scoredCreators = allCreators.map(creator => {
+      const campaignNiches = userCampaigns.map((c: any) => c.niche).filter(Boolean).flat();
+      const scoredCreators = allCreators.map((creator: any) => {
         let score = 0; const reasons: string[] = [];
         if (campaignNiches.length > 0 && creator.niche) {
           const creatorNiches = Array.isArray(creator.niche) ? creator.niche : [];
@@ -91,7 +91,7 @@ export default function BrandDashboard() {
         else if (totalFollowers > 10000) score += 20;
         else if (totalFollowers > 1000) score += 10;
         const avgBudget = userCampaigns.length > 0
-          ? userCampaigns.reduce((s, c) => s + (parseFloat(c.budget) || 0), 0) / userCampaigns.length : 0;
+          ? userCampaigns.reduce((s: any, c: any) => s + (parseFloat(c.budget) || 0), 0) / userCampaigns.length : 0;
         if (avgBudget > 0) {
           const ec = totalFollowers * 10;
           if (ec <= avgBudget * 1.2) { score += 20; reasons.push("Budget adapté"); }
@@ -103,10 +103,13 @@ export default function BrandDashboard() {
         if (creator.phone) ps += 2;
         if (creator.instagram_username || creator.youtube_username || creator.tiktok_username) ps += 3;
         score += ps; if (ps >= 8) reasons.push("Profil complet");
-        if (userCampaigns.some(c => c.assigned_creator_id === creator.id_w)) { score += 15; reasons.push("Déjà collaboré"); }
+        if (userCampaigns.some((c: any) => c.assigned_creator_id === creator.id_w)) { score += 15; reasons.push("Déjà collaboré"); }
         return { ...creator, matchScore: score, matchReasons: reasons, totalFollowers, primaryPlatform: getPrimaryPlatform(creator) };
       });
-      return scoredCreators.filter(c => c.matchScore > 0).sort((a, b) => b.matchScore - a.matchScore).slice(0, 5);
+      return scoredCreators
+        .filter((c: any) => c.matchScore > 0)
+        .sort((a: any, b: any) => b.matchScore - a.matchScore)
+        .slice(0, 5);
     } catch { return []; }
   };
 
@@ -136,7 +139,7 @@ export default function BrandDashboard() {
         setCampaigns(campaignsData || []);
         if (campaignsData?.length) {
           const today = new Date(); let totalBudget = 0, completedCampaigns = 0, ongoingCampaigns = 0;
-          campaignsData.forEach(c => {
+          campaignsData.forEach((c: any) => {
             totalBudget += parseFloat(c.budget) || 0;
             if (c.start_date && c.end_date) {
               const s = new Date(c.start_date), e = new Date(c.end_date);
@@ -590,5 +593,19 @@ export default function BrandDashboard() {
 
       </div>
     </div>
+  );
+}
+
+export default function BrandDashboard() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB]">
+          <Loader2 className="w-10 h-10 text-[#D4A017] animate-spin" />
+        </div>
+      }
+    >
+      <BrandDashboardInner />
+    </Suspense>
   );
 }

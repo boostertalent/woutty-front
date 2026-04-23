@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
@@ -16,7 +16,7 @@ const XLogo = ({ size = 16 }: { size?: number }) => (
   </svg>
 );
 
-export default function CampaignMatchResults() {
+function CampaignMatchResultsInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id_t_campagne = searchParams.get('campaign');
@@ -64,14 +64,14 @@ export default function CampaignMatchResults() {
 
       const campaignNiches = Array.isArray(campaignData.interests) ? campaignData.interests : [];
 
-      const scoredCreators = allCreators.map(creator => {
+      const scoredCreators = allCreators.map((creator: any) => {
         let score = 0;
         const reasons: string[] = [];
 
         if (campaignNiches.length > 0 && creator.niche) {
           const creatorNiches = Array.isArray(creator.niche) ? creator.niche : [];
-          const nicheMatch = creatorNiches.some(cn =>
-            campaignNiches.some(campNiche =>
+          const nicheMatch = creatorNiches.some((cn: any) =>
+            campaignNiches.some((campNiche: any) =>
               cn.toLowerCase().includes(campNiche.toLowerCase()) ||
               campNiche.toLowerCase().includes(cn.toLowerCase())
             )
@@ -129,8 +129,8 @@ export default function CampaignMatchResults() {
       });
 
       return scoredCreators
-        .filter(c => c.matchScore > 0)
-        .sort((a, b) => b.matchScore - a.matchScore);
+        .filter((c: any) => c.matchScore > 0)
+        .sort((a: any, b: any) => b.matchScore - a.matchScore);
     } catch (err) {
       console.error("❌ Erreur suggestion:", err);
       return [];
@@ -653,5 +653,19 @@ export default function CampaignMatchResults() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CampaignMatchResults() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-white">
+          <Loader2 className="w-10 h-10 text-[#D4A017] animate-spin" />
+        </div>
+      }
+    >
+      <CampaignMatchResultsInner />
+    </Suspense>
   );
 }

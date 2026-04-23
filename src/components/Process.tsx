@@ -23,7 +23,7 @@ export default function Process() {
   const currentSteps = activeTab === "brands" ? brandSteps : creatorSteps;
 
   return (
-    <section className="py-12 px-6 bg-background text-foreground">
+    <section className="py-12 px-4 sm:px-6 bg-background text-foreground">
       <div className="max-w-5xl mx-auto flex flex-col items-center">
 
         <motion.span
@@ -39,7 +39,7 @@ export default function Process() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-4xl md:text-5xl font-bold text-center mb-3"
+          className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-3"
         >
           Comment ça marche ?
         </motion.h2>
@@ -53,7 +53,7 @@ export default function Process() {
           Un processus simple, fluide et sécurisé, pensé pour les marques et les créateurs.
         </motion.p>
 
-        <div className="relative flex bg-muted p-1 rounded-full border border-border mb-10">
+        <div className="relative flex bg-muted p-1 rounded-full border border-border mb-10 w-full max-w-md">
           <motion.div
             layout
             className="absolute top-1 bottom-1 w-1/2 bg-booster-yellow rounded-full"
@@ -66,7 +66,7 @@ export default function Process() {
               key={tab}
               whileTap={{ scale: 0.95 }}
               onClick={() => setActiveTab(tab as any)}
-              className={`relative z-10 px-6 py-2 text-sm font-medium rounded-full transition-colors ${
+              className={`relative z-10 flex-1 px-4 sm:px-6 py-2 text-sm font-medium rounded-full transition-colors ${
                 activeTab === tab ? "text-black" : "text-muted-foreground"
               }`}
             >

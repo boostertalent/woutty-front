@@ -57,7 +57,7 @@ export async function GET(request: Request) {
         .eq('id_w', user.id)
         .maybeSingle();
       if (brandData) {
-        return NextResponse.redirect(`${origin}/brands/auth/dashboard`);
+        return NextResponse.redirect(`${origin}/brands/dashboard`);
       }
 
       return NextResponse.redirect(`${origin}/auth/login?error=profile_not_found`);
