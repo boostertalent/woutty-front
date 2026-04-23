@@ -49,7 +49,7 @@ function AppPhone() {
     >
       <motion.div
         style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-        className="relative scale-100 md:scale-110"
+        className="relative max-md:scale-[0.8] max-md:origin-center md:scale-110"
       >
         <div style={{ position: "absolute", bottom: "-30px", left: "50%", transform: "translateX(-50%)", width: "80%", height: "30px", background: "radial-gradient(ellipse, rgba(0,0,0,0.25) 0%, transparent 70%)", filter: "blur(10px)" }} />
         <div style={{ width: "260px", background: "#111", borderRadius: "36px", border: "3px solid #222", padding: "10px", boxShadow: "0 40px 80px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)", transformStyle: "preserve-3d" }}>
@@ -378,10 +378,10 @@ export default function Hero() {
   };
 
   return (
-    <section className="w-full bg-[#FFD000] text-black overflow-hidden mt-6 sm:mt-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-6 md:pb-8 flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="flex flex-col items-start gap-4 flex-1 max-w-xl w-full">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-black/20 bg-black/10 text-[10px] font-semibold text-black">
+    <section className="w-full bg-[#FFD000] text-black overflow-hidden mt-3 max-md:mt-4 sm:mt-10">
+      <div className="max-w-7xl mx-auto flex flex-col items-center justify-between gap-3 px-4 py-3 sm:px-6 md:flex-row md:gap-6 md:py-6 md:pb-8">
+        <div className="flex flex-col items-start max-md:gap-2 gap-4 flex-1 max-w-xl w-full">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 max-md:px-2.5 max-md:py-0.5 px-3 py-1 rounded-full border border-black/20 bg-black/10 text-[10px] font-semibold text-black">
             <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
             Lancement Woutty · 2026
           </motion.div>
@@ -390,18 +390,18 @@ export default function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             style={{ fontFamily: "'Instrument Serif', 'Georgia', serif" }}
-            className="text-[56px] sm:text-[84px] md:text-[120px] font-normal italic leading-[0.9] sm:leading-[0.82] tracking-tighter text-black"
+            className="text-[42px] max-md:leading-[0.88] sm:text-[84px] md:text-[120px] font-normal italic leading-[0.9] sm:leading-[0.82] tracking-tighter text-black"
           >
             Woutty
           </motion.h1>
-          <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-black/70 text-lg leading-relaxed max-w-md">
+          <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-black/70 max-md:text-sm max-md:leading-snug text-lg leading-relaxed max-w-md">
             La plateforme qui connecte les marques aux créateurs de contenu authentiques au Sénégal.
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
-            className="flex flex-col sm:flex-row gap-3 sm:gap-6 w-full"
+            className="flex flex-col sm:flex-row max-md:gap-2 gap-3 sm:gap-6 w-full"
           >
             <button
               type="button"
@@ -428,7 +428,7 @@ export default function Hero() {
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-black" />
                 </span>
                 <div className="leading-none">
-                  <div className="text-lg sm:text-xl font-black -mt-[1px]">30+ Créateurs</div>
+                  <div className="text-base max-md:text-[15px] sm:text-xl font-black -mt-[1px]">30+ Créateurs</div>
                   <div className="mt-1 text-[9px] font-extrabold text-black/60 uppercase tracking-[0.22em]">
                     Voir des profils
                     <span className="ml-1 inline-block group-hover:translate-x-[2px] transition-transform">→</span>
@@ -465,7 +465,7 @@ export default function Hero() {
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-black" />
                 </span>
                 <div className="leading-none">
-                  <div className="text-lg sm:text-xl font-black -mt-[1px]">10+ Marques</div>
+                  <div className="text-base max-md:text-[15px] sm:text-xl font-black -mt-[1px]">10+ Marques</div>
                   <div className="mt-1 text-[9px] font-extrabold text-black/60 uppercase tracking-[0.22em]">
                     Voir la vitrine
                     <span className="ml-1 inline-block group-hover:translate-x-[2px] transition-transform">→</span>
@@ -483,11 +483,11 @@ export default function Hero() {
               <div className="text-[9px] font-semibold text-black/60 uppercase tracking-widest">Satisfaction</div>
             </div>
           </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex flex-wrap gap-3">
-            <Link href="/auth" className="w-full sm:w-auto text-center bg-black text-white px-6 py-3 rounded-full font-black text-sm hover:bg-gray-900 transition-colors shadow-md">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex flex-wrap max-md:gap-2 gap-3">
+            <Link href="/auth" className="w-full sm:w-auto text-center bg-black text-white px-5 max-md:py-2.5 py-3 rounded-full font-black text-sm hover:bg-gray-900 transition-colors shadow-md">
               Commencer maintenant
             </Link>
-            <Link href="#process" className="w-full sm:w-auto text-center border-2 border-black/20 text-black px-6 py-3 rounded-full font-bold text-sm hover:bg-black/5 transition-colors">
+            <Link href="#process" className="w-full sm:w-auto text-center border-2 border-black/20 text-black px-5 max-md:py-2.5 py-3 rounded-full font-bold text-sm hover:bg-black/5 transition-colors">
               Comment ça marche ?
             </Link>
           </motion.div>
@@ -496,7 +496,7 @@ export default function Hero() {
           initial={{ opacity: 0, x: 40 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2, duration: 0.8 }}
-          className="flex-1 flex justify-center items-center min-h-[320px] sm:min-h-[420px] md:min-h-[480px] relative w-full"
+          className="flex-1 flex justify-center items-center max-md:min-h-0 max-md:py-0 sm:min-h-[340px] md:min-h-[480px] relative w-full"
         >
           {/* Pops réseaux sociaux (entre le texte et le téléphone) */}
           <div className="hidden md:block absolute left-0 top-10 w-[220px] pointer-events-none">
