@@ -390,7 +390,7 @@ export default function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             style={{ fontFamily: "'Instrument Serif', 'Georgia', serif" }}
-            className="text-[42px] max-md:leading-[0.88] sm:text-[84px] md:text-[120px] font-normal italic leading-[0.9] sm:leading-[0.82] tracking-tighter text-black"
+            className="text-[52px] max-md:leading-[0.86] sm:text-[84px] md:text-[120px] font-black italic leading-[0.9] sm:leading-[0.82] tracking-tighter text-black"
           >
             Woutty
           </motion.h1>
@@ -401,7 +401,7 @@ export default function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
-            className="flex flex-col sm:flex-row max-md:gap-2 gap-3 sm:gap-6 w-full"
+            className="flex flex-row max-md:gap-2 gap-3 sm:gap-6 w-full"
           >
             <button
               type="button"
@@ -415,7 +415,7 @@ export default function Hero() {
                 if (!isCreatorsOpen) scheduleCloseCreators();
               }}
               onClick={() => setIsCreatorsOpen((v) => !v)}
-              className="text-left group relative w-full sm:w-auto"
+              className="text-left group relative w-1/2 sm:w-auto"
               aria-haspopup="dialog"
               aria-expanded={isCreatorsOpen}
             >
@@ -452,7 +452,7 @@ export default function Hero() {
                 if (!isBrandsOpen) scheduleCloseBrands();
               }}
               onClick={() => setIsBrandsOpen((v) => !v)}
-              className="text-left group relative w-full sm:w-auto"
+              className="text-left group relative w-1/2 sm:w-auto"
               aria-haspopup="dialog"
               aria-expanded={isBrandsOpen}
             >
@@ -486,9 +486,6 @@ export default function Hero() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex flex-wrap max-md:gap-2 gap-3">
             <Link href="/auth" className="w-full sm:w-auto text-center bg-black text-white px-5 max-md:py-2.5 py-3 rounded-full font-black text-sm hover:bg-gray-900 transition-colors shadow-md">
               Commencer maintenant
-            </Link>
-            <Link href="#process" className="w-full sm:w-auto text-center border-2 border-black/20 text-black px-5 max-md:py-2.5 py-3 rounded-full font-bold text-sm hover:bg-black/5 transition-colors">
-              Comment ça marche ?
             </Link>
           </motion.div>
         </div>
@@ -620,7 +617,9 @@ export default function Hero() {
             </AnimatePresence>
           </div>
 
-          <AppPhone />
+          <div className="hidden md:block">
+            <AppPhone />
+          </div>
         </motion.div>
       </div>
 
@@ -849,14 +848,20 @@ export default function Hero() {
   );
 }
 
-function InvitationImageFrame({ children }: { children: React.ReactNode }) {
+function InvitationImageFrame({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="relative w-full overflow-hidden bg-background">
+    <div className={["relative w-full overflow-hidden bg-background", className].filter(Boolean).join(" ")}>
       {children}
       {/* Fusion très légère sur les bords — zone étroite pour ne pas voiler le texte des visuels */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(to_right,var(--background)_0%,color-mix(in_srgb,var(--background)_22%,transparent)_4%,transparent_9%,transparent_91%,color-mix(in_srgb,var(--background)_22%,transparent)_96%,var(--background)_100%)]"
+        className="pointer-events-none absolute inset-0 z-[1] hidden sm:block bg-[linear-gradient(to_right,var(--background)_0%,color-mix(in_srgb,var(--background)_22%,transparent)_4%,transparent_9%,transparent_91%,color-mix(in_srgb,var(--background)_22%,transparent)_96%,var(--background)_100%)]"
       />
       <div
         aria-hidden
@@ -864,7 +869,7 @@ function InvitationImageFrame({ children }: { children: React.ReactNode }) {
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 z-[3] shadow-[inset_0_0_20px_14px_var(--background)] opacity-[0.18] sm:shadow-[inset_0_0_28px_18px_var(--background)] sm:opacity-[0.22]"
+        className="pointer-events-none absolute inset-0 z-[3] hidden sm:block shadow-[inset_0_0_20px_14px_var(--background)] opacity-[0.18] sm:shadow-[inset_0_0_28px_18px_var(--background)] sm:opacity-[0.22]"
       />
     </div>
   );
@@ -880,7 +885,7 @@ export function HeroCreatorPartnerCards() {
           animate={{ opacity: 1, y: 0 }}
           className="flex w-full flex-col gap-5"
         >
-          <InvitationImageFrame>
+          <InvitationImageFrame className="max-md:relative max-md:left-1/2 max-md:right-1/2 max-md:w-screen max-md:-mx-[50vw]">
             <Image
               src="/imgaes-invitation/invitation_marque2.png"
               alt="Woutty — invitation aux marques"
@@ -908,7 +913,7 @@ export function HeroCreatorPartnerCards() {
           transition={{ delay: 0.06 }}
           className="flex w-full flex-col gap-5"
         >
-          <InvitationImageFrame>
+          <InvitationImageFrame className="max-md:relative max-md:left-1/2 max-md:right-1/2 max-md:w-screen max-md:-mx-[50vw]">
             <Image
               src="/imgaes-invitation/invitation_createur1.png"
               alt="Woutty — invitation aux créateurs de contenu"

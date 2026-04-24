@@ -99,12 +99,15 @@ export default function CreateCreatorProfile() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 font-sans text-gray-900">
-      <Link href="/auth" className="fixed top-8 left-8 flex items-center gap-2 text-gray-500 hover:text-black transition-colors font-medium">
+    <main className="min-h-screen bg-gray-50 flex flex-col items-center md:justify-center max-md:justify-start max-md:pt-16 p-4 font-sans text-gray-900">
+      <Link
+        href="/auth"
+        className="fixed top-3 left-3 z-50 flex items-center gap-2 rounded-full border border-gray-200 bg-white/85 backdrop-blur px-3 py-2 text-xs font-bold text-gray-700 shadow-sm hover:text-black transition-colors"
+      >
         <ChevronLeft size={20} /> Retour
       </Link>
 
-      <h1 className="text-4xl md:text-5xl font-bold mb-12 text-center">
+      <h1 className="max-md:text-2xl text-4xl md:text-5xl font-bold max-md:mb-6 mb-12 text-center">
         Créer votre profil <span className="text-[#ceaf4a]">créateur !</span>
       </h1>
 

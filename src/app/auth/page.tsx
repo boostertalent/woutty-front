@@ -34,10 +34,10 @@ function ChoiceCard({ icon, title, description, features, href, buttonText, dela
 
 export default function AuthChoicePage() {
   return (
-    <div className="min-h-screen bg-white text-black flex flex-col items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-white text-black flex flex-col items-center justify-center max-md:pt-16 p-6 relative overflow-hidden">
       <Link
         href="/"
-        className="fixed top-6 left-6 z-20 flex items-center gap-2 rounded-full border border-black/10 bg-black/5 px-4 py-2 text-sm font-black hover:bg-black/10 transition-colors"
+        className="fixed top-3 left-3 z-50 flex items-center gap-2 rounded-full border border-black/10 bg-white/80 backdrop-blur px-4 py-2 text-xs sm:text-sm font-black hover:bg-white/90 transition-colors shadow-sm"
       >
         <ChevronLeft size={20} /> Accueil
       </Link>
@@ -45,12 +45,12 @@ export default function AuthChoicePage() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-16"
+        className="text-center mb-10 md:mb-16"
       >
-        <h1 className="text-5xl md:text-6xl font-extrabold text-black mb-4 tracking-tight" style={{ fontFamily: 'Georgia, serif' }}>
+        <h1 className="max-md:text-3xl text-5xl md:text-6xl font-extrabold text-black mb-3 md:mb-4 tracking-tight" style={{ fontFamily: 'Georgia, serif' }}>
           Bienvenue sur <span className="underline decoration-black decoration-4 underline-offset-[0.18em]">Woutty</span>
         </h1>
-        <p className="text-xl text-black font-medium italic">Choisissez votre profil pour commencer</p>
+        <p className="max-md:text-base text-xl text-black font-medium italic">Choisissez votre profil pour commencer</p>
       </motion.div>
 
       <div className="grid lg:grid-cols-2 md:grid-cols-2 grid-cols-1 gap-8 w-full max-w-6xl">

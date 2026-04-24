@@ -83,7 +83,7 @@ export default function BrandBenefits() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="text-4xl md:text-5xl font-bold mb-6 leading-[1.1] tracking-tight"
+          className="max-md:text-left max-md:text-2xl text-4xl md:text-5xl font-bold max-md:mb-3 mb-6 leading-[1.1] tracking-tight"
         >
           Boostez votre visibilité avec les talents qui résonnent avec votre audience
         </motion.h2>
@@ -93,7 +93,7 @@ export default function BrandBenefits() {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ delay: 0.3, duration: 0.8 }}
-          className="text-muted-foreground mb-16 max-w-2xl mx-auto text-lg leading-relaxed"
+          className="text-muted-foreground max-md:text-left max-md:text-sm text-lg leading-relaxed max-md:mb-8 mb-16 max-w-2xl mx-auto max-md:mx-0"
         >
           Que vous lanciez un produit, renforciez votre notoriété ou engagiez une communauté, nous créons des campagnes sur-mesure.
         </motion.p>

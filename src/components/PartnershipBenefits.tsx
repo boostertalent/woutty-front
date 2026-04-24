@@ -128,7 +128,7 @@ export default function PartnershipBenefits() {
           viewport={{ once: true }}
           className="text-[10px] uppercase tracking-[0.2em] border border-border px-4 py-1.5 rounded-full text-muted-foreground mb-8 inline-block"
         >
-          Nos campagnes réalisées
+          Campagnes réalisées
         </motion.span>
 
         {/* Titre */}
@@ -137,9 +137,9 @@ export default function PartnershipBenefits() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 leading-[1.1] tracking-tight"
+          className="max-md:text-left max-md:text-2xl text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 leading-[1.1] tracking-tight"
         >
-          Ensemble, redéfinissons les standards de l'influence
+          L'historique de nos campagnes !
         </motion.h2>
 
         <motion.p
@@ -147,7 +147,7 @@ export default function PartnershipBenefits() {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ delay: 0.3, duration: 0.8 }}
-          className="text-muted-foreground mb-10 sm:mb-16 max-w-2xl mx-auto text-base sm:text-lg leading-relaxed"
+          className="text-muted-foreground max-md:text-left max-md:text-sm mb-10 sm:mb-16 max-w-2xl mx-auto text-base sm:text-lg leading-relaxed max-md:mx-0"
         >
           Un aperçu de contenus et campagnes menés avec des marques et des créateurs sur Woutty.
         </motion.p>

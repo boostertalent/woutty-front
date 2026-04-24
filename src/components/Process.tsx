@@ -83,7 +83,7 @@ export default function Process() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.4 }}
-              className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-8"
+              className="grid grid-cols-1 md:grid-cols-2 max-md:gap-x-8 gap-x-16 max-md:gap-y-4 gap-y-8"
             >
               {currentSteps.map((step, i) => (
                 <motion.div
@@ -92,12 +92,12 @@ export default function Process() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.08 }}
                   whileHover={{ y: -4 }}
-                  className="flex gap-5 p-4 rounded-2xl hover:bg-muted/50 transition"
+                  className="flex max-md:gap-3 gap-5 max-md:p-3 p-4 rounded-2xl hover:bg-muted/50 transition"
                 >
-                  <span className="text-xl font-bold text-booster-yellow shrink-0">{step.id}.</span>
+                  <span className="max-md:text-lg text-xl font-bold text-booster-yellow shrink-0">{step.id}.</span>
                   <div>
-                    <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed max-w-sm">{step.desc}</p>
+                    <h3 className="max-md:text-base text-xl font-semibold max-md:mb-1 mb-2">{step.title}</h3>
+                    <p className="text-muted-foreground max-md:text-xs text-sm leading-relaxed max-w-sm">{step.desc}</p>
                   </div>
                 </motion.div>
               ))}

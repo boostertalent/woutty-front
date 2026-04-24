@@ -6,11 +6,11 @@ import { motion } from "framer-motion";
 
 export default function RegisterPartnerPage() {
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center max-md:pt-16 p-6">
 
       <Link
         href="/auth"
-        className="fixed top-8 left-8 z-20 flex items-center gap-2 bg-black text-white px-4 py-2 rounded-full font-bold hover:bg-gray-800 transition-colors shadow-md"
+        className="fixed top-3 left-3 z-50 flex items-center gap-2 bg-black/90 text-white px-4 py-2 rounded-full font-bold hover:bg-black transition-colors shadow-md"
       >
         <ChevronLeft size={20} /> Retour
       </Link>

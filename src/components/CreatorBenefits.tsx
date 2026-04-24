@@ -19,11 +19,11 @@ export default function CreatorBenefits() {
           Nos Créateurs
         </motion.span>
 
-        <h2 className="text-4xl md:text-5xl font-bold mb-6 max-w-2xl mx-auto leading-[1.1] tracking-tight">
-          Votre créativité mérite d'être rémunérée
+        <h2 className="max-md:text-left max-md:text-2xl text-4xl md:text-5xl font-bold max-md:mb-3 mb-6 max-w-2xl mx-auto leading-[1.1] tracking-tight max-md:mx-0">
+          Un aperçu de nos créateurs !
         </h2>
 
-        <p className="text-muted-foreground mb-16 max-w-3xl mx-auto text-lg leading-relaxed">
+        <p className="text-muted-foreground max-md:text-left max-md:text-sm text-lg leading-relaxed max-md:mb-8 mb-16 max-w-3xl mx-auto max-md:mx-0">
           Vous créez du contenu qui engage ? Nous vous accompagnons pour décrocher les meilleurs contrats et faire grandir votre communauté.
         </p>
 
