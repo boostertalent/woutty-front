@@ -4,15 +4,17 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { createBrowserClient } from '@supabase/ssr'; 
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { motion } from 'framer-motion'; 
+import { motion } from 'framer-motion';
+import { createNotification } from '@/lib/notifications';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 
-import { 
-  BarChart3, 
-  Briefcase, 
-  Send, 
-  User, 
-  Instagram, 
+import {
+  BarChart3,
+  Briefcase,
+  Send,
+  User,
+  Instagram,
   MessageCircle,
   Heart,
   Eye,
@@ -35,7 +37,8 @@ import {
   TrendingUp,
   CheckCircle,
   Bell,
-  Archive
+  Archive,
+  Upload
 } from 'lucide-react';
 
 const XLogo = ({ size = 14 }: { size?: number }) => (
@@ -74,7 +77,7 @@ export default function CreatorDashboard() {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [processingCampaign, setProcessingCampaign] = useState<number | null>(null);
+  const [processingCampaign, setProcessingCampaign] = useState<string | null>(null);
   const [selectedPlatforms, setSelectedPlatforms] = useState<any[]>([]);
   const [allPosts, setAllPosts] = useState<any[]>([]);
   const [pendingCampaigns, setPendingCampaigns] = useState<any[]>([]);
@@ -83,6 +86,7 @@ export default function CreatorDashboard() {
   const [creatorInfo, setCreatorInfo] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<number>(0);
+  const [userId, setUserId] = useState<string | null>(null);
    const normalizeId = useCallback((id: any): string => {
     if (!id) return '';
     return String(id).split('.')[0].trim().toLowerCase().replace(/\s+/g, '');
@@ -133,6 +137,7 @@ export default function CreatorDashboard() {
     }
 
     const USER_ID = session.user.id;
+    setUserId(USER_ID);
     const adminViewingId = searchParams.get('viewing');
     let creatorIdToLoad = adminViewingId || USER_ID;
     setIsAdminViewing(!!adminViewingId);
@@ -296,28 +301,57 @@ const formattedPosts = (postData || []).map((post, index) => {
     
     setAllPosts(formattedPosts);
 
-    // ✅ 7. CHARGER LES CAMPAGNES
-    const { data: pendingData } = await supabase
-      .from('campaigns')
-      .select('*')
-      .eq('assigned_creator_id', creatorIdToLoad)
-      .or('creator_status.is.null,creator_status.eq.pending');
+    // ✅ 7. CHARGER LES CAMPAGNES via campaign_creators
+    const { data: ccPending } = await supabase
+      .from('campaign_creators')
+      .select('campaign_id, campaigns(*)')
+      .eq('creator_id', creatorIdToLoad)
+      .eq('status', 'pending_creator');
 
-    setPendingCampaigns(pendingData || []);
-    setNotifications(pendingData?.length || 0);
+    const pendingData = (ccPending || []).map((row: any) => row.campaigns).filter(Boolean);
+    setPendingCampaigns(pendingData);
+    setNotifications(pendingData.length);
 
-    const { data: acceptedData } = await supabase
-      .from('campaigns')
-      .select('*')
-      .eq('assigned_creator_id', creatorIdToLoad)
-      .eq('creator_status', 'accepted');
+    const { data: ccAccepted } = await supabase
+      .from('campaign_creators')
+      .select('campaign_id, nb_publications, campaigns(id_t_campagne, title, description, objectives, social_networks, formats, nb_publications, budget, start_date, end_date, id_w)')
+      .eq('creator_id', creatorIdToLoad)
+      .eq('status', 'accepted');
 
-    const ongoing = acceptedData?.filter(c => !c.end_date || new Date(c.end_date) >= new Date()) || [];
-    const finished = acceptedData?.filter(c => c.end_date && new Date(c.end_date) < new Date()) || [];
+    // Charger les soumissions approuvées et en attente via l'API (admin client pour contourner les restrictions)
+    let approvedCountMap: Record<string, number> = {};
+    let pendingCountMap: Record<string, number> = {};
+    try {
+      const approvedRes = await fetch(`/api/creator/approved-submissions?creatorId=${creatorIdToLoad}`);
+      if (approvedRes.ok) {
+        const approvedData = await approvedRes.json();
+        approvedCountMap = approvedData.counts || {};
+        pendingCountMap = approvedData.pendingCounts || {};
+      }
+    } catch {
+      // silencieux — la progression restera à 0 si l'appel échoue
+    }
+
+    const acceptedData = (ccAccepted || []).map((row: any) => {
+      const campaign = row.campaigns;
+      if (!campaign) return null;
+      const totalPub = campaign.nb_publications || 0;
+      const creatorPub = row.nb_publications || 0;
+      const ratio = totalPub > 0 ? creatorPub / totalPub : 1;
+      const remuneration = (parseFloat(campaign.budget) || 0) * ratio * 0.85;
+      const approvedCount = approvedCountMap[row.campaign_id] || 0;
+      const pendingCount = pendingCountMap[row.campaign_id] || 0;
+      // Si nb_publications du créateur n'est pas renseigné, on utilise le total de la campagne
+      const nbAttendus = creatorPub > 0 ? creatorPub : totalPub;
+      return { ...campaign, remuneration, approvedCount, pendingCount, creatorNbPublications: nbAttendus };
+    }).filter(Boolean);
+
+    const ongoing = acceptedData?.filter((c: any) => !c.end_date || new Date(c.end_date) >= new Date()) || [];
+    const finished = acceptedData?.filter((c: any) => c.end_date && new Date(c.end_date) < new Date()) || [];
 
     setAcceptedCampaigns(ongoing);
     setCompletedCampaigns(finished);
-    setTotalRevenue(finished.reduce((sum, c) => sum + (parseFloat(c.budget) || 0), 0));
+    setTotalRevenue(finished.reduce((sum: number, c: any) => sum + (c.remuneration || 0), 0));
     setCompletedCampaignsCount(finished.length);
 
     console.log("✅ Chargement terminé avec succès");
@@ -355,78 +389,103 @@ const filteredPosts = useMemo(() => {
   console.log(`🔍 ${filtered.length} post(s) trouvé(s) pour "${activeFilter}"`);
   return filtered;
 }, [activeFilter, allPosts]);
-  const handleAcceptCampaign = async (campaignId: string) => { 
+  const handleAcceptCampaign = async (campaignId: string) => {
     setProcessingCampaign(campaignId);
     try {
+      const creatorId = creatorInfo?.id_w;
+
+      // Mettre à jour campaign_creators
       const { error } = await supabase
-        .from('campaigns')
-        .update({ 
-          creator_status: 'accepted',
-          accepted_at: new Date().toISOString()
-        })
-        .eq('id_t_campagne', campaignId); 
+        .from('campaign_creators')
+        .update({ status: 'accepted', accepted_at: new Date().toISOString() })
+        .eq('campaign_id', campaignId)
+        .eq('creator_id', creatorId);
 
       if (error) throw error;
 
-      console.log("✅ Campagne acceptée");
+      // Notifier l'admin et la marque
+      const { data: campaignData } = await supabase
+        .from('campaigns').select('title, id_w').eq('id_t_campagne', campaignId).maybeSingle();
+      const { data: adminData } = await supabase
+        .from('createur').select('id_w, email, full_name').eq('role', 'admin').limit(1).maybeSingle();
+
+      const meta = {
+        campaign_title: campaignData?.title || 'Sans titre',
+        creator_name: creatorInfo?.full_name || 'Créateur',
+        action_url: '/admin/campaigns',
+      };
+
+      if (adminData) {
+        await createNotification({
+          campaign_id: campaignId, creator_id: creatorId,
+          recipient_id: adminData.id_w, recipient_role: 'admin',
+          notification_type: 'creator_accepted', metadata: meta,
+        });
+      }
+      if (campaignData?.id_w) {
+        await createNotification({
+          campaign_id: campaignId, creator_id: creatorId,
+          brand_id: campaignData.id_w,
+          recipient_id: campaignData.id_w, recipient_role: 'brand',
+          notification_type: 'creator_accepted', metadata: { ...meta, action_url: '/brands/dashboard' },
+        });
+      }
+
       await fetchData();
     } catch (err: any) {
-      console.error("❌ Erreur détaillée:", err);
+      console.error("❌ Erreur:", err);
       setError("Erreur lors de l'acceptation de la campagne");
     } finally {
       setProcessingCampaign(null);
     }
 };
-const linkPostToCampaign = async (postId, campaignId) => {
-  try {
-    const { error } = await supabase
-      .from('info_poste')
-      .update({ 
-        id_t_campagne: campaignId,
-        is_validated: false,
-        validated_at: null
-      })
-      .eq('id_t_poste', postId);
-
-    if (error) throw error;
-    
-    setAllPosts(prev => prev.map(p => 
-      p.id_t_poste === postId 
-        ? { ...p, id_t_campagne: campaignId, is_validated: false } 
-        : p
-    ));
-
-    setSelectedPost(prev => ({ 
-      ...prev, 
-      id_t_campagne: campaignId,
-      is_validated: false 
-    }));
-
-    console.log("✅ Post lié avec succès (en attente de validation)");
-  } catch (err) {
-    console.error("❌ Erreur:", err);
-    setError("Impossible de lier le post à la campagne.");
-  }
-};
- const handleRejectCampaign = async (campaignId: string) => { 
+const handleRejectCampaign = async (campaignId: string) => {
     if (!confirm('Êtes-vous sûr de vouloir refuser cette campagne ?')) return;
 
     setProcessingCampaign(campaignId);
     try {
+      const creatorId = creatorInfo?.id_w;
+
+      // Mettre à jour campaign_creators
       const { error } = await supabase
-        .from('campaigns')
-        .update({ 
-          creator_status: 'rejected',
-          assigned_creator_id: null 
-        })
-        .eq('id_t_campagne', campaignId); 
+        .from('campaign_creators')
+        .update({ status: 'declined_creator' })
+        .eq('campaign_id', campaignId)
+        .eq('creator_id', creatorId);
 
       if (error) throw error;
 
-      console.log("✅ Campagne refusée");
+      // Notifier l'admin et la marque
+      const { data: campaignData } = await supabase
+        .from('campaigns').select('title, id_w').eq('id_t_campagne', campaignId).maybeSingle();
+      const { data: adminData } = await supabase
+        .from('createur').select('id_w, email, full_name').eq('role', 'admin').limit(1).maybeSingle();
+
+      const meta = {
+        campaign_title: campaignData?.title || 'Sans titre',
+        creator_name: creatorInfo?.full_name || 'Créateur',
+        action_url: '/admin/campaigns',
+      };
+
+      if (adminData) {
+        await createNotification({
+          campaign_id: campaignId, creator_id: creatorId,
+          recipient_id: adminData.id_w, recipient_role: 'admin',
+          notification_type: 'creator_declined', metadata: meta,
+        });
+      }
+      if (campaignData?.id_w) {
+        await createNotification({
+          campaign_id: campaignId, creator_id: creatorId,
+          brand_id: campaignData.id_w,
+          recipient_id: campaignData.id_w, recipient_role: 'brand',
+          notification_type: 'creator_declined', metadata: { ...meta, action_url: '/brands/dashboard' },
+        });
+      }
+
       await fetchData();
     } catch (err: any) {
-      console.error("❌ Erreur détaillée:", err);
+      console.error("❌ Erreur:", err);
       setError("Erreur lors du refus de la campagne");
     } finally {
       setProcessingCampaign(null);
@@ -456,18 +515,10 @@ const linkPostToCampaign = async (postId, campaignId) => {
   };
 
   const calculateProgress = (campaign: any) => {
-    if (!campaign.start_date || !campaign.end_date) return 0;
-    
-    const start = new Date(campaign.start_date).getTime();
-    const end = new Date(campaign.end_date).getTime();
-    const now = new Date().getTime();
-    
-    if (now < start) return 0;
-    if (now > end) return 100;
-    
-    const total = end - start;
-    const elapsed = now - start;
-    return Math.round((elapsed / total) * 100);
+    const approved = campaign.approvedCount || 0;
+    const total = campaign.creatorNbPublications || 0;
+    if (total === 0) return 0;
+    return Math.min(100, Math.round((approved / total) * 100));
   };
 
   if (loading) {
@@ -610,99 +661,6 @@ const linkPostToCampaign = async (postId, campaignId) => {
           </div>
         )}
       </div>
-      {/* SECTION LIAISON CAMPAGNE - */}
-<div className="mt-8 pt-6 border-t border-dashed border-gray-200">
-  <p className="text-[10px] uppercase font-bold text-gray-400 mb-3 flex items-center gap-2">
-    <Briefcase size={12} /> Campagne associée
-  </p>
-  
-  {acceptedCampaigns.length > 0 ? (
-    <div className="space-y-3">
-      {selectedPost.id_t_campagne ? (
-        <div className="group relative">
-          <div className="flex items-center justify-between p-4 bg-green-50 rounded-2xl border border-green-100">
-            <div className="flex items-center gap-3">
-              <div className="bg-green-500 rounded-full p-1 text-white">
-                <Check size={12} />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-green-800">Post validé pour :</p>
-                <p className="text-sm text-green-700 truncate max-w-[150px]">
-                  {acceptedCampaigns.find(c => c.id_t_campagne === selectedPost.id_t_campagne)?.title || 'Campagne liée'}
-                </p>
-              </div>
-            </div>
-            <button 
-              onClick={() => linkPostToCampaign(selectedPost.id_t_poste, null)}
-              className="text-[10px] font-bold text-red-500 hover:bg-red-50 px-2 py-1 rounded-lg transition-colors"
-            >
-              DISSOCIER
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="relative">
-          <select 
-            onChange={(e) => linkPostToCampaign(selectedPost.id_t_poste, e.target.value)}
-            className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-[#D4A017] outline-none appearance-none transition-all hover:bg-gray-100"
-          >
-            <option value="">Sélectionner une campagne...</option>
-            {acceptedCampaigns.map(camp => (
-              <option key={camp.id_t_campagne} value={camp.id_t_campagne}>
-                🎯 {camp.title}
-              </option>
-            ))}
-          </select>
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-
-          </div>
-        </div>
-      )}
-    </div>
-  ) : (
-    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-      <p className="text-xs text-gray-500 italic text-center">Aucune campagne acceptée disponible pour liaison.</p>
-    </div>
-  )}
-</div>
-{selectedPost.id_t_campagne && (
-  <div className="mt-6 pt-6 border-t border-gray-200">
-    <p className="text-[10px] uppercase font-bold text-gray-400 mb-3 flex items-center gap-2">
-      <Shield size={12} /> Validation Admin
-    </p>
-    
-    {selectedPost.is_validated ? (
-      <div className="p-4 bg-green-50 rounded-2xl border border-green-200">
-        <div className="flex items-center gap-3 mb-2">
-          <CheckCircle size={20} className="text-green-600" />
-          <div>
-            <p className="text-sm font-bold text-green-800">Post validé</p>
-            {selectedPost.validated_at && (
-              <p className="text-xs text-green-600">
-                Validé le {formatDate(selectedPost.validated_at)}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-    ) : (
-      <div className="p-4 bg-orange-50 rounded-2xl border border-orange-200">
-        <div className="flex items-center gap-3 mb-3">
-          <AlertCircle size={20} className="text-orange-600" />
-          <div>
-            <p className="text-sm font-bold text-orange-800">En attente de validation</p>
-            <p className="text-xs text-orange-600">
-              L'admin doit valider ce post pour la campagne
-            </p>
-          </div>
-        </div>
-        <p className="text-xs text-orange-700 bg-orange-100 p-2 rounded-lg">
-          💡 Le post sera comptabilisé une fois validé par l'administrateur
-        </p>
-      </div>
-    )}
-  </div>
-)}
       
       {/* PARTIE STATISTIQUES -  */}
       
@@ -790,16 +748,6 @@ const linkPostToCampaign = async (postId, campaignId) => {
 )}
 
 
-      {/* SIDEBAR */}
-           <button
-                onClick={() => window.open('https://boostertalent.app.n8n.cloud/webhook/b4d75f16-f24e-4ca0-97a6-49502970c201/chat', 'ChatWoutty', 'width=400,height=700,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes,resizable=yes')}
-                className="fixed bottom-8 right-8 z-50 w-16 h-16 bg-gradient-to-r from-[#ceaf4a] to-[#b8962f] text-white rounded-full shadow-2xl hover:shadow-[#ceaf4a]/50 hover:scale-110 transition-all duration-300 flex items-center justify-center group"
-                title="Ouvrir le support"
-              >
-                <MessageCircle size={28} className="group-hover:rotate-12 transition-transform duration-300" />
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">!</span>
-              </button>
-      
       <aside className="hidden md:flex w-64 bg-white border-r flex-col p-6 h-full">
         <div className="flex items-center gap-3 mb-10">
           <div className="w-10 h-10 rounded-full border-2 border-[#D4A017] flex items-center justify-center overflow-hidden">
@@ -867,14 +815,17 @@ const linkPostToCampaign = async (postId, campaignId) => {
 
       {/* MAIN */}
       <main className="flex-1 flex flex-col p-4 md:p-10 h-full overflow-hidden pb-20 md:pb-10">
-        <header className="mb-8">
-          <h1 className="text-3xl font-serif font-bold">{activeTab}</h1>
-          <p className="text-gray-400 text-sm mt-1">
-            {activeTab === 'Ma performance' && 'Gérez votre influence en temps réel'}
-            {activeTab === 'Opportunités' && `${notifications} nouvelle${notifications > 1 ? 's' : ''} opportunité${notifications > 1 ? 's' : ''}`}
-            {activeTab === 'Mes campagnes' && 'Suivez vos contrats en cours'}
-            {activeTab === 'Terminées' && 'Vos campagnes accomplies'}
-          </p>
+        <header className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-serif font-bold">{activeTab}</h1>
+            <p className="text-gray-400 text-sm mt-1">
+              {activeTab === 'Ma performance' && 'Gérez votre influence en temps réel'}
+              {activeTab === 'Opportunités' && `${notifications} nouvelle${notifications > 1 ? 's' : ''} opportunité${notifications > 1 ? 's' : ''}`}
+              {activeTab === 'Mes campagnes' && 'Suivez vos contrats en cours'}
+              {activeTab === 'Terminées' && 'Vos campagnes accomplies'}
+            </p>
+          </div>
+          <NotificationBell recipientId={userId} />
         </header>
 
         <div className="flex-1 overflow-y-auto">
@@ -1223,8 +1174,10 @@ const linkPostToCampaign = async (postId, campaignId) => {
                     const daysLeft = Math.max(0, Math.ceil((new Date(campaign.end_date).getTime() - new Date().getTime()) / (1000 * 3600 * 24)));
                     
                     return (
-                      <div key={campaign.id} className="bg-white p-6 md:p-8 rounded-[32px] shadow-sm border border-gray-100">
-                        <div className="flex items-start justify-between mb-6">
+                      <div key={campaign.id_t_campagne} className="bg-white p-6 md:p-8 rounded-[32px] shadow-sm border border-gray-100">
+
+                        {/* EN-TÊTE */}
+                        <div className="flex items-start justify-between mb-4">
                           <div>
                             <div className="flex items-center gap-2 mb-2">
                               <Building2 size={16} className="text-[#D4A017]" />
@@ -1240,25 +1193,64 @@ const linkPostToCampaign = async (postId, campaignId) => {
                           </div>
                         </div>
 
-                        <div className="mb-6">
-                          <div className="flex justify-between text-xs text-gray-500 mb-2">
-                            <span>Début: {formatDate(campaign.start_date)}</span>
-                            <span>Fin: {formatDate(campaign.end_date)}</span>
+                        {/* BARRE DE PROGRESSION */}
+                        <div className="mb-4">
+                          <div className="flex justify-between text-xs text-gray-500 mb-1">
+                            <span>{campaign.approvedCount || 0} contenu{(campaign.approvedCount || 0) > 1 ? 's' : ''} validé{(campaign.approvedCount || 0) > 1 ? 's' : ''}</span>
+                            <span>{campaign.creatorNbPublications || 0} attendu{(campaign.creatorNbPublications || 0) > 1 ? 's' : ''}</span>
                           </div>
-                          <div className="w-full h-4 bg-gray-100 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-gradient-to-r from-[#D4A017] to-[#FFD700] transition-all duration-500 flex items-center justify-end pr-2"
+                          <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-[#D4A017] to-[#FFD700] transition-all duration-500"
                               style={{ width: `${progress}%` }}
-                            >
-                              {progress > 10 && (
-                                <span className="text-white text-xs font-bold">{progress}%</span>
-                              )}
-                            </div>
+                            />
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-4">
-                          
+                        {/* BRIEF */}
+                        {(campaign.description || campaign.objectives?.length > 0 || campaign.social_networks?.length > 0) && (
+                          <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 mb-4 space-y-3">
+                            <p className="text-xs font-black text-amber-700 uppercase tracking-wider">Brief campagne</p>
+
+                            {campaign.description && (
+                              <p className="text-sm text-gray-700">{campaign.description}</p>
+                            )}
+
+                            {campaign.objectives?.length > 0 && (
+                              <div>
+                                <p className="text-xs font-bold text-gray-500 mb-1">Objectifs</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {campaign.objectives.map((obj: string, i: number) => (
+                                    <span key={i} className="px-2 py-1 bg-white border border-amber-200 rounded-full text-xs font-bold text-amber-700">
+                                      {obj}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {campaign.social_networks?.length > 0 && (
+                              <div>
+                                <p className="text-xs font-bold text-gray-500 mb-1">Contenus à produire</p>
+                                <div className="space-y-1">
+                                  {campaign.social_networks.map((network: any, i: number) => (
+                                    <div key={i} className="flex items-center gap-2 text-sm">
+                                      <span className="font-bold text-gray-700">{network.platform}</span>
+                                      {(network.formats || []).map((f: any, j: number) => (
+                                        <span key={j} className="px-2 py-0.5 bg-white border border-gray-200 rounded-full text-xs text-gray-600">
+                                          {f.name} × {f.nbPublications}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* STATS */}
+                        <div className="grid grid-cols-3 gap-4 mb-5">
                           <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-100">
                             <p className="text-xs text-blue-400 uppercase font-bold mb-1">Jours restants</p>
                             <p className="text-lg font-black text-blue-600">{daysLeft}</p>
@@ -1271,7 +1263,32 @@ const linkPostToCampaign = async (postId, campaignId) => {
                             </p>
                             <p className="text-xs text-purple-500">En cours</p>
                           </div>
+                          <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-100">
+                            <p className="text-xs text-green-400 uppercase font-bold mb-1">Ma rémunération</p>
+                            <p className="text-sm font-black text-green-600">{Math.round(campaign.remuneration || 0).toLocaleString('fr-FR')}</p>
+                            <p className="text-xs text-green-500">CFA</p>
+                          </div>
                         </div>
+
+                        {/* BOUTON ZONE TAMPON */}
+                        {(() => {
+                          const quotaReached = campaign.creatorNbPublications > 0 &&
+                            (campaign.approvedCount + campaign.pendingCount) >= campaign.creatorNbPublications;
+                          return quotaReached ? (
+                            <div className="w-full flex items-center justify-center gap-2 py-3 bg-green-50 text-green-700 rounded-2xl font-bold border border-green-200 cursor-default">
+                              <CheckCircle size={18} />
+                              Quota atteint — {campaign.approvedCount} validé{campaign.approvedCount > 1 ? 's' : ''}{campaign.pendingCount > 0 ? `, ${campaign.pendingCount} en attente` : ''}
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => router.push(`/creators/dashboard/submit/${campaign.id_t_campagne}`)}
+                              className="w-full flex items-center justify-center gap-2 py-3 bg-[#D4A017] text-white rounded-2xl font-bold hover:bg-[#b8962f] transition-colors"
+                            >
+                              <Upload size={18} />
+                              Soumettre un contenu pour validation
+                            </button>
+                          );
+                        })()}
                       </div>
                     );
                   })}
@@ -1311,7 +1328,6 @@ const linkPostToCampaign = async (postId, campaignId) => {
                       </div>
 
                       <div className="grid grid-cols-3 gap-4">
-                        
                         <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-100">
                           <p className="text-xs text-blue-400 uppercase font-bold mb-1">Durée</p>
                           <p className="text-xl font-black text-blue-600">
@@ -1324,6 +1340,11 @@ const linkPostToCampaign = async (postId, campaignId) => {
                           <p className="text-sm font-black text-purple-600">
                             {formatDate(campaign.end_date)}
                           </p>
+                        </div>
+                        <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-100">
+                          <p className="text-xs text-green-400 uppercase font-bold mb-1">Rémunération</p>
+                          <p className="text-sm font-black text-green-600">{Math.round(campaign.remuneration || 0).toLocaleString('fr-FR')}</p>
+                          <p className="text-xs text-green-500">CFA</p>
                         </div>
                       </div>
                     </div>

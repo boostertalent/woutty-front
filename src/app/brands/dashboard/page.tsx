@@ -488,7 +488,7 @@ export default function BrandDashboard() {
                 <Zap size={16} className="text-[#D4A017]" /> Mes packs
               </button>
             </Link>
-            <Link href="/brands/campaign-choice">
+            <Link href="/brands/auth/campagne">
               <button className="bg-[#D4A017] text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-[#B88A14] transition-all shadow-lg">
                 <Zap size={18} fill="currentColor" /> Créer une campagne
               </button>
@@ -530,7 +530,7 @@ export default function BrandDashboard() {
                 <Zap size={48} className="mx-auto text-gray-200 mb-4" />
                 <p className="text-gray-600 font-bold text-lg mb-2">Aucune campagne créée</p>
                 <p className="text-sm text-gray-400 mb-6">Créez votre première campagne pour commencer !</p>
-                <Link href="/brands/campaign-choice">
+                <Link href="/brands/auth/campagne">
                   <button className="bg-[#D4A017] text-white px-6 py-3 rounded-xl font-bold inline-flex items-center gap-2 hover:bg-[#B88A14] transition-all">
                     <Zap size={18} fill="currentColor" /> Créer une campagne
                   </button>
@@ -663,15 +663,6 @@ export default function BrandDashboard() {
           </div>
         </div>
 
-        {/* BOUTON CHAT FLOTTANT */}
-        <button
-          onClick={() => window.open('https://boostertalent.app.n8n.cloud/webhook/b4d75f16-f24e-4ca0-97a6-49502970c201/chat', 'ChatWoutty', 'width=400,height=700,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes,resizable=yes')}
-          className="fixed bottom-8 right-8 z-50 w-16 h-16 bg-gradient-to-r from-[#ceaf4a] to-[#b8962f] text-white rounded-full shadow-2xl hover:shadow-[#ceaf4a]/50 hover:scale-110 transition-all duration-300 flex items-center justify-center group"
-          title="Ouvrir le support"
-        >
-          <MessageCircle size={28} className="group-hover:rotate-12 transition-transform duration-300" />
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">!</span>
-        </button>
 
         {/* BANNIÈRE ADMIN VIEWING */}
         {isAdminViewing && (

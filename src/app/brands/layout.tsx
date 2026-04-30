@@ -4,13 +4,16 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import Link from 'next/link';
-import { LayoutDashboard, UserCheck, Settings, LogOut, Loader2 } from 'lucide-react';
+import { LayoutDashboard, UserCheck, Settings, LogOut, Loader2, FileVideo } from 'lucide-react';
+import NotificationBell from '@/components/notifications/NotificationBell';
+import ChatWidget from '@/components/ChatWidget';
 
 export default function BrandsLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [brandInfo, setBrandInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -32,6 +35,7 @@ export default function BrandsLayout({ children }: { children: React.ReactNode }
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { router.push('/auth/login'); return; }
+      setUserId(session.user.id);
 
       // Vérifier si admin en mode visualisation
       const adminViewingId = typeof window !== 'undefined'
@@ -68,6 +72,11 @@ export default function BrandsLayout({ children }: { children: React.ReactNode }
       name: 'Collaborations',
       icon: <UserCheck size={20} />,
       href: '/brands/dashboard/collaborations',
+    },
+    {
+      name: 'Contenus à valider',
+      icon: <FileVideo size={20} />,
+      href: '/brands/dashboard/validate-submissions',
     },
     {
       name: 'Mon profil',
@@ -144,11 +153,18 @@ export default function BrandsLayout({ children }: { children: React.ReactNode }
         </div>
       </aside>
 
-      {/* CONTENU DE LA PAGE */}
-      <main className="flex-1 overflow-y-auto">
+      {/* MAIN */}
+      <main className="flex-1 flex flex-col overflow-y-auto">
+
+        {/* HEADER */}
+        <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-end px-8 sticky top-0 z-10">
+          <NotificationBell recipientId={userId} />
+        </header>
+
         {children}
       </main>
 
+      <ChatWidget />
     </div>
   );
 }
