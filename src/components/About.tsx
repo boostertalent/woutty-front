@@ -19,7 +19,7 @@ export default function About() {
 
   return (
     /* ✅ bg-background pour changer de noir à blanc */
-    <section className="py-24 px-6 flex flex-col items-center text-center bg-background transition-colors duration-500">
+    <section className="py-14 sm:py-24 px-4 sm:px-6 flex flex-col items-center text-center bg-background transition-colors duration-500">
       <motion.p 
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
@@ -30,7 +30,7 @@ export default function About() {
 
       {/* ✅ text-foreground pour changer de blanc à noir */}
       <motion.h2 
-        className="text-4xl md:text-6xl font-bold mb-16 text-foreground tracking-tight"
+        className="text-3xl sm:text-4xl md:text-6xl font-bold mb-10 sm:mb-16 text-foreground tracking-tight"
       >
         C&apos;est quoi Woutty ?
       </motion.h2>
@@ -55,7 +55,7 @@ function FeatureCard({ title, description, index }: { title: string; description
       initial="initial"
       whileHover="active"
       whileTap="active"
-      className="relative h-[250px] flex items-center justify-center rounded-[2.5rem] bg-card border border-border overflow-hidden p-8 cursor-pointer shadow-2xl transition-colors duration-300"
+      className="relative h-[210px] sm:h-[250px] flex items-center justify-center rounded-[2.5rem] bg-card border border-border overflow-hidden p-6 sm:p-8 cursor-pointer shadow-2xl transition-colors duration-300"
       variants={{
         initial: { borderColor: "var(--border)" },
         active: { borderColor: "#F5C200" } 
@@ -68,7 +68,7 @@ function FeatureCard({ title, description, index }: { title: string; description
           active: { opacity: 1, scale: 1, filter: "blur(0px)" }
         }}
         transition={{ duration: 0.3, ease: "easeOut" }}
-        className="absolute inset-0 flex items-center justify-center p-8 text-foreground text-center text-sm md:text-base leading-relaxed z-20"
+        className="absolute inset-0 flex items-center justify-center p-6 sm:p-8 text-foreground text-center text-sm md:text-base leading-relaxed z-20"
       >
         {description}
       </motion.div>

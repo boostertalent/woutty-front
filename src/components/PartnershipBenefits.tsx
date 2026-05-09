@@ -1,150 +1,187 @@
 "use client";
-import React from 'react';
-import { motion } from "framer-motion";
-import { Handshake, Globe, BarChart3, Rocket, ArrowRight } from "lucide-react";
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Play } from "lucide-react";
 import Link from 'next/link';
-const partnershipBenefits = [
-  {
-    icon: <Handshake className="w-8 h-8" />,
-    title: "Alliances Stratégiques",
-    desc: "Nous bâtissons des ponts entre des marques visionnaires et des écosystèmes créatifs pour des collaborations à long terme."
-  },
-  {
-    icon: <Globe className="w-8 h-8" />,
-    title: "Visibilité Étendue",
-    desc: "Profitez de notre réseau international pour propulser votre message au-delà de vos frontières habituelles."
-  },
-  {
-    icon: <BarChart3 className="w-8 h-8" />,
-    title: "Croissance Mesurable",
-    desc: "Chaque partenariat est piloté par la donnée pour garantir un retour sur investissement et un impact réel sur votre business."
-  },
-  {
-    icon: <Rocket className="w-8 h-8" />,
-    title: "Innovation Co-créative",
-    desc: "Accédez à des formats publicitaires exclusifs et inventez avec nous le futur du marketing d'influence."
-  }
+
+const campagnes = [
+  { type: "image", src: "/campagnes-réalisées/Corniche-visual.jpg",              title: "Corniche Visual",       span: "col-span-1 row-span-1 sm:col-span-2 sm:row-span-1", fit: "cover" },
+  { type: "image", src: "/campagnes-réalisées/8 Mars.avec couleur.jpg",          title: "8 Mars",                span: "col-span-1 row-span-1 sm:col-span-1 sm:row-span-2", fit: "cover" },
+  { type: "image", src: "/campagnes-réalisées/3.png",                           title: "Loxea Rent",            span: "col-span-1 row-span-1 sm:col-span-1 sm:row-span-1", fit: "cover" },
+  { type: "image", src: "/campagnes-réalisées/g8fw3nnnaqmsvtmfc8bh.avif",        title: "Campagne",              span: "col-span-1 row-span-1 sm:col-span-1 sm:row-span-1", fit: "cover" },
+  { type: "image", src: "/campagnes-réalisées/Booster Academy 2.jpg",             title: "Booster Academy",       span: "col-span-1 row-span-1 sm:col-span-1 sm:row-span-2", fit: "cover" },
+  { type: "image", src: "/campagnes-réalisées/VISUEL JEU CONCOURS.jpg.jpeg",      title: "Jeu Concours",          span: "col-span-1 row-span-1 sm:col-span-1 sm:row-span-2", fit: "cover" },
+  { type: "video", src: "/campagnes-réalisées/Publicité Yango Can MAroc 2025.mp4", title: "Yango CAN Maroc 2025", span: "col-span-1 row-span-1 sm:col-span-1 sm:row-span-1", fit: "cover" },
+  { type: "video", src: "/campagnes-réalisées/New face Gandour.MP4",              title: "New Face Gandour",      span: "col-span-1 row-span-1 sm:col-span-1 sm:row-span-2", fit: "cover" },
+  { type: "video", src: "/campagnes-réalisées/Video Gandour Fah.MP4",             title: "Gandour x Fah",         span: "col-span-1 row-span-1 sm:col-span-1 sm:row-span-2", fit: "cover" },
+  { type: "video", src: "/campagnes-réalisées/VID-20250722-WA0004.mp4",           title: "Campagne 8",            span: "col-span-1 row-span-1 sm:col-span-1 sm:row-span-2", fit: "cover" },
+  { type: "video", src: "/campagnes-réalisées/VID-20250722-WA0006.mp4",           title: "Campagne 9",            span: "col-span-1 row-span-1 sm:col-span-1 sm:row-span-1", fit: "cover" },
 ];
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-    },
-  },
+type Campagne = {
+  type: string;
+  src: string;
+  title: string;
+  span: string;
+  fit: string;
 };
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { 
-    opacity: 1, 
-    y: 0, 
-    transition: { duration: 0.6 }
-  },
-};
+function MediaModal({ item, onClose }: { item: Campagne; onClose: () => void }) {
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4"
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9, y: 20 }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          onClick={(e) => e.stopPropagation()}
+          className="relative max-w-4xl w-full"
+        >
+          <button
+            onClick={onClose}
+            className="absolute -top-4 -right-4 z-10 w-10 h-10 rounded-full bg-booster-yellow flex items-center justify-center hover:scale-110 transition-transform shadow-lg"
+          >
+            <X className="w-5 h-5 text-black" />
+          </button>
+
+          {item.type === "video" ? (
+            <video
+              key={item.src}
+              src={item.src}
+              controls
+              autoPlay
+              playsInline
+              className="w-full max-h-[80vh] object-contain rounded-3xl bg-black"
+            />
+          ) : (
+            <img
+              src={item.src}
+              alt={item.title}
+              className="w-full max-h-[80vh] object-contain rounded-3xl bg-black"
+            />
+          )}
+          <p className="text-center text-white text-sm mt-4 font-medium">{item.title}</p>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+function MediaCard({ item, onClick }: { item: Campagne; onClick: () => void }) {
+  return (
+    <motion.div
+      onClick={onClick}
+      whileHover={{ scale: 1.02 }}
+      className={`${item.span} relative overflow-hidden cursor-pointer group bg-black`}
+    >
+      {item.type === "video" ? (
+        <>
+          <video
+            src={item.src}
+            muted
+            loop
+            playsInline
+            autoPlay
+            className={`w-full h-full object-${item.fit}`}
+          />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center group-hover:bg-booster-yellow transition-colors duration-300">
+              <Play className="w-5 h-5 text-white group-hover:text-black transition-colors duration-300" />
+            </div>
+          </div>
+        </>
+      ) : (
+        <img
+          src={item.src}
+          alt={item.title}
+          className={`w-full h-full object-${item.fit}`}
+        />
+      )}
+
+      <div className="absolute inset-0 border-2 border-transparent group-hover:border-booster-yellow transition-colors duration-300 pointer-events-none" />
+    </motion.div>
+  );
+}
 
 export default function PartnershipBenefits() {
+  const [selected, setSelected] = useState<Campagne | null>(null);
+
   return (
-    <section className="bg-background text-foreground py-24 px-6 overflow-hidden transition-colors duration-500">
-      <div className="max-w-4xl mx-auto text-center">
-        
-        {/* Badge animé */}
-        <motion.span 
+    <section className="bg-background text-foreground py-10 sm:py-12 px-4 sm:px-6 overflow-hidden transition-colors duration-500">
+      <div className="max-w-5xl mx-auto text-center">
+
+        {selected && (
+          <MediaModal item={selected} onClose={() => setSelected(null)} />
+        )}
+
+        {/* Badge */}
+        <motion.span
           initial={{ opacity: 0, scale: 0.8 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           className="text-[10px] uppercase tracking-[0.2em] border border-border px-4 py-1.5 rounded-full text-muted-foreground mb-8 inline-block"
         >
-          Écosystème & Partenariats
+          Campagnes réalisées
         </motion.span>
-        
+
         {/* Titre */}
-        <motion.h2 
+        <motion.h2
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="text-4xl md:text-5xl font-bold mb-6 leading-[1.1] tracking-tight"
+          className="max-md:text-left max-md:text-2xl text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 leading-[1.1] tracking-tight"
         >
-          Ensemble, redéfinissons les standards de l'influence
+          L'historique de nos campagnes !
         </motion.h2>
-        
-        <motion.p 
+
+        <motion.p
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ delay: 0.3, duration: 0.8 }}
-          className="text-muted-foreground mb-16 max-w-2xl mx-auto text-lg leading-relaxed"
+          className="text-muted-foreground max-md:text-left max-md:text-sm mb-10 sm:mb-16 max-w-2xl mx-auto text-base sm:text-lg leading-relaxed max-md:mx-0"
         >
-          Nous croyons en la force du collectif. Devenez partenaire de Booster Talent et accédez à des opportunités de croissance uniques.
+          Un aperçu de contenus et campagnes menés avec des marques et des créateurs sur Woutty.
         </motion.p>
 
-        {/* Grille de cartes dynamiques */}
-        <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left"
+        {/* Grille masonry */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-0 auto-rows-[180px] sm:auto-rows-[200px]"
         >
-          {partnershipBenefits.map((item, index) => (
-            <motion.div 
-              key={index}
-              variants={itemVariants}
-              whileHover={{ 
-                y: -8,
-                backgroundColor: "var(--card)",
-                borderColor: "var(--color-booster-yellow, #F5C200)" 
-              }}
-              className="bg-muted/30 border border-border p-8 rounded-[2rem] transition-all duration-300 group cursor-default shadow-sm"
-            >
-              <motion.div 
-                className="mb-6 text-booster-yellow"
-                whileHover={{ rotate: 5, scale: 1.1 }}
-              >
-                {item.icon}
-              </motion.div>
-              <h3 className="text-booster-yellow font-bold text-sm uppercase tracking-widest mb-3 transition-colors group-hover:text-foreground">
-                {item.title}
-              </h3>
-              <p className="text-muted-foreground text-xs leading-relaxed group-hover:text-foreground transition-colors">
-                {item.desc}
-              </p>
-            </motion.div>
+          {campagnes.map((item, i) => (
+            <MediaCard
+              key={i}
+              item={item}
+              onClick={() => setSelected(item)}
+            />
           ))}
         </motion.div>
 
-        {/* Boutons d'action */}
-         <div className="mt-16 flex flex-col sm:flex-row items-center justify-center gap-12">
-          
-          {/* LIEN PRINCIPAL : INSCRIPTION */}
-          <Link href="/auth" className="w-full sm:w-auto">
-            <motion.div 
+        {/* Bouton */}
+        <div className="mt-16 flex justify-center">
+          <Link href="/auth/login" className="w-full sm:w-auto">
+            <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="bg-booster-yellow text-black px-10 py-4 rounded-full font-bold text-center shadow-xl shadow-yellow-500/10 cursor-pointer"
             >
-              Devenir partenaire
+              Lancer une campagne
             </motion.div>
           </Link>
-
-          {/* LIEN SECONDAIRE : DÉCOUVRIR LES TALENTS */}
-          <Link 
-            href="/" 
-            className="text-foreground flex items-center gap-3 font-semibold group transition-all"
-          >
-            Voir nos partenaires
-            <motion.span
-              animate={{ x: [0, 5, 0] }}
-              transition={{ repeat: Infinity, duration: 1.5 }}
-            >
-              <ArrowRight className="w-5 h-5 text-booster-yellow group-hover:translate-x-2 transition-transform" />
-            </motion.span>
-          </Link>
-          
         </div>
+
       </div>
     </section>
   );

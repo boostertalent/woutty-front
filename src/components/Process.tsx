@@ -10,7 +10,7 @@ export default function Process() {
     { id: "1", title: "Postez votre brief", desc: "Décrivez votre besoin : objectifs, type de contenu, budget, délais." },
     { id: "2", title: "Matching IA", desc: "Notre algorithme sélectionne les créateurs les plus pertinents pour votre marque." },
     { id: "3", title: "Validez et lancez", desc: "Choisissez vos créateurs. Le paiement est sécurisé en escrow." },
-    { id: "4", title: "Recevez vos contenus", desc: "Téléchargez vos UGC avec tous les droits d’utilisation." }
+    { id: "4", title: "Recevez vos contenus", desc: "Téléchargez vos UGC avec tous les droits d'utilisation." }
   ];
 
   const creatorSteps = [
@@ -23,25 +23,23 @@ export default function Process() {
   const currentSteps = activeTab === "brands" ? brandSteps : creatorSteps;
 
   return (
-    <section className="py-24 px-6 bg-background text-foreground">
+    <section className="py-12 px-4 sm:px-6 bg-background text-foreground">
       <div className="max-w-5xl mx-auto flex flex-col items-center">
 
-        {/* Badge */}
         <motion.span
           initial={{ opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-[10px] uppercase tracking-[0.25em] border border-border px-3 py-1 rounded-full text-muted-foreground mb-6"
+          className="text-[10px] uppercase tracking-[0.25em] border border-border px-3 py-1 rounded-full text-muted-foreground mb-4"
         >
           Processus
         </motion.span>
 
-        {/* Title */}
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-4xl md:text-5xl font-bold text-center mb-4"
+          className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-3"
         >
           Comment ça marche ?
         </motion.h2>
@@ -50,14 +48,12 @@ export default function Process() {
           initial={{ opacity: 0, y: 15 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-muted-foreground text-center mb-14 max-w-lg"
+          className="text-muted-foreground text-center mb-8 max-w-lg"
         >
           Un processus simple, fluide et sécurisé, pensé pour les marques et les créateurs.
         </motion.p>
 
-        {/* Toggle Marques / Créateurs */}
-        <div className="relative flex bg-muted p-1 rounded-full border border-border mb-16">
-          {/* Pill animée */}
+        <div className="relative flex bg-muted p-1 rounded-full border border-border mb-10 w-full max-w-md">
           <motion.div
             layout
             className="absolute top-1 bottom-1 w-1/2 bg-booster-yellow rounded-full"
@@ -65,13 +61,12 @@ export default function Process() {
             animate={{ x: activeTab === "brands" ? 0 : "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
           />
-
           {["brands", "creators"].map((tab) => (
             <motion.button
               key={tab}
               whileTap={{ scale: 0.95 }}
               onClick={() => setActiveTab(tab as any)}
-              className={`relative z-10 px-6 py-2 text-sm font-medium rounded-full transition-colors ${
+              className={`relative z-10 flex-1 px-4 sm:px-6 py-2 text-sm font-medium rounded-full transition-colors ${
                 activeTab === tab ? "text-black" : "text-muted-foreground"
               }`}
             >
@@ -80,7 +75,6 @@ export default function Process() {
           ))}
         </div>
 
-        {/* Steps */}
         <div className="w-full">
           <AnimatePresence mode="wait">
             <motion.div
@@ -89,7 +83,7 @@ export default function Process() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.4 }}
-              className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12"
+              className="grid grid-cols-1 md:grid-cols-2 max-md:gap-x-8 gap-x-16 max-md:gap-y-4 gap-y-8"
             >
               {currentSteps.map((step, i) => (
                 <motion.div
@@ -98,19 +92,12 @@ export default function Process() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.08 }}
                   whileHover={{ y: -4 }}
-                  className="flex gap-5 p-4 rounded-2xl hover:bg-muted/50 transition"
+                  className="flex max-md:gap-3 gap-5 max-md:p-3 p-4 rounded-2xl hover:bg-muted/50 transition"
                 >
-                  <span className="text-xl font-bold text-booster-yellow shrink-0">
-                    {step.id}.
-                  </span>
-
+                  <span className="max-md:text-lg text-xl font-bold text-booster-yellow shrink-0">{step.id}.</span>
                   <div>
-                    <h3 className="text-xl font-semibold mb-2">
-                      {step.title}
-                    </h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed max-w-sm">
-                      {step.desc}
-                    </p>
+                    <h3 className="max-md:text-base text-xl font-semibold max-md:mb-1 mb-2">{step.title}</h3>
+                    <p className="text-muted-foreground max-md:text-xs text-sm leading-relaxed max-w-sm">{step.desc}</p>
                   </div>
                 </motion.div>
               ))}

@@ -38,7 +38,18 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
     },
-    
+   animation: {
+  carousel: "scroll 60s ease-in-out infinite",
+},
+keyframes: {
+  scroll: {
+    "0%":   { transform: "translateX(0)" },
+    "40%":  { transform: "translateX(-25%)" },
+    "45%":  { transform: "translateX(-25%)" },  // pause milieu
+    "90%":  { transform: "translateX(-50%)" },
+    "100%": { transform: "translateX(-50%)" },  // pause fin
+  },
+}, 
   },
   plugins: [tailwindcssAnimate],
 } satisfies Config;

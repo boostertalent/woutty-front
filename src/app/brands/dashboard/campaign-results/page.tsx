@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
@@ -16,7 +16,7 @@ const XLogo = ({ size = 16 }: { size?: number }) => (
   </svg>
 );
 
-export default function CampaignMatchResults() {
+function CampaignMatchResultsInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id_t_campagne = searchParams.get('campaign');
@@ -653,5 +653,19 @@ export default function CampaignMatchResults() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CampaignMatchResults() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-white">
+          <Loader2 className="w-10 h-10 text-[#D4A017] animate-spin" />
+        </div>
+      }
+    >
+      <CampaignMatchResultsInner />
+    </Suspense>
   );
 }

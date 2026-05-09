@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Building2, Loader2, AlertCircle, ChevronRight } from 'lucide-react';
+import { Building2, Loader2, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Liste des domaines possibles pour la sélection
 const DOMAINES = [
@@ -81,7 +81,13 @@ export default function EntrepriseDetails() {
   };
 
   return (
-    <main className="min-h-screen bg-[#f3f3f3] flex flex-col items-center justify-center p-4 font-sans text-gray-900">
+    <main className="min-h-screen bg-[#f3f3f3] flex flex-col items-center justify-center max-md:pt-16 p-4 font-sans text-gray-900">
+      <Link
+        href="/auth"
+        className="fixed top-3 left-3 z-50 flex items-center gap-2 rounded-full border border-gray-200 bg-white/85 backdrop-blur px-3 py-2 text-xs font-bold text-gray-700 shadow-sm hover:text-black transition-colors"
+      >
+        <ChevronLeft size={18} /> Retour
+      </Link>
       <div className="bg-white rounded-[40px] shadow-sm w-full max-w-2xl p-8 md:p-12 border border-gray-100 relative">
 
         {/* En-tête */}
@@ -200,13 +206,6 @@ export default function EntrepriseDetails() {
 
           {/* Boutons */}
           <div className="flex justify-between items-center mt-12 pt-4">
-            <Link 
-              href="/auth" 
-              className="bg-black text-white px-8 py-3.5 rounded-2xl font-bold hover:bg-gray-800 transition-all active:scale-95 text-center min-w-[120px]"
-            >
-              Retour
-            </Link>
-
             <button 
               type="submit"
               disabled={!isFormValid || loading}

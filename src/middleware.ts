@@ -50,8 +50,45 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
+  // Si l'utilisateur est déjà connecté, on ne redirige vers un dashboard
+  // que s'il possède un profil complet (admin / createur / marque).
+  // Sinon, on le laisse sur `/auth/login` (ex: OAuth sans inscription).
   if (user && isAuthRoute && request.nextUrl.pathname === '/auth/login') {
-    return NextResponse.redirect(new URL('/brands/dashboard', request.url))
+    const userId = user.id
+
+    // 1) Admin secondaire
+    const { data: adminData } = await supabase
+      .from('admin')
+      .select('id_w, role')
+      .eq('id_w', userId)
+      .maybeSingle()
+
+    if (adminData) {
+      return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+    }
+
+    // 2) Créateur
+    const { data: creatorData } = await supabase
+      .from('createur')
+      .select('id_w, role')
+      .eq('id_w', userId)
+      .maybeSingle()
+
+    if (creatorData) {
+      const path = creatorData.role === 'admin' ? '/admin/dashboard' : '/creators/dashboard'
+      return NextResponse.redirect(new URL(path, request.url))
+    }
+
+    // 3) Marque/Entreprise
+    const { data: brandData } = await supabase
+      .from('marque')
+      .select('id_w')
+      .eq('id_w', userId)
+      .maybeSingle()
+
+    if (brandData) {
+      return NextResponse.redirect(new URL('/brands/dashboard', request.url))
+    }
   }
 
   return response

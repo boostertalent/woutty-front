@@ -44,7 +44,7 @@ export default function Footer() {
   return (
     <footer className="bg-background text-foreground border-t border-border pt-20 pb-10 px-6 transition-colors duration-500">
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 mb-20">
           
           {/* Section Logo & Newsletter */}
           <div className="lg:col-span-2 space-y-8">
@@ -72,25 +72,28 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Sections de liens */}
-          {footerLinks.map((section) => (
-            <div key={section.title} className="space-y-6">
-              <h4 className="text-sm font-bold uppercase tracking-widest">{section.title}</h4>
-              <ul className="space-y-4">
-                {section.links.map((link) => (
-                  <li key={link.name}>
-                    <a 
-                      href={link.href} 
-                      className="text-muted-foreground text-sm hover:text-booster-yellow flex items-center group transition-colors"
-                    >
-                      {link.name}
-                      <ArrowUpRight className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-all -translate-y-1 group-hover:translate-y-0" />
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          {/* Sections de liens
+              Mobile: 3 colonnes côte à côte (Plateforme / Société / Légal) pour réduire la hauteur */}
+          <div className="grid grid-cols-3 gap-x-6 gap-y-10 lg:col-span-3">
+            {footerLinks.map((section) => (
+              <div key={section.title} className="space-y-4">
+                <h4 className="text-[11px] sm:text-sm font-bold uppercase tracking-widest">{section.title}</h4>
+                <ul className="space-y-2 sm:space-y-4">
+                  {section.links.map((link) => (
+                    <li key={link.name}>
+                      <a
+                        href={link.href}
+                        className="text-muted-foreground text-[11px] sm:text-sm hover:text-booster-yellow flex items-center group transition-colors"
+                      >
+                        {link.name}
+                        <ArrowUpRight className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-all -translate-y-1 group-hover:translate-y-0" />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Barre inférieure */}

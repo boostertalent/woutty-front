@@ -2,24 +2,24 @@
 
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
-import BrandVisual from "@/components/BrandVisual"; 
 import Process from "@/components/Process";
-import About from "@/components/About";
 import CreatorBenefits from "@/components/CreatorBenefits";
 import BrandBenefits from "@/components/BrandBenefits";
 import PartnershipBenefits from "@/components/PartnershipBenefits";
 import FAQ from "@/components/FAQ";
 import Footer from "@/components/Footer";
+import { HeroCreatorPartnerCards } from "@/components/Hero";
 
 export default function Home() {
   return (
-    <main className="relative bg-background text-foreground selection:bg-booster-yellow selection:text-black transition-colors duration-500">
+    <main className="relative z-10 bg-transparent text-foreground selection:bg-booster-yellow selection:text-black transition-colors duration-500">
       <Navbar />
       
-      {/* 1. Hero & Introduction */}
+      {/* 1. Hero */}
       <Hero />
-      <BrandVisual />
-      <About />
+
+      {/* Section Créateur / Partenaire (juste avant "Comment ça marche") */}
+      <HeroCreatorPartnerCards />
 
       {/* 2. Section Comment ça marche */}
       <section id="process" className="scroll-mt-24">
@@ -27,7 +27,7 @@ export default function Home() {
       </section>
 
       {/* 3. Section Créateurs */}
-      <section id="creators" className="scroll-mt-24">
+      <section id="creators" className="scroll-mt-32">
         <CreatorBenefits />
       </section>
 
@@ -36,14 +36,16 @@ export default function Home() {
         <BrandBenefits />
       </section>
 
-      {/* 5. Section Partenariats */}
-      <section id="partenariat" className="scroll-mt-24">
+      {/* Nos campagnes réalisées (galerie visuelle) */}
+      <section id="campagnes-realisees" className="scroll-mt-24">
         <PartnershipBenefits />
       </section>
-    {/* qusetionnaire*/}
+
+      {/* Questionnaire */}
       <FAQ />
-      {/* footer */}
-      <Footer/>
+
+      {/* Footer */}
+      <Footer />
       
     </main>
   );

@@ -1,8 +1,12 @@
 import { render } from '@testing-library/react';
-import Component from './theme-provider';
+import { ThemeProvider } from './theme-provider';
 
-describe('theme-provider', () => {
+describe('ThemeProvider', () => {
   it('renders without crashing', () => {
-    render(<Component />);
+    render(
+      <ThemeProvider>
+        <div>test</div>
+      </ThemeProvider>
+    );
   });
 });

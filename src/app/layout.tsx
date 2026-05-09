@@ -13,7 +13,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Configuration de la police pour les titres Booster Talent
 const instrumentSerif = Instrument_Serif({
   variable: "--font-instrument-serif",
   weight: "400",
@@ -36,11 +35,11 @@ export default function RootLayout({ children }: RootLayoutProps) {
       <head />
       <body
         translate="no"
-        className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} antialiased font-sans bg-booster-bg`}
+        className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} antialiased font-sans bg-white`}
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark" 
+          defaultTheme="light"
           enableSystem={false}
           disableTransitionOnChange
         >

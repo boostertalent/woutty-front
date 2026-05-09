@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react'; 
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Zap, ArrowRight, Sparkles,
   Pencil, Trash2, X as CloseIcon, Check,
@@ -20,7 +20,7 @@ const XLogo = ({ size = 16 }: { size?: number }) => (
   </svg>
 );
 
-export default function BrandDashboard() {
+function BrandDashboardInner() {
   const searchParams = useSearchParams();
   const [isAdminViewing, setIsAdminViewing] = useState(false);
   const router = useRouter();
@@ -39,6 +39,7 @@ export default function BrandDashboard() {
   const [loadingCreatorDetails, setLoadingCreatorDetails] = useState(false);
   const [showCampaignSelection, setShowCampaignSelection] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const determineStatusByDates = (startDateStr: string, endDateStr: string) => {
     if (!startDateStr || !endDateStr) return 'pending';
@@ -90,7 +91,7 @@ export default function BrandDashboard() {
         else if (totalFollowers > 10000) score += 20;
         else if (totalFollowers > 1000) score += 10;
         const avgBudget = userCampaigns.length > 0
-          ? userCampaigns.reduce((s, c) => s + (parseFloat(c.budget) || 0), 0) / userCampaigns.length : 0;
+          ? userCampaigns.reduce((s: any, c: any) => s + (parseFloat(c.budget) || 0), 0) / userCampaigns.length : 0;
         if (avgBudget > 0) {
           const ec = totalFollowers * 10;
           if (ec <= avgBudget * 1.2) { score += 20; reasons.push("Budget adapté"); }
@@ -162,7 +163,7 @@ export default function BrandDashboard() {
         assigned_creator_id: selectedCreator.id_w, creator_status: 'pending', status: 'assigned'
       }).eq('id_t_campagne', campaignId);
       if (error) throw error;
-      alert(`✅ Campagne attribuée à ${selectedCreator?.full_name} !\n\n✉️ Le créateur verra cette campagne dans son onglet "Opportunités".`);
+      alert(`✅ Campagne attribuée à ${selectedCreator?.full_name} !`);
       setSelectedCreator(null); setCreatorDetails(null); setShowCampaignSelection(false);
       await fetchData();
     } catch (e: any) { alert("❌ " + e.message); } finally { setIsAssigning(false); }
@@ -191,9 +192,7 @@ export default function BrandDashboard() {
     <div className="p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
 
-        {/* ================================================
-            MODAL DÉTAILLÉ DU CRÉATEUR
-        ================================================ */}
+        {/* MODAL CRÉATEUR */}
         {selectedCreator && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
             <motion.div
@@ -203,7 +202,6 @@ export default function BrandDashboard() {
               transition={{ duration: 0.2 }}
               className="bg-white rounded-3xl w-full max-w-2xl p-8 shadow-2xl border border-gray-100 my-8"
             >
-              {/* En-tête modal */}
               <div className="flex justify-between items-center mb-8">
                 <h3 className="text-2xl font-bold text-[#111827]">
                   {showCampaignSelection ? 'Sélectionner une campagne' : 'Profil du créateur'}
@@ -216,7 +214,6 @@ export default function BrandDashboard() {
                 </button>
               </div>
 
-              {/* VUE PROFIL */}
               {!showCampaignSelection ? (
                 loadingCreatorDetails ? (
                   <div className="text-center py-16">
@@ -225,12 +222,8 @@ export default function BrandDashboard() {
                   </div>
                 ) : creatorDetails ? (
                   <div className="space-y-6">
-
-                    {/* CARTE PRINCIPALE */}
-                    <div className="flex flex-col items-center p-8 bg-gradient-to-br from-[#D4A017]/5 to-[#FFD700]/5 rounded-2xl border border-[#D4A017]/10 relative overflow-hidden">
-
-                      {/* Avatar */}
-                      <div className="w-32 h-32 rounded-full bg-gray-200 border-4 border-white shadow-xl overflow-hidden mb-6 relative">
+                    <div className="flex flex-col items-center p-8 bg-gradient-to-br from-[#D4A017]/5 to-[#FFD700]/5 rounded-2xl border border-[#D4A017]/10">
+                      <div className="w-32 h-32 rounded-full bg-gray-200 border-4 border-white shadow-xl overflow-hidden mb-6">
                         {creatorDetails.avatar_url ? (
                           <img src={creatorDetails.avatar_url} alt="" className="w-full h-full object-cover" />
                         ) : (
@@ -239,70 +232,48 @@ export default function BrandDashboard() {
                           </div>
                         )}
                       </div>
-
-                      {/* Nom */}
-                      <h4 className="text-3xl font-bold text-[#111827] mb-4 text-center">
-                        {creatorDetails.full_name || 'Créateur'}
-                      </h4>
-
-                      {/* Niches */}
+                      <h4 className="text-3xl font-bold text-[#111827] mb-4 text-center">{creatorDetails.full_name || 'Créateur'}</h4>
                       {creatorDetails.niche && creatorDetails.niche.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-6 justify-center">
                           {creatorDetails.niche.map((n: string, i: number) => (
-                            <span key={i} className="px-4 py-2 bg-[#D4A017]/10 text-[#D4A017] rounded-full text-sm font-bold border border-[#D4A017]/20">
-                              {n}
-                            </span>
+                            <span key={i} className="px-4 py-2 bg-[#D4A017]/10 text-[#D4A017] rounded-full text-sm font-bold border border-[#D4A017]/20">{n}</span>
                           ))}
                         </div>
                       )}
-
-                      {/* STATISTIQUES AUDIENCE - avec followers ET following */}
                       <div className="w-full">
                         <h5 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
-                          <TrendingUp size={16} className="text-[#D4A017]" />
-                          Statistiques d'audience
+                          <TrendingUp size={16} className="text-[#D4A017]" /> Statistiques d'audience
                         </h5>
                         <div className="grid md:grid-cols-3 gap-4">
                           {creatorDetails.instagram_followers > 0 && (
                             <div className="flex items-center gap-3 p-4 bg-pink-50 rounded-xl border border-pink-100">
                               <Instagram size={20} className="text-pink-600 shrink-0" />
-                              <div className="min-w-0">
+                              <div>
                                 <p className="text-xs text-pink-600 font-bold">Instagram</p>
                                 <p className="text-sm font-bold text-gray-900">{formatNumber(creatorDetails.instagram_followers)} followers</p>
-                                {creatorDetails.instagram_following > 0 && (
-                                  <p className="text-xs text-gray-500">{formatNumber(creatorDetails.instagram_following)} following</p>
-                                )}
                               </div>
                             </div>
                           )}
                           {creatorDetails.youtube_followers > 0 && (
                             <div className="flex items-center gap-3 p-4 bg-red-50 rounded-xl border border-red-100">
                               <Youtube size={20} className="text-red-600 shrink-0" />
-                              <div className="min-w-0">
+                              <div>
                                 <p className="text-xs text-red-600 font-bold">YouTube</p>
                                 <p className="text-sm font-bold text-gray-900">{formatNumber(creatorDetails.youtube_followers)} abonnés</p>
-                                {creatorDetails.youtube_following > 0 && (
-                                  <p className="text-xs text-gray-500">{formatNumber(creatorDetails.youtube_following)} abonnements</p>
-                                )}
                               </div>
                             </div>
                           )}
                           {creatorDetails.tiktok_followers > 0 && (
                             <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
                               <Music2 size={20} className="text-gray-700 shrink-0" />
-                              <div className="min-w-0">
+                              <div>
                                 <p className="text-xs text-gray-700 font-bold">TikTok</p>
                                 <p className="text-sm font-bold text-gray-900">{formatNumber(creatorDetails.tiktok_followers)} followers</p>
-                                {creatorDetails.tiktok_following > 0 && (
-                                  <p className="text-xs text-gray-500">{formatNumber(creatorDetails.tiktok_following)} following</p>
-                                )}
                               </div>
                             </div>
                           )}
                         </div>
                       </div>
-
-                      {/* Raisons du match */}
                       {selectedCreator.matchReasons && selectedCreator.matchReasons.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-6 justify-center">
                           {selectedCreator.matchReasons.map((reason: string, i: number) => (
@@ -313,104 +284,24 @@ export default function BrandDashboard() {
                         </div>
                       )}
                     </div>
-
-                    {/* RÉSEAUX SOCIAUX - avec toutes les plateformes + Facebook */}
-                    <div>
-                      <h5 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gradient-to-br from-[#D4A017] to-[#FFD700] rounded-lg flex items-center justify-center">
-                          <Sparkles size={16} className="text-white" />
-                        </div>
-                        Réseaux sociaux
-                      </h5>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {creatorDetails.instagram_username && (
-                          <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-pink-50 to-pink-100/50 rounded-xl border border-pink-200 hover:shadow-md transition-all">
-                            <Instagram size={22} className="text-pink-600 shrink-0" />
-                            <div className="min-w-0">
-                              <p className="text-[11px] text-pink-600 font-black uppercase tracking-wide">Instagram</p>
-                              <p className="text-sm font-bold text-gray-900 truncate">@{creatorDetails.instagram_username}</p>
-                            </div>
-                          </div>
-                        )}
-                        {creatorDetails.youtube_username && (
-                          <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-red-50 to-red-100/50 rounded-xl border border-red-200 hover:shadow-md transition-all">
-                            <Youtube size={22} className="text-red-600 shrink-0" />
-                            <div className="min-w-0">
-                              <p className="text-[11px] text-red-600 font-black uppercase tracking-wide">YouTube</p>
-                              <p className="text-sm font-bold text-gray-900 truncate">@{creatorDetails.youtube_username}</p>
-                            </div>
-                          </div>
-                        )}
-                        {creatorDetails.tiktok_username && (
-                          <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200 hover:shadow-md transition-all">
-                            <Music2 size={22} className="text-gray-700 shrink-0" />
-                            <div className="min-w-0">
-                              <p className="text-[11px] text-gray-700 font-black uppercase tracking-wide">TikTok</p>
-                              <p className="text-sm font-bold text-gray-900 truncate">@{creatorDetails.tiktok_username}</p>
-                            </div>
-                          </div>
-                        )}
-                        {creatorDetails.twitter_username && (
-                          <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl border border-blue-200 hover:shadow-md transition-all">
-                            <XLogo size={22} />
-                            <div className="min-w-0">
-                              <p className="text-[11px] text-blue-700 font-black uppercase tracking-wide">X</p>
-                              <p className="text-sm font-bold text-gray-900 truncate">@{creatorDetails.twitter_username}</p>
-                            </div>
-                          </div>
-                        )}
-                        {creatorDetails.snapchat_username && (
-                          <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-yellow-50 to-yellow-100/50 rounded-xl border border-yellow-200 hover:shadow-md transition-all">
-                            <Camera size={22} className="text-yellow-600 shrink-0" />
-                            <div className="min-w-0">
-                              <p className="text-[11px] text-yellow-600 font-black uppercase tracking-wide">Snapchat</p>
-                              <p className="text-sm font-bold text-gray-900 truncate">@{creatorDetails.snapchat_username}</p>
-                            </div>
-                          </div>
-                        )}
-                        {creatorDetails.facebook_username && (
-                          <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl border border-blue-200 hover:shadow-md transition-all">
-                            <Users size={22} className="text-blue-600 shrink-0" />
-                            <div className="min-w-0">
-                              <p className="text-[11px] text-blue-600 font-black uppercase tracking-wide">Facebook</p>
-                              <p className="text-sm font-bold text-gray-900 truncate">@{creatorDetails.facebook_username}</p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* BOUTONS D'ACTION */}
                     <div className="flex gap-3 pt-6 border-t border-gray-100">
-                      <button
-                        onClick={() => { setSelectedCreator(null); setCreatorDetails(null); }}
-                        className="flex-1 py-3 px-4 border-2 border-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-50 hover:border-gray-300 transition-all"
-                      >
+                      <button onClick={() => { setSelectedCreator(null); setCreatorDetails(null); }} className="flex-1 py-3 px-4 border-2 border-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-50 transition-all">
                         Annuler
                       </button>
-                      <button
-                        onClick={() => setShowCampaignSelection(true)}
-                        className="flex-1 py-3 px-4 bg-gradient-to-r from-[#D4A017] to-[#FFD700] text-white rounded-xl font-bold hover:shadow-xl transition-all flex items-center justify-center gap-2 group"
-                      >
-                        Attribuer une campagne
-                        <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                      <button onClick={() => setShowCampaignSelection(true)} className="flex-1 py-3 px-4 bg-gradient-to-r from-[#D4A017] to-[#FFD700] text-white rounded-xl font-bold hover:shadow-xl transition-all flex items-center justify-center gap-2 group">
+                        Attribuer une campagne <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                       </button>
                     </div>
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                      <Users size={32} className="text-gray-300" />
-                    </div>
                     <p className="text-gray-500 font-medium">Impossible de charger les détails</p>
                   </div>
                 )
               ) : (
-                /* VUE SÉLECTION DE CAMPAGNE */
                 <div>
                   <p className="text-sm text-gray-600 mb-6">
-                    Sélectionnez la campagne à attribuer à{' '}
-                    <strong className="text-[#D4A017]">{creatorDetails?.full_name}</strong>
+                    Sélectionnez la campagne à attribuer à <strong className="text-[#D4A017]">{creatorDetails?.full_name}</strong>
                   </p>
                   <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
                     {campaigns.filter(c => !c.assigned_creator_id).length > 0 ? (
@@ -423,19 +314,13 @@ export default function BrandDashboard() {
                             whileTap={{ scale: 0.99 }}
                             disabled={isAssigning}
                             onClick={() => handleAssignCampaign(camp.id_t_campagne)}
-                            className="w-full text-left p-5 rounded-2xl border-2 border-gray-200 hover:border-[#D4A017] hover:bg-gradient-to-br hover:from-[#D4A017]/5 hover:to-[#FFD700]/5 transition-all flex justify-between items-center group disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full text-left p-5 rounded-2xl border-2 border-gray-200 hover:border-[#D4A017] hover:bg-gradient-to-br hover:from-[#D4A017]/5 hover:to-[#FFD700]/5 transition-all flex justify-between items-center group disabled:opacity-50"
                           >
                             <div className="min-w-0 flex-1">
-                              <span className="block font-bold text-[#111827] mb-2 group-hover:text-[#D4A017] transition-colors">
-                                {camp.title || 'Sans titre'}
-                              </span>
+                              <span className="block font-bold text-[#111827] mb-2 group-hover:text-[#D4A017] transition-colors">{camp.title || 'Sans titre'}</span>
                               <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-xs text-gray-600 font-medium">
-                                  Budget: <span className="font-bold text-[#D4A017]">{parseFloat(camp.budget || 0).toLocaleString()} CFA</span>
-                                </span>
-                                <span className={`text-[10px] px-2 py-1 rounded-full font-bold border ${statusDisplay.color}`}>
-                                  {statusDisplay.text}
-                                </span>
+                                <span className="text-xs text-gray-600 font-medium">Budget: <span className="font-bold text-[#D4A017]">{parseFloat(camp.budget || 0).toLocaleString()} CFA</span></span>
+                                <span className={`text-[10px] px-2 py-1 rounded-full font-bold border ${statusDisplay.color}`}>{statusDisplay.text}</span>
                               </div>
                             </div>
                             <ArrowRight size={22} className="text-[#D4A017] group-hover:translate-x-1 transition-transform shrink-0 ml-4" />
@@ -444,17 +329,12 @@ export default function BrandDashboard() {
                       })
                     ) : (
                       <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50">
-                        <Zap size={48} className="mx-auto text-gray-300 mb-4" />
                         <p className="text-gray-500 font-medium">Aucune campagne disponible</p>
-                        <p className="text-sm text-gray-400 mt-1">Toutes vos campagnes sont déjà attribuées</p>
                       </div>
                     )}
                   </div>
                   <div className="flex gap-3 mt-6 pt-6 border-t border-gray-100">
-                    <button
-                      onClick={() => setShowCampaignSelection(false)}
-                      className="flex-1 py-3 px-4 border-2 border-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
-                    >
+                    <button onClick={() => setShowCampaignSelection(false)} className="flex-1 py-3 px-4 border-2 border-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-50 transition-all flex items-center justify-center gap-2">
                       <ArrowLeft size={18} /> Retour
                     </button>
                   </div>
@@ -464,9 +344,7 @@ export default function BrandDashboard() {
           </div>
         )}
 
-        {/* ================================================
-            EN-TÊTE PAGE
-        ================================================ */}
+        {/* EN-TÊTE */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
           <div>
             <h1 className="text-3xl font-serif font-bold text-[#111827]">
@@ -477,17 +355,11 @@ export default function BrandDashboard() {
             </p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
-            <button
-              onClick={fetchData}
-              disabled={loading}
-              className="flex items-center gap-2 text-gray-400 hover:text-[#D4A017] text-sm font-bold px-4 py-2 border border-gray-100 rounded-xl hover:border-[#D4A017]/30 transition-all disabled:opacity-50"
-            >
+            <button onClick={fetchData} disabled={loading} className="flex items-center gap-2 text-gray-400 hover:text-[#D4A017] text-sm font-bold px-4 py-2 border border-gray-100 rounded-xl hover:border-[#D4A017]/30 transition-all disabled:opacity-50">
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Actualiser
             </button>
             <Link href="/brands/my-pack">
-              <button
-                className="flex items-center gap-2 text-sm font-bold px-4 py-2 border border-gray-100 rounded-xl text-gray-700 hover:border-[#D4A017]/40 hover:bg-[#D4A017]/5 transition-all"
-              >
+              <button className="flex items-center gap-2 text-sm font-bold px-4 py-2 border border-gray-100 rounded-xl text-gray-700 hover:border-[#D4A017]/40 hover:bg-[#D4A017]/5 transition-all">
                 <Zap size={16} className="text-[#D4A017]" /> Mes packs
               </button>
             </Link>
@@ -499,21 +371,17 @@ export default function BrandDashboard() {
           </div>
         </div>
 
-        {/* ================================================
-            STATS CARDS
-        ================================================ */}
+        {/* STATS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10 text-sm text-gray-600">
           <StatCard title="Budget Total" value={`${stats.totalBudget.toLocaleString('fr-FR')} CFA`} icon={<TrendingUp size={24} />} loading={loading} subtitle={`${stats.totalCampaigns} campagne${stats.totalCampaigns > 1 ? 's' : ''}`} />
           <StatCard title="Campagnes terminées" value={stats.completedCampaigns.toString()} icon={<Check size={24} />} loading={loading} subtitle="Basé sur les dates de fin" />
           <StatCard title="Campagnes en cours" value={stats.ongoingCampaigns.toString()} icon={<Zap size={24} />} loading={loading} subtitle="Actives aujourd'hui" />
         </div>
 
-        {/* ================================================
-            GRILLE PRINCIPALE
-        ================================================ */}
+        {/* GRILLE PRINCIPALE */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-          {/* LISTE DES CAMPAGNES */}
+          {/* CAMPAGNES */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-[#111827] font-bold text-lg">Vos campagnes ({campaigns.length})</h2>
@@ -571,14 +439,13 @@ export default function BrandDashboard() {
                       </div>
                     </div>
                     <div className="flex gap-2 shrink-0">
-                      <Link href={`/brands/auth/edit/${camp.id_t_campagne}`} className="p-2 text-gray-400 hover:text-blue-600 transition-colors" title="Modifier">
+                      <Link href={`/brands/auth/edit/${camp.id_t_campagne}`} className="p-2 text-gray-400 hover:text-blue-600 transition-colors">
                         <Pencil size={18} />
                       </Link>
-                      <button onClick={() => handleDeleteCampaign(camp.id_t_campagne)} className="p-2 text-gray-400 hover:text-red-600 transition-colors" title="Supprimer">
+                      <button onClick={() => handleDeleteCampaign(camp.id_t_campagne)} className="p-2 text-gray-400 hover:text-red-600 transition-colors">
                         <Trash2 size={18} />
                       </button>
-                      <Link href={`/brands/dashboard/details/${camp.id_t_campagne}`}
-                        className="ml-2 text-[10px] font-black text-[#111827] bg-gray-50 px-4 py-2 rounded-xl border border-gray-100 hover:bg-[#D4A017] hover:text-white hover:border-[#D4A017] transition-all uppercase tracking-widest">
+                      <Link href={`/brands/dashboard/details/${camp.id_t_campagne}`} className="ml-2 text-[10px] font-black text-[#111827] bg-gray-50 px-4 py-2 rounded-xl border border-gray-100 hover:bg-[#D4A017] hover:text-white hover:border-[#D4A017] transition-all uppercase tracking-widest">
                         Détails
                       </Link>
                     </div>
@@ -595,11 +462,7 @@ export default function BrandDashboard() {
               <p className="text-[10px] text-[#D4A017] font-black flex items-center gap-1 uppercase tracking-widest mt-1">
                 <Sparkles size={12} /> IA Woutty
               </p>
-              {campaigns.length > 0 && (
-                <p className="text-[9px] text-gray-400 mt-2">Basé sur vos {campaigns.length} campagne{campaigns.length > 1 ? 's' : ''}</p>
-              )}
             </div>
-
             {creators.length > 0 ? (
               <>
                 <div className="space-y-6 mb-8">
@@ -626,24 +489,14 @@ export default function BrandDashboard() {
                             <p className="text-[10px] text-gray-400 uppercase font-bold tracking-tighter">
                               {creator.primaryPlatform} • {formatNumber(creator.totalFollowers)}
                             </p>
-                            {creator.matchReasons?.length > 0 && (
-                              <div className="flex gap-1 mt-1">
-                                {creator.matchReasons.slice(0, 2).map((reason: string, i: number) => (
-                                  <span key={i} className="text-[8px] bg-[#D4A017]/10 text-[#D4A017] px-1.5 py-0.5 rounded-md font-bold">{reason}</span>
-                                ))}
-                              </div>
-                            )}
                           </div>
                         </div>
-                        <div className="flex flex-col items-end gap-1">
-                          <div className={`text-[9px] font-black px-2 py-1 rounded-md border ${
-                            matchPercentage >= 80 ? 'bg-green-50 text-green-600 border-green-100'
-                            : matchPercentage >= 60 ? 'bg-yellow-50 text-yellow-600 border-yellow-100'
-                            : 'bg-orange-50 text-orange-600 border-orange-100'
-                          }`}>
-                            {matchPercentage}%
-                          </div>
-                          <span className="text-[8px] text-[#D4A017] font-bold opacity-0 group-hover:opacity-100 transition-opacity">VOIR</span>
+                        <div className={`text-[9px] font-black px-2 py-1 rounded-md border ${
+                          matchPercentage >= 80 ? 'bg-green-50 text-green-600 border-green-100'
+                          : matchPercentage >= 60 ? 'bg-yellow-50 text-yellow-600 border-yellow-100'
+                          : 'bg-orange-50 text-orange-600 border-orange-100'
+                        }`}>
+                          {matchPercentage}%
                         </div>
                       </div>
                     );
@@ -666,27 +519,73 @@ export default function BrandDashboard() {
           </div>
         </div>
 
-        {/* BOUTON CHAT FLOTTANT */}
-        <button
-          onClick={() => window.open('https://boostertalent.app.n8n.cloud/webhook/b4d75f16-f24e-4ca0-97a6-49502970c201/chat', 'ChatWoutty', 'width=400,height=700,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes,resizable=yes')}
-          className="fixed bottom-8 right-8 z-50 w-16 h-16 bg-gradient-to-r from-[#ceaf4a] to-[#b8962f] text-white rounded-full shadow-2xl hover:shadow-[#ceaf4a]/50 hover:scale-110 transition-all duration-300 flex items-center justify-center group"
-          title="Ouvrir le support"
-        >
-          <MessageCircle size={28} className="group-hover:rotate-12 transition-transform duration-300" />
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">!</span>
-        </button>
+        {/* ================================================
+            CHAT INTÉGRÉ FLOTTANT
+        ================================================ */}
+        <div className="fixed bottom-8 right-8 z-50">
 
-        {/* BANNIÈRE ADMIN VIEWING */}
+          {/* Fenêtre chat */}
+          <AnimatePresence>
+            {isChatOpen && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                transition={{ duration: 0.2 }}
+                className="absolute bottom-20 right-0 w-[400px] h-[600px] bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-[#ceaf4a] to-[#b8962f]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                      <MessageCircle size={18} className="text-white" />
+                    </div>
+                    <div>
+                      <p className="text-white font-black text-sm">Support Woutty</p>
+                      <p className="text-white/70 text-[10px]">Toujours disponible</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsChatOpen(false)}
+                    className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
+                  >
+                    <CloseIcon size={16} className="text-white" />
+                  </button>
+                </div>
+
+                {/* Iframe */}
+                <iframe
+                  src="https://boostertalent.app.n8n.cloud/webhook/b4d75f16-f24e-4ca0-97a6-49502970c201/chat"
+                  className="flex-1 w-full border-none"
+                  title="Support Woutty"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Bouton toggle */}
+          <button
+            onClick={() => setIsChatOpen(!isChatOpen)}
+            className="w-16 h-16 bg-gradient-to-r from-[#ceaf4a] to-[#b8962f] text-white rounded-full shadow-2xl hover:shadow-[#ceaf4a]/50 hover:scale-110 transition-all duration-300 flex items-center justify-center group relative"
+          >
+            {isChatOpen
+              ? <CloseIcon size={24} />
+              : <MessageCircle size={28} className="group-hover:rotate-12 transition-transform duration-300" />
+            }
+            {!isChatOpen && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">!</span>
+            )}
+          </button>
+        </div>
+
+        {/* BANNIÈRE ADMIN */}
         {isAdminViewing && (
           <motion.div
             initial={{ y: -50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-4 p-2 pl-4 bg-white/80 backdrop-blur-md border border-orange-100 rounded-full shadow-[0_10px_30px_-10px_rgba(234,88,12,0.2)]"
+            className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-4 p-2 pl-4 bg-white/80 backdrop-blur-md border border-orange-100 rounded-full shadow-lg"
           >
-            <button
-              onClick={handleBackToAdmin}
-              className="flex items-center gap-2 px-4 py-1.5 bg-gray-900 hover:bg-black text-white rounded-full text-xs font-black transition-all active:scale-95"
-            >
+            <button onClick={handleBackToAdmin} className="flex items-center gap-2 px-4 py-1.5 bg-gray-900 hover:bg-black text-white rounded-full text-xs font-black transition-all">
               retour au dashboard admin
             </button>
           </motion.div>
@@ -694,5 +593,19 @@ export default function BrandDashboard() {
 
       </div>
     </div>
+  );
+}
+
+export default function BrandDashboard() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB]">
+          <Loader2 className="w-10 h-10 text-[#D4A017] animate-spin" />
+        </div>
+      }
+    >
+      <BrandDashboardInner />
+    </Suspense>
   );
 }
