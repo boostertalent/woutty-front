@@ -26,22 +26,32 @@ export default function BrandCollaborations() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { router.push('/auth/login'); return; }
 
-      const { data: campaignsData, error } = await supabase
+      // Récupérer les campagnes de la marque
+      const { data: brandCampaigns } = await supabase
         .from('campaigns')
-        .select('*')
-        .eq('id_w', session.user.id)
-        .eq('creator_status', 'accepted')
+        .select('id_t_campagne')
+        .eq('id_w', session.user.id);
+
+      if (!brandCampaigns?.length) { setCollaborations([]); return; }
+
+      const campaignIds = brandCampaigns.map((c: any) => c.id_t_campagne);
+
+      // Récupérer les campaign_creators acceptés pour ces campagnes
+      const { data: ccRows, error } = await supabase
+        .from('campaign_creators')
+        .select('*, campaigns(*), createur(*)')
+        .in('campaign_id', campaignIds)
+        .eq('status', 'accepted')
         .order('accepted_at', { ascending: false });
 
-      if (error || !campaignsData?.length) { setCollaborations([]); return; }
+      if (error || !ccRows?.length) { setCollaborations([]); return; }
 
-      const collaborationsWithCreators = await Promise.all(
-        campaignsData.map(async (campaign: any) => {
-          const { data: creatorInfo } = await supabase
-            .from('createur').select('*').eq('id_w', campaign.assigned_creator_id).single();
-          return { campaign, creatorInfo };
-        })
-      );
+      const collaborationsWithCreators = ccRows.map((row: any) => ({
+        campaign: row.campaigns,
+        creatorInfo: row.createur,
+        acceptedAt: row.accepted_at,
+      }));
+
       setCollaborations(collaborationsWithCreators);
     } catch (error) {
       console.error("❌", error);
@@ -128,7 +138,7 @@ export default function BrandCollaborations() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {collaborations.map(({ campaign, creatorInfo }) => {
+                  {collaborations.map(({ campaign, creatorInfo, acceptedAt }) => {
                     const key = campaign.id_t_campagne || campaign.id;
                     const daysLeft = campaign.end_date ? Math.max(0, Math.ceil((new Date(campaign.end_date).getTime() - Date.now()) / (1000 * 3600 * 24))) : 0;
                     return (
@@ -160,7 +170,7 @@ export default function BrandCollaborations() {
                             <Building2 size={14} className="text-gray-400 shrink-0" />
                             <div className="min-w-0">
                               <p className="text-sm font-bold text-gray-700 truncate">{campaign.title || 'Campagne'}</p>
-                              {campaign.accepted_at && <p className="text-xs text-green-600">Acceptée le {formatDate(campaign.accepted_at)}</p>}
+                              {acceptedAt && <p className="text-xs text-green-600">Acceptée le {formatDate(acceptedAt)}</p>}
                             </div>
                           </div>
                         </td>

@@ -363,7 +363,7 @@ function BrandDashboardInner() {
                 <Zap size={16} className="text-[#D4A017]" /> Mes packs
               </button>
             </Link>
-            <Link href="/brands/campaign-choice">
+            <Link href="/brands/auth/campagne">
               <button className="bg-[#D4A017] text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-[#B88A14] transition-all shadow-lg">
                 <Zap size={18} fill="currentColor" /> Créer une campagne
               </button>
@@ -401,7 +401,7 @@ function BrandDashboardInner() {
                 <Zap size={48} className="mx-auto text-gray-200 mb-4" />
                 <p className="text-gray-600 font-bold text-lg mb-2">Aucune campagne créée</p>
                 <p className="text-sm text-gray-400 mb-6">Créez votre première campagne pour commencer !</p>
-                <Link href="/brands/campaign-choice">
+                <Link href="/brands/auth/campagne">
                   <button className="bg-[#D4A017] text-white px-6 py-3 rounded-xl font-bold inline-flex items-center gap-2 hover:bg-[#B88A14] transition-all">
                     <Zap size={18} fill="currentColor" /> Créer une campagne
                   </button>
@@ -519,11 +519,8 @@ function BrandDashboardInner() {
           </div>
         </div>
 
-        {/* ================================================
-            CHAT INTÉGRÉ FLOTTANT
-        ================================================ */}
+        {/* Chat flottant support */}
         <div className="fixed bottom-8 right-8 z-50">
-
           {/* Fenêtre chat */}
           <AnimatePresence>
             {isChatOpen && (

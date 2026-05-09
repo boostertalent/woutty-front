@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
-import { 
-  Check, X, Eye, Loader2, ArrowLeft, Calendar, User, 
+import {
+  Check, X, Eye, Loader2, ArrowLeft, Calendar, User,
   Heart, MessageCircle, Share2, TrendingUp, ExternalLink,
   Shield, AlertCircle, CheckCircle2, Filter, Building2
 } from 'lucide-react';
+import { createNotification } from '@/lib/notifications';
+import { triggerEmailNotification } from '@/lib/n8n';
 
 export default function ValidatePostsPage() {
   const router = useRouter();
@@ -160,6 +162,40 @@ export default function ValidatePostsPage() {
         postId,
         `Post ${approved ? 'validé' : 'rejeté'}`
       );
+
+      // ✅ Notifier le créateur — validation ou rejet (F1 — CDC)
+      const post = pendingPosts.find((p) => p.id_t_poste === postId);
+      if (post?.id_w) {
+        const { data: creatorData } = await supabase
+          .from('createur')
+          .select('id_w, email, full_name')
+          .eq('id_w', post.id_w)
+          .maybeSingle();
+
+        if (creatorData) {
+          const notifMeta = {
+            campaign_title: post.campaigns?.title ?? 'Campagne',
+            post_id: postId,
+            action_url: '/creators/dashboard',
+          };
+
+          await createNotification({
+            campaign_id: post.id_t_campagne ?? undefined,
+            creator_id: post.id_w,
+            recipient_id: creatorData.id_w,
+            recipient_role: 'creator',
+            notification_type: approved ? 'content_validated' : 'content_rejected',
+            metadata: notifMeta,
+          });
+
+          await triggerEmailNotification({
+            event: approved ? 'content_validated' : 'content_rejected',
+            recipient_email: creatorData.email,
+            recipient_name: creatorData.full_name || 'Créateur',
+            metadata: notifMeta,
+          });
+        }
+      }
 
       // ✅ Recharger les posts
       await loadPosts();

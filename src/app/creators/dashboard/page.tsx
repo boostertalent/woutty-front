@@ -4,7 +4,10 @@ import React, { Suspense, useState, useMemo, useEffect, useCallback } from 'reac
 import { createBrowserClient } from '@supabase/ssr'; 
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { motion } from 'framer-motion'; 
+import { motion } from 'framer-motion';
+import { createNotification } from '@/lib/notifications';
+import { triggerEmailNotification } from '@/lib/n8n';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 
 import { 
@@ -83,6 +86,7 @@ function CreatorDashboardInner() {
   const [creatorInfo, setCreatorInfo] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<number>(0);
+  const [userId, setUserId] = useState<string | null>(null);
    const normalizeId = useCallback((id: any): string => {
     if (!id) return '';
     return String(id).split('.')[0].trim().toLowerCase().replace(/\s+/g, '');
@@ -133,6 +137,7 @@ function CreatorDashboardInner() {
     }
 
     const USER_ID = session.user.id;
+    setUserId(USER_ID);
     const adminViewingId = searchParams.get('viewing');
     let creatorIdToLoad = adminViewingId || USER_ID;
     setIsAdminViewing(!!adminViewingId);
@@ -296,28 +301,39 @@ const formattedPosts = (postData || []).map((post, index) => {
     
     setAllPosts(formattedPosts);
 
-    // ✅ 7. CHARGER LES CAMPAGNES
-    const { data: pendingData } = await supabase
-      .from('campaigns')
-      .select('*')
-      .eq('assigned_creator_id', creatorIdToLoad)
-      .or('creator_status.is.null,creator_status.eq.pending');
+    // ✅ 7. CHARGER LES CAMPAGNES via campaign_creators
+    const { data: ccPending } = await supabase
+      .from('campaign_creators')
+      .select('campaign_id, campaigns(*)')
+      .eq('creator_id', creatorIdToLoad)
+      .eq('status', 'pending_creator');
 
-    setPendingCampaigns(pendingData || []);
-    setNotifications(pendingData?.length || 0);
+    const pendingData = (ccPending || []).map((row: any) => row.campaigns).filter(Boolean);
+    setPendingCampaigns(pendingData);
+    setNotifications(pendingData.length);
 
-    const { data: acceptedData } = await supabase
-      .from('campaigns')
-      .select('*')
-      .eq('assigned_creator_id', creatorIdToLoad)
-      .eq('creator_status', 'accepted');
+    const { data: ccAccepted } = await supabase
+      .from('campaign_creators')
+      .select('campaign_id, nb_publications, campaigns(*)')
+      .eq('creator_id', creatorIdToLoad)
+      .eq('status', 'accepted');
 
-    const ongoing = acceptedData?.filter(c => !c.end_date || new Date(c.end_date) >= new Date()) || [];
-    const finished = acceptedData?.filter(c => c.end_date && new Date(c.end_date) < new Date()) || [];
+    const acceptedData = (ccAccepted || []).map((row: any) => {
+      const campaign = row.campaigns;
+      if (!campaign) return null;
+      const totalPub = campaign.nb_publications || 0;
+      const creatorPub = row.nb_publications || 0;
+      const ratio = totalPub > 0 ? creatorPub / totalPub : 1;
+      const remuneration = (parseFloat(campaign.budget) || 0) * ratio * 0.85;
+      return { ...campaign, remuneration };
+    }).filter(Boolean);
+
+    const ongoing = acceptedData?.filter((c: any) => !c.end_date || new Date(c.end_date) >= new Date()) || [];
+    const finished = acceptedData?.filter((c: any) => c.end_date && new Date(c.end_date) < new Date()) || [];
 
     setAcceptedCampaigns(ongoing);
     setCompletedCampaigns(finished);
-    setTotalRevenue(finished.reduce((sum, c) => sum + (parseFloat(c.budget) || 0), 0));
+    setTotalRevenue(finished.reduce((sum: number, c: any) => sum + (c.remuneration || 0), 0));
     setCompletedCampaignsCount(finished.length);
 
     console.log("✅ Chargement terminé avec succès");
@@ -355,23 +371,51 @@ const filteredPosts = useMemo(() => {
   console.log(`🔍 ${filtered.length} post(s) trouvé(s) pour "${activeFilter}"`);
   return filtered;
 }, [activeFilter, allPosts]);
-  const handleAcceptCampaign = async (campaignId: string) => { 
+  const handleAcceptCampaign = async (campaignId: string) => {
     setProcessingCampaign(campaignId);
     try {
+      const creatorId = creatorInfo?.id_w;
+
+      // Mettre à jour campaign_creators
       const { error } = await supabase
-        .from('campaigns')
-        .update({ 
-          creator_status: 'accepted',
-          accepted_at: new Date().toISOString()
-        })
-        .eq('id_t_campagne', campaignId); 
+        .from('campaign_creators')
+        .update({ status: 'accepted', accepted_at: new Date().toISOString() })
+        .eq('campaign_id', campaignId)
+        .eq('creator_id', creatorId);
 
       if (error) throw error;
 
-      console.log("✅ Campagne acceptée");
+      // Notifier l'admin et la marque
+      const { data: campaignData } = await supabase
+        .from('campaigns').select('title, id_w').eq('id_t_campagne', campaignId).maybeSingle();
+      const { data: adminData } = await supabase
+        .from('createur').select('id_w, email, full_name').eq('role', 'admin').limit(1).maybeSingle();
+
+      const meta = {
+        campaign_title: campaignData?.title || 'Sans titre',
+        creator_name: creatorInfo?.full_name || 'Créateur',
+        action_url: '/admin/campaigns',
+      };
+
+      if (adminData) {
+        await createNotification({
+          campaign_id: campaignId, creator_id: creatorId,
+          recipient_id: adminData.id_w, recipient_role: 'admin',
+          notification_type: 'creator_accepted', metadata: meta,
+        });
+      }
+      if (campaignData?.id_w) {
+        await createNotification({
+          campaign_id: campaignId, creator_id: creatorId,
+          brand_id: campaignData.id_w,
+          recipient_id: campaignData.id_w, recipient_role: 'brand',
+          notification_type: 'creator_accepted', metadata: { ...meta, action_url: '/brands/dashboard' },
+        });
+      }
+
       await fetchData();
     } catch (err: any) {
-      console.error("❌ Erreur détaillée:", err);
+      console.error("❌ Erreur:", err);
       setError("Erreur lors de l'acceptation de la campagne");
     } finally {
       setProcessingCampaign(null);
@@ -403,30 +447,102 @@ const linkPostToCampaign = async (postId, campaignId) => {
     }));
 
     console.log("✅ Post lié avec succès (en attente de validation)");
+
+    // Notification : content_submitted → notifie l'admin
+    try {
+      const { data: campaignData } = await supabase
+        .from('campaigns')
+        .select('title, id_w')
+        .eq('id_t_campagne', campaignId)
+        .maybeSingle();
+
+      const { data: adminData } = await supabase
+        .from('createur')
+        .select('id_w, email, full_name')
+        .eq('role', 'admin')
+        .limit(1)
+        .maybeSingle();
+
+      if (adminData) {
+        const notifMeta = {
+          campaign_title: campaignData?.title || 'Sans titre',
+          creator_name: creatorInfo?.full_name || 'Créateur',
+          post_id: postId,
+          action_url: '/admin/validate-posts',
+        };
+
+        await createNotification({
+          campaign_id: campaignId,
+          creator_id: creatorInfo?.id_w,
+          recipient_id: adminData.id_w,
+          recipient_role: 'admin',
+          notification_type: 'content_submitted',
+          metadata: notifMeta,
+        });
+
+        await triggerEmailNotification({
+          event: 'content_submitted',
+          recipient_email: adminData.email,
+          recipient_name: adminData.full_name || 'Admin',
+          metadata: notifMeta,
+        });
+      }
+    } catch (notifErr) {
+      console.error('⚠️ Notification content_submitted non envoyée:', notifErr);
+    }
+
   } catch (err) {
     console.error("❌ Erreur:", err);
     setError("Impossible de lier le post à la campagne.");
   }
 };
- const handleRejectCampaign = async (campaignId: string) => { 
+const handleRejectCampaign = async (campaignId: string) => {
     if (!confirm('Êtes-vous sûr de vouloir refuser cette campagne ?')) return;
 
     setProcessingCampaign(campaignId);
     try {
+      const creatorId = creatorInfo?.id_w;
+
+      // Mettre à jour campaign_creators
       const { error } = await supabase
-        .from('campaigns')
-        .update({ 
-          creator_status: 'rejected',
-          assigned_creator_id: null 
-        })
-        .eq('id_t_campagne', campaignId); 
+        .from('campaign_creators')
+        .update({ status: 'declined_creator' })
+        .eq('campaign_id', campaignId)
+        .eq('creator_id', creatorId);
 
       if (error) throw error;
 
-      console.log("✅ Campagne refusée");
+      // Notifier l'admin et la marque
+      const { data: campaignData } = await supabase
+        .from('campaigns').select('title, id_w').eq('id_t_campagne', campaignId).maybeSingle();
+      const { data: adminData } = await supabase
+        .from('createur').select('id_w, email, full_name').eq('role', 'admin').limit(1).maybeSingle();
+
+      const meta = {
+        campaign_title: campaignData?.title || 'Sans titre',
+        creator_name: creatorInfo?.full_name || 'Créateur',
+        action_url: '/admin/campaigns',
+      };
+
+      if (adminData) {
+        await createNotification({
+          campaign_id: campaignId, creator_id: creatorId,
+          recipient_id: adminData.id_w, recipient_role: 'admin',
+          notification_type: 'creator_declined', metadata: meta,
+        });
+      }
+      if (campaignData?.id_w) {
+        await createNotification({
+          campaign_id: campaignId, creator_id: creatorId,
+          brand_id: campaignData.id_w,
+          recipient_id: campaignData.id_w, recipient_role: 'brand',
+          notification_type: 'creator_declined', metadata: { ...meta, action_url: '/brands/dashboard' },
+        });
+      }
+
       await fetchData();
     } catch (err: any) {
-      console.error("❌ Erreur détaillée:", err);
+      console.error("❌ Erreur:", err);
       setError("Erreur lors du refus de la campagne");
     } finally {
       setProcessingCampaign(null);
@@ -867,14 +983,17 @@ const linkPostToCampaign = async (postId, campaignId) => {
 
       {/* MAIN */}
       <main className="flex-1 flex flex-col p-4 md:p-10 h-full overflow-hidden pb-20 md:pb-10">
-        <header className="mb-8">
-          <h1 className="text-3xl font-serif font-bold">{activeTab}</h1>
-          <p className="text-gray-400 text-sm mt-1">
-            {activeTab === 'Ma performance' && 'Gérez votre influence en temps réel'}
-            {activeTab === 'Opportunités' && `${notifications} nouvelle${notifications > 1 ? 's' : ''} opportunité${notifications > 1 ? 's' : ''}`}
-            {activeTab === 'Mes campagnes' && 'Suivez vos contrats en cours'}
-            {activeTab === 'Terminées' && 'Vos campagnes accomplies'}
-          </p>
+        <header className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-serif font-bold">{activeTab}</h1>
+            <p className="text-gray-400 text-sm mt-1">
+              {activeTab === 'Ma performance' && 'Gérez votre influence en temps réel'}
+              {activeTab === 'Opportunités' && `${notifications} nouvelle${notifications > 1 ? 's' : ''} opportunité${notifications > 1 ? 's' : ''}`}
+              {activeTab === 'Mes campagnes' && 'Suivez vos contrats en cours'}
+              {activeTab === 'Terminées' && 'Vos campagnes accomplies'}
+            </p>
+          </div>
+          <NotificationBell recipientId={userId} />
         </header>
 
         <div className="flex-1 overflow-y-auto">
@@ -1258,7 +1377,6 @@ const linkPostToCampaign = async (postId, campaignId) => {
                         </div>
 
                         <div className="grid grid-cols-3 gap-4">
-                          
                           <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-100">
                             <p className="text-xs text-blue-400 uppercase font-bold mb-1">Jours restants</p>
                             <p className="text-lg font-black text-blue-600">{daysLeft}</p>
@@ -1270,6 +1388,11 @@ const linkPostToCampaign = async (postId, campaignId) => {
                               <TrendingUp className="mx-auto" size={24} />
                             </p>
                             <p className="text-xs text-purple-500">En cours</p>
+                          </div>
+                          <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-100">
+                            <p className="text-xs text-green-400 uppercase font-bold mb-1">Ma rémunération</p>
+                            <p className="text-sm font-black text-green-600">{Math.round(campaign.remuneration || 0).toLocaleString('fr-FR')}</p>
+                            <p className="text-xs text-green-500">CFA</p>
                           </div>
                         </div>
                       </div>
@@ -1311,7 +1434,6 @@ const linkPostToCampaign = async (postId, campaignId) => {
                       </div>
 
                       <div className="grid grid-cols-3 gap-4">
-                        
                         <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-100">
                           <p className="text-xs text-blue-400 uppercase font-bold mb-1">Durée</p>
                           <p className="text-xl font-black text-blue-600">
@@ -1324,6 +1446,11 @@ const linkPostToCampaign = async (postId, campaignId) => {
                           <p className="text-sm font-black text-purple-600">
                             {formatDate(campaign.end_date)}
                           </p>
+                        </div>
+                        <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-100">
+                          <p className="text-xs text-green-400 uppercase font-bold mb-1">Rémunération</p>
+                          <p className="text-sm font-black text-green-600">{Math.round(campaign.remuneration || 0).toLocaleString('fr-FR')}</p>
+                          <p className="text-xs text-green-500">CFA</p>
                         </div>
                       </div>
                     </div>
