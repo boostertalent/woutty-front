@@ -6,7 +6,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import Link from 'next/link';
 import {
   Users, Building2, BarChart3, Shield, Search,
-  LogOut, Loader2, X, User, Activity, HeadphonesIcon, MessageCircle
+  LogOut, Loader2, X, User, Activity, HeadphonesIcon, MessageCircle, FileVideo
 } from 'lucide-react';
 import NotificationBell from '@/components/notifications/NotificationBell';
 
@@ -91,6 +91,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: '/admin/creators',    label: 'Créateurs',       icon: <Users size={20} />,      always: true },
     { href: '/admin/brands',      label: 'Marques',         icon: <Building2 size={20} />,  always: true },
     { href: '/admin/admins',      label: 'Admins',          icon: <Shield size={20} />,     always: true },
+    { href: '/admin/validate-submissions', label: 'Zone Tampon', icon: <FileVideo size={20} />, always: true },
     { href: '/admin/assistance',  label: 'Assistance',      icon: <HeadphonesIcon size={20} />, always: true },
     { href: '/admin/logs',        label: "Logs d'activité", icon: <Activity size={20} />,   always: false },
     { href: '/admin/profile',     label: 'Mon profil',      icon: <User size={20} />,       always: false },
@@ -191,15 +192,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
           {children}
         </div>
-
-        {/* BOUTON SUPPORT */}
-        <button
-          onClick={() => window.open('https://boostertalent.app.n8n.cloud/webhook/b4d75f16-f24e-4ca0-97a6-49502970c201/chat', 'ChatSupportWoutty', 'width=400,height=700,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes,resizable=yes')}
-          className="fixed bottom-8 right-8 z-50 w-16 h-16 bg-gradient-to-r from-[#ceaf4a] to-[#b8962f] text-white rounded-full shadow-2xl hover:shadow-[#ceaf4a]/50 hover:scale-110 transition-all duration-300 flex items-center justify-center group"
-        >
-          <MessageCircle size={28} className="group-hover:rotate-12 transition-transform duration-300" />
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">!</span>
-        </button>
 
       </main>
     </div>
