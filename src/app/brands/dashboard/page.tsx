@@ -4,21 +4,15 @@ import React, { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react'; 
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   Users, Zap, ArrowRight, Sparkles,
   Pencil, Trash2, X as CloseIcon, Check,
   RefreshCw, Clock, TrendingUp, Instagram, Youtube, 
-  Music2, Camera, Mail, Loader2, MessageCircle, Phone
+  Music2, Loader2
 } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { createBrowserClient } from '@supabase/ssr';
-
-const XLogo = ({ size = 16 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932 6.064-6.932zm-1.294 19.497h2.039L6.486 3.24H4.298L17.607 20.65z" />
-  </svg>
-);
 
 function BrandDashboardInner() {
   const searchParams = useSearchParams();
@@ -39,7 +33,6 @@ function BrandDashboardInner() {
   const [loadingCreatorDetails, setLoadingCreatorDetails] = useState(false);
   const [showCampaignSelection, setShowCampaignSelection] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const determineStatusByDates = (startDateStr: string, endDateStr: string) => {
     if (!startDateStr || !endDateStr) return 'pending';
@@ -517,62 +510,6 @@ function BrandDashboardInner() {
               </div>
             )}
           </div>
-        </div>
-
-        {/* Chat flottant support */}
-        <div className="fixed bottom-8 right-8 z-50">
-          {/* Fenêtre chat */}
-          <AnimatePresence>
-            {isChatOpen && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                transition={{ duration: 0.2 }}
-                className="absolute bottom-20 right-0 w-[400px] h-[600px] bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col"
-              >
-                {/* Header */}
-                <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-[#ceaf4a] to-[#b8962f]">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                      <MessageCircle size={18} className="text-white" />
-                    </div>
-                    <div>
-                      <p className="text-white font-black text-sm">Support Woutty</p>
-                      <p className="text-white/70 text-[10px]">Toujours disponible</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setIsChatOpen(false)}
-                    className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
-                  >
-                    <CloseIcon size={16} className="text-white" />
-                  </button>
-                </div>
-
-                {/* Iframe */}
-                <iframe
-                  src="https://boostertalent.app.n8n.cloud/webhook/b4d75f16-f24e-4ca0-97a6-49502970c201/chat"
-                  className="flex-1 w-full border-none"
-                  title="Support Woutty"
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Bouton toggle */}
-          <button
-            onClick={() => setIsChatOpen(!isChatOpen)}
-            className="w-16 h-16 bg-gradient-to-r from-[#ceaf4a] to-[#b8962f] text-white rounded-full shadow-2xl hover:shadow-[#ceaf4a]/50 hover:scale-110 transition-all duration-300 flex items-center justify-center group relative"
-          >
-            {isChatOpen
-              ? <CloseIcon size={24} />
-              : <MessageCircle size={28} className="group-hover:rotate-12 transition-transform duration-300" />
-            }
-            {!isChatOpen && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">!</span>
-            )}
-          </button>
         </div>
 
         {/* BANNIÈRE ADMIN */}

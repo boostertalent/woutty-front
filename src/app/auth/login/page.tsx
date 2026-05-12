@@ -90,7 +90,7 @@ function LoginPageInner() {
           .eq('id_w', userId)
           .maybeSingle();
         if (brandData) {
-          router.push('/brands/auth/dashboard');
+          router.push('/brands/dashboard');
           router.refresh();
           return;
         }
