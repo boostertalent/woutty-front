@@ -768,12 +768,7 @@ const handleRejectCampaign = async (campaignId: string) => {
                 activeTab === item.name ? 'bg-[#EBD8A3] text-[#D4A017]' : 'text-gray-500 hover:bg-gray-50'
               }`}
             >
-              {item.icon} {item.name}
-              {item.badge && item.badge > 0 && (
-                <span className="absolute top-2 right-2 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                  {item.badge}
-                </span>
-              )}
+              {item.icon} {item.name}{typeof item.badge === 'number' ? ` [${item.badge}]` : ''}
             </button>
           ))}
           <Link href="/creators/dashboard/profile">
@@ -799,12 +794,9 @@ const handleRejectCampaign = async (campaignId: string) => {
             className={`relative flex flex-col items-center gap-1 ${activeTab === item.name ? 'text-[#D4A017]' : 'text-gray-400'}`}
           >
             {item.icon}
-            <span className="text-[10px] font-bold">{item.name.split(' ')[0]}</span>
-            {item.badge && item.badge > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
-                {item.badge}
-              </span>
-            )}
+            <span className="text-[10px] font-bold">
+              {item.name.split(' ')[0]}{typeof item.badge === 'number' ? ` [${item.badge}]` : ''}
+            </span>
           </button>
         ))}
         <Link href="/creators/dashboard/profile" className="flex flex-col items-center gap-1 text-gray-400">

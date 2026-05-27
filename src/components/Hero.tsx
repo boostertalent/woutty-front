@@ -390,7 +390,7 @@ export default function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             style={{ fontFamily: "'Instrument Serif', 'Georgia', serif" }}
-            className="text-[52px] max-md:leading-[0.86] sm:text-[84px] md:text-[120px] font-black italic leading-[0.9] sm:leading-[0.82] tracking-tighter text-black"
+            className="text-[64px] max-md:leading-[0.86] sm:text-[100px] md:text-[144px] font-black italic leading-[0.9] sm:leading-[0.82] tracking-tighter text-black"
           >
             Woutty
           </motion.h1>
